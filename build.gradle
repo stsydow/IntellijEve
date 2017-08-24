@@ -1,0 +1,49 @@
+apply plugin: 'java'
+apply plugin: 'org.jetbrains.intellij'
+apply plugin: 'kotlin'
+
+
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
+        maven {
+            url 'http://dl.bintray.com/jetbrains/intellij-plugin-service'
+        }
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.4-2"
+        classpath "org.jetbrains.intellij.plugins:gradle-intellij-plugin:0.2.0-SNAPSHOT"
+    }
+}
+
+intellij {
+    version 'LATEST-TRUNK-SNAPSHOT'
+    pluginName 'IntellijEve'
+}
+
+group 'org.tub.eveamcp'
+version '0.0.1'
+
+sourceSets {
+    main {
+        resources {
+            srcDir 'resources'
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+prepareSandbox {
+    doLast {
+        copy {
+            from System.getProperty("user.home")+'/.IdeaIC2017.2/config/plugins/'
+            into './build/idea-sandbox/plugins/'
+        }
+    }
+}
