@@ -234,19 +234,21 @@ class Viewport : JPanel(), MouseListener, MouseWheelListener, MouseMotionListene
     }
 
     override fun componentResized(e: ComponentEvent?) {
-        println(e)
+        if (width > 0 && height > 0) {
+            println(e)
 
-        val scale = Math.sqrt(
-                (width * width + height * height).toDouble() /
-                        (currentSize.width * currentSize.width + currentSize.height * currentSize.height).toDouble()
-        )
+            val scale = Math.sqrt(
+                    (width * width + height * height).toDouble() /
+                            (currentSize.width * currentSize.width + currentSize.height * currentSize.height).toDouble()
+            )
 
-        val center = transform.applyInverse(
-                Coordinate((width - currentSize.width).toDouble(),
-                        (height - currentSize.height).toDouble()))
+            val center = transform.applyInverse(
+                    Coordinate((width - currentSize.width).toDouble(),
+                            (height - currentSize.height).toDouble()))
 
-        transform = transform.zoom(scale, center)
-        currentSize = Dimension(width, height)
+            transform = transform.zoom(scale, center)
+            currentSize = Dimension(width, height)
+        }
     }
 
     override fun keyTyped(e: KeyEvent?) {
