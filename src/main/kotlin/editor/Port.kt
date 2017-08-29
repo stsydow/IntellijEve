@@ -5,7 +5,7 @@ import javax.swing.JPopupMenu
 
 enum class Direction {IN, OUT }
 
-class Port(val direction: Direction, val message_type: String, parent: Node, scene: Viewport) : UIElement(Transform(0.0, 0.0, 1.0), parent, scene) {
+class Port(val direction: Direction, var message_type: String, parent: Node, scene: Viewport) : UIElement(Transform(0.0, 0.0, 1.0), parent, scene) {
     companion object {
         val IN_SHAPE = Transform(0.0, 0.0, UNIT) * listOf(
                 Coordinate(0.0, 0.0),

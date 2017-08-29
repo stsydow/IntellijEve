@@ -58,12 +58,18 @@ class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopu
 class PortContextMenu(val port: Port, val interaction_point: Coordinate) : JPopupMenu() {
     init {
         val deletePortItem = JMenuItem("delete port")
+        val setPayloadItem = JMenuItem("set message type")
 
         deletePortItem.addActionListener {
             port.parent!!.remove(port)
         }
+        setPayloadItem.addActionListener {
+            port.message_type = JOptionPane.showInputDialog(port.parent!!.scene, "new message type:", port.message_type)
+            port.repaint()
+        }
 
         add(deletePortItem)
+        add(setPayloadItem)
     }
 }
 
