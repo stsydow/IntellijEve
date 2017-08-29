@@ -1,5 +1,6 @@
 package editor
 
+import java.awt.Color
 import javax.swing.JPopupMenu
 
 enum class Direction {IN, OUT }
@@ -63,7 +64,7 @@ class Port(val direction: Direction, val message_type: String, parent: Node, sce
         if (g.transform.scale > 0.5) {
             localGraphics.text(message_type, text_pos, DEFAULT_FONT)
         }
-        localGraphics.polygon(poly, true)
+        localGraphics.polygon(Color.BLACK, poly, true)
     }
 
     override fun getContextMenu(at: Coordinate): JPopupMenu {

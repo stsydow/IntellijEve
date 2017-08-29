@@ -1,5 +1,6 @@
 package editor
 
+import java.awt.Color
 import javax.swing.JPopupMenu
 
 enum class PropertyType {Filter, Order, ContextId }
@@ -33,6 +34,7 @@ open class Node(transform: Transform, val name: String, parent: Node?, scene: Vi
 
     var padding = DEFAULT_PADDING
     var innerBounds = DEFAULT_BOUNDS
+    var color = Color.GREEN
 
     constructor(parent: Node, scene: Viewport) : this(DEFAULT_TRANSFORM, parent, scene)
     constructor(t: Transform, parent: Node, scene: Viewport) : this(t, DEFAULT_NAME, parent, scene) {
@@ -155,13 +157,19 @@ open class Node(transform: Transform, val name: String, parent: Node?, scene: Vi
     override fun render(g: GraphicsProxy) {
         val localGraphics = g.stack(transform)
 
-        localGraphics.rect(bounds - propertiesPadding)
+        localGraphics.rect(color, bounds - propertiesPadding)
 
         localGraphics.text(name, titleBottom + Vector(0.5 * UNIT, -0.5 * UNIT), DEFAULT_FONT)
         localGraphics.line(titleBottom, titleBottom + Vector(bounds.width, 0.0))
 
         if (properties.size > 0) {
+            localGraphics.polygon(color, listOf(bounds.topLeft + Vector(0.0, propertiesPadding.top),
+                    bounds.topLeft,
+                    bounds.topRight - Vector(propertiesPadding.top, 0.0),
+                    bounds.topRight + Vector(0.0, propertiesPadding.top)),
+                    true)
             localGraphics.lines(
+                    Color.BLACK,
                     bounds.topLeft + Vector(0.0, propertiesPadding.top),
                     bounds.topLeft,
                     bounds.topRight - Vector(propertiesPadding.top, 0.0),

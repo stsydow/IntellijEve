@@ -1,6 +1,7 @@
 package editor
 
 import javax.swing.JMenuItem
+import javax.swing.JOptionPane
 import javax.swing.JPopupMenu
 
 class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopupMenu() {
@@ -8,6 +9,7 @@ class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopu
         val createNodeItem = JMenuItem("create node")
         val deleteNodeItem = JMenuItem("delete node")
         val addPortItem = JMenuItem("add port")
+        val setColorItem = JMenuItem("set color")
 
         createNodeItem.addActionListener {
             val local_to_global = node.getGlobalTransform()
@@ -36,10 +38,20 @@ class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopu
             node.addPort(port)
             node.scene.pushOperation(AddPortOperation(node, port))
         }
+        setColorItem.addActionListener {
+            val new = JOptionPane.showInputDialog(node.scene, "new color:", "#ff0000")
+            try {
+                node.color = hex2Rgb(new)
+                node.repaint()
+            } catch(e: Exception) {
+                println(e)
+            }
+        }
 
         add(createNodeItem)
         add(deleteNodeItem)
         add(addPortItem)
+        add(setColorItem)
     }
 }
 
