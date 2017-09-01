@@ -10,6 +10,9 @@ class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopu
         val deleteNodeItem = JMenuItem("delete node")
         val addPortItem = JMenuItem("add port")
         val setColorItem = JMenuItem("set color")
+        val setOrderItem = JMenuItem("set order")
+        val setContextId = JMenuItem("set context")
+        val setFilter = JMenuItem("set filter")
 
         createNodeItem.addActionListener {
             val local_to_global = node.getGlobalTransform()
@@ -47,11 +50,62 @@ class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopu
                 println(e)
             }
         }
+        setOrderItem.addActionListener {
+            val old = node.getProperty(PropertyType.Order);
+            val order: String?;
+            if (old != null) {
+                order = JOptionPane.showInputDialog(node.scene, "order by:", old)
+            } else {
+                order = JOptionPane.showInputDialog(node.scene, "order by:", old)
+            }
+
+            if (order != null && order != "") {
+                node.setProperty(PropertyType.Order, order)
+            } else if (old != null) {
+                node.removeProperty(PropertyType.Order);
+            }
+            node.repaint()
+        }
+        setContextId.addActionListener {
+            val old = node.getProperty(PropertyType.ContextId);
+            val order: String?;
+            if (old != null) {
+                order = JOptionPane.showInputDialog(node.scene, "construct id from:", old)
+            } else {
+                order = JOptionPane.showInputDialog(node.scene, "relevant fields:", old)
+            }
+
+            if (order != null && order != "") {
+                node.setProperty(PropertyType.ContextId, order)
+            } else if (old != null) {
+                node.removeProperty(PropertyType.ContextId);
+            }
+            node.repaint()
+        }
+        setFilter.addActionListener {
+            val old = node.getProperty(PropertyType.Filter);
+            val order: String?;
+            if (old != null) {
+                order = JOptionPane.showInputDialog(node.scene, "set Filter", old)
+            } else {
+                order = JOptionPane.showInputDialog(node.scene, "filter by:", old)
+            }
+
+            if (order != null && order != "") {
+                node.setProperty(PropertyType.Filter, order)
+            } else if (old != null) {
+                node.removeProperty(PropertyType.Filter);
+            }
+            node.repaint()
+        }
 
         add(createNodeItem)
         add(deleteNodeItem)
         add(addPortItem)
         add(setColorItem)
+        add(setOrderItem)
+        add(setContextId)
+        add(setFilter)
     }
 }
 

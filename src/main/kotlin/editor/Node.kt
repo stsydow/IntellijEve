@@ -5,7 +5,10 @@ import javax.swing.JPopupMenu
 
 enum class PropertyType {Filter, Order, ContextId }
 
-class Property(val type: PropertyType, val expression: String) {
+class Property(val type: PropertyType, var expression: String) {
+    override fun toString(): String {
+        return "${type.toString()}: $expression"
+    }
 }
 
 // assert Nodes may not overlap
@@ -25,7 +28,7 @@ open class Node(transform: Transform, val name: String, parent: Node?, scene: Vi
     internal val childEdges = mutableListOf<Edge>()
     internal val childNodes = mutableListOf<Node>()
 
-    val properties = mutableListOf<Property>(Property(PropertyType.Order, "time ÖgÖg"), Property(PropertyType.Filter, "filter stuff:ÖgÖg"))
+    val properties = mutableListOf<Property>()
 
     val propertiesPadding: Padding get() = Padding((1.2 * properties.size + 0.5) * UNIT, 0.0, 0.0, 0.0)
 
@@ -176,7 +179,7 @@ open class Node(transform: Transform, val name: String, parent: Node?, scene: Vi
                     bounds.topRight + Vector(0.0, propertiesPadding.top)
             )
             properties.forEachIndexed { i, p ->
-                localGraphics.text(p.expression, bounds.topLeft + Vector(0.5 * UNIT, 1.2 * (i + 1) * UNIT), DEFAULT_FONT)
+                localGraphics.text(p.toString(), bounds.topLeft + Vector(0.5 * UNIT, 1.2 * (i + 1) * UNIT), DEFAULT_FONT)
             }
         }
 
@@ -200,6 +203,28 @@ open class Node(transform: Transform, val name: String, parent: Node?, scene: Vi
 
     override fun getContextMenu(at: Coordinate): JPopupMenu {
         return NodeContextMenu(this, at)
+    }
+
+    fun getProperty(type: PropertyType): String? {
+        properties.forEach {
+            if (it.type == type)
+                return it.expression;
+        }
+        return null;
+    }
+
+    fun setProperty(type: PropertyType, value: String) {
+        properties.forEach {
+            if (it.type == type) {
+                it.expression = value;
+                return;
+            }
+        }
+        properties.add(Property(type, value))
+    }
+
+    fun removeProperty(type: PropertyType) {
+        properties.retainAll { it.type != type }
     }
 }
 
