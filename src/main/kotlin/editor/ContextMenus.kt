@@ -13,6 +13,7 @@ class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopu
         val setOrderItem = JMenuItem("set order")
         val setContextId = JMenuItem("set context")
         val setFilter = JMenuItem("set filter")
+        val generateItem = JMenuItem("generate")
 
         createNodeItem.addActionListener {
             val local_to_global = node.getGlobalTransform()
@@ -98,14 +99,21 @@ class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopu
             }
             node.repaint()
         }
+        generateItem.addActionListener {
+            node.scene.editor.generate()
+        }
 
         add(createNodeItem)
-        add(deleteNodeItem)
-        add(addPortItem)
-        add(setColorItem)
-        add(setOrderItem)
-        add(setContextId)
-        add(setFilter)
+        if (node.parent != null) {
+            add(deleteNodeItem)
+            add(addPortItem)
+            add(setColorItem)
+            add(setOrderItem)
+            add(setContextId)
+            add(setFilter)
+        } else {
+            add(generateItem)
+        }
     }
 }
 

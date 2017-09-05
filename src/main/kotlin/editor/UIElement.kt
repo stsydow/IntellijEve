@@ -8,6 +8,11 @@ const val UNIT = FONT_SIZE
 val DEFAULT_FONT = Font(FontStyle.REGULAR, FONT_SIZE)
 
 abstract class UIElement(var transform: Transform, val parent: Node?, var scene: Viewport) {
+
+    val id: String
+    init {
+        id = "uielement"+scene.idx++
+    }
     abstract fun render(g: GraphicsProxy)
     abstract fun getContextMenu(at: Coordinate): JPopupMenu
     abstract fun pick(c: Coordinate, operation: Operation, screenTransform: Transform): UIElement?

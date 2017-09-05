@@ -1,5 +1,6 @@
 package intellij
 
+import codegen.RustCodeGenerator
 import com.intellij.codeHighlighting.BackgroundEditorHighlighter
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorLocation
@@ -12,11 +13,14 @@ import editor.Viewport
 import java.beans.PropertyChangeListener
 import javax.swing.JComponent
 import javax.swing.JPanel
+import com.sun.javafx.scene.CameraHelper.project
+import com.intellij.ide.impl.ProjectUtil.getBaseDir
+
+
 
 
 class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserDataHolderBase(), FileEditor {
-    //val panel: JPanel = JPanel()
-    val panel: Viewport = Viewport()
+    val panel: Viewport = Viewport(this)
 
     override fun isModified(): Boolean {
         return false
@@ -68,5 +72,16 @@ class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserD
 
     override fun dispose() {
 
+    }
+
+    fun generate() {
+        try {
+            val gen: RustCodeGenerator = RustCodeGenerator()
+            val path = project.baseDir.path
+            gen.generateSkeleton(path)
+            gen.generateCode(panel.root, path)
+        } catch(e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

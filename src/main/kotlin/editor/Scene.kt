@@ -1,5 +1,6 @@
 package editor
 
+import intellij.GraphFileEditor
 import java.awt.Dimension
 import java.awt.Graphics
 import java.awt.Graphics2D
@@ -21,7 +22,8 @@ data class Interaction(val operation: Operation, val type: EventType){
 }
 */
 
-class Viewport : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener, KeyListener {
+class Viewport(val editor: GraphFileEditor) : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener, KeyListener {
+    var idx: Int = 0
     val root = RootNode(this)
     var currentSize = Dimension(1200, 800)
     var transform = Transform(currentSize.width.toDouble() / 2, currentSize.height.toDouble() / 2, 2.0)

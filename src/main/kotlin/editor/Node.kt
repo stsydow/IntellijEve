@@ -12,7 +12,7 @@ class Property(val type: PropertyType, var expression: String) {
 }
 
 // assert Nodes may not overlap
-open class Node(transform: Transform, val name: String, parent: Node?, scene: Viewport) : UIElement(transform, parent, scene) {
+open class Node(transform: Transform, var name: String, parent: Node?, scene: Viewport) : UIElement(transform, parent, scene) {
     companion object {
         val TITLE_HEIGHT = 2 * UNIT
         val INNER_PADDING = Padding(0.2 * UNIT)
@@ -47,6 +47,7 @@ open class Node(transform: Transform, val name: String, parent: Node?, scene: Vi
     init {
         assert(this is RootNode || parent != null)
         positionChildren()
+        name = id
     }
 
     open fun positionChildren() {
