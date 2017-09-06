@@ -208,7 +208,7 @@ use nodes::SourceNode;
             if (it.childNodes.count() == 0) {
                 builder.append(
                         """
-use nodes::${it.id}Instance;"""
+use nodes::${it.name}Instance;"""
                 );
             }
         }
@@ -250,7 +250,7 @@ fn build_model() -> Arc<RwLock<Graph>> {""");
         graphs.forEach {
             if (it.childNodes.count() == 0) {
                 builder.append("""
-        ${it.name}: ${it.id},""");
+        ${it.id}: ${it.id},""");
             }
         }
         builder.append(
@@ -371,7 +371,7 @@ fn build_threads(source_nodes: &Vec<Arc<Mutex<SourceNode>>>, normal_nodes: &Vec<
         graphs.forEach {
             if (it.childNodes.count() == 0) {
                 builder.append(
-                        """pub mod node_${it.id};
+                        """pub mod node_${it.name};
 """
                 )
             }

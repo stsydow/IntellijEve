@@ -13,6 +13,7 @@ class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopu
         val setOrderItem = JMenuItem("set order")
         val setContextId = JMenuItem("set context")
         val setFilter = JMenuItem("set filter")
+        val setName = JMenuItem("set name")
         val generateItem = JMenuItem("generate")
 
         createNodeItem.addActionListener {
@@ -99,6 +100,14 @@ class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopu
             }
             node.repaint()
         }
+        setName.addActionListener {
+            val old = node.name
+            val new = JOptionPane.showInputDialog(node.scene, "set Name", old)
+            if (new != null) {
+                node.name = new
+                node.repaint()
+            }
+        }
         generateItem.addActionListener {
             node.scene.editor.generate()
         }
@@ -111,6 +120,7 @@ class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopu
             add(setOrderItem)
             add(setContextId)
             add(setFilter)
+            add(setName)
         } else {
             add(generateItem)
         }

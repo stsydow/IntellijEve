@@ -9,15 +9,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
 import editor.Viewport
-//import editor.Viewport
 import java.beans.PropertyChangeListener
 import javax.swing.JComponent
-import javax.swing.JPanel
-import com.sun.javafx.scene.CameraHelper.project
-import com.intellij.ide.impl.ProjectUtil.getBaseDir
-
-
-
 
 class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserDataHolderBase(), FileEditor {
     val panel: Viewport = Viewport(this)
@@ -76,7 +69,7 @@ class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserD
 
     fun generate() {
         try {
-            val gen: RustCodeGenerator = RustCodeGenerator()
+            val gen = RustCodeGenerator()
             val path = project.baseDir.path
             gen.generateSkeleton(path)
             gen.generateCode(panel.root, path)
