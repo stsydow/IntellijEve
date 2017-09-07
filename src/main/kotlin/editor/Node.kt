@@ -23,10 +23,10 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         val DEFAULT_TRANSFORM = Transform(0.0, 0.0, SCALE_FACTOR)
     }
 
-    internal val in_port = Port(Direction.IN, "Any", this, scene)
-    internal val out_ports = mutableListOf<Port>(Port(Direction.OUT, "Any", this, scene), Port(Direction.OUT, "Any", this, scene))
-    internal val childEdges = mutableListOf<Edge>()
-    internal val childNodes = mutableListOf<Node>()
+    val in_port = Port(Direction.IN, "Any", this, scene)
+    val out_ports = mutableListOf<Port>()
+    val childEdges = mutableListOf<Edge>()
+    val childNodes = mutableListOf<Node>()
 
     val properties = mutableListOf<Property>()
 
@@ -38,6 +38,8 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     var padding = DEFAULT_PADDING
     var innerBounds = DEFAULT_BOUNDS
     var color = Color.GREEN
+
+    val childNodeCount: Int get() = childNodes.size
 
     constructor(parent: Node, scene: Viewport) : this(DEFAULT_TRANSFORM, parent, scene)
     constructor(t: Transform, parent: Node, scene: Viewport) : this(t, DEFAULT_NAME, parent, scene) {
@@ -124,6 +126,18 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             assert(childEdges.remove(child))
         }
         repaint()
+    }
+
+    fun getPortById(id: String): Port? {
+        if (in_port.id == id) {
+            return in_port
+        } else {
+            return out_ports.find { it.id == id }
+        }
+    }
+
+    fun getChildNodeById(id: String): Node? {
+        return childNodes.find { it.id == id }
     }
 
     fun onChildChanged(child: Node) {
@@ -229,12 +243,12 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     }
 }
 
-class RootNode(val viewport: Viewport, t: Transform, scene: Viewport) : Node(t, "__root__", null, scene) {
+class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null, viewport) {
     init {
         innerBounds = Bounds.infinite()
     }
 
-    constructor(viewport: Viewport) : this(viewport, Transform(), viewport)
+    constructor(viewport: Viewport) : this(viewport, Transform())
 
     override fun render(g: GraphicsProxy) {
         val localGraphics = g.stack(transform)

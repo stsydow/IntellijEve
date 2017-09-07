@@ -2,12 +2,12 @@ package editor
 
 import javax.swing.JPopupMenu
 
-class Edge(transform: Transform, parent: Node, val source: Port, val destination: Port, scene: Viewport) : UIElement(transform, parent, scene) {
+class Edge(transform: Transform, parent: Node, val source: Port, val target: Port, scene: Viewport) : UIElement(transform, parent, scene) {
     override val bounds: Bounds
         get() = Bounds.minimalBounds(source_coord, destination_coord)
 
     init {
-        assert(isValidEdge(source, destination))
+        assert(isValidEdge(source, target))
     }
 
     val source_coord: Coordinate get() {
@@ -20,11 +20,11 @@ class Edge(transform: Transform, parent: Node, val source: Port, val destination
     }
 
     val destination_coord: Coordinate get() {
-        if (destination.parent == parent)
-            return destination.getExternalCoordinate()
+        if (target.parent == parent)
+            return target.getExternalCoordinate()
         else {
-            assert(destination.parent!!.parent == parent)
-            return destination.parent.transform * destination.getExternalCoordinate()
+            assert(target.parent!!.parent == parent)
+            return target.parent.transform * target.getExternalCoordinate()
         }
     }
 

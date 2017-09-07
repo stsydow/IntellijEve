@@ -17,7 +17,7 @@ object DemoLauncher {
         val frame = JFrame("Demo")
         frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
 
-        val viewport = Viewport()
+        val viewport = Viewport(null)
         viewport.layout = BorderLayout()
         frame.contentPane = viewport
 

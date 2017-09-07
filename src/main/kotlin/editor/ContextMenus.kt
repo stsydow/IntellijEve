@@ -30,7 +30,7 @@ class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopu
             node.parent!!.remove(node)
             val crossingEdges = mutableListOf<Edge>()
             node.parent.childEdges.retainAll {
-                val retain = !(it.destination.parent == node || it.source.parent == node)
+                val retain = !(it.target.parent == node || it.source.parent == node)
                 if (!retain) {
                     crossingEdges.add(it)
                 }
@@ -109,7 +109,7 @@ class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopu
             }
         }
         generateItem.addActionListener {
-            node.scene.editor.generate()
+            node.scene.editor!!.generate()
         }
 
         add(createNodeItem)

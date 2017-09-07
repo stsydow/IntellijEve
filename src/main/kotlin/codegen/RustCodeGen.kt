@@ -4,7 +4,6 @@ import editor.Edge
 import editor.Node
 import editor.Port
 import editor.RootNode
-import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths;
 
@@ -290,7 +289,7 @@ fn build_initial_instances(graph: &Arc<RwLock<Graph>>) -> (Vec<Arc<Mutex<SourceN
                         builder.append("""
                 SuccessorInstanceList {
                     senders: vec!(
-                        ${it.destination.parent!!.id}_sender.clone()
+                        ${it.target.parent!!.id}_sender.clone()
                     )
                 },""");
                     }
@@ -715,13 +714,13 @@ fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
         val list: MutableList<Edge> = mutableListOf()
         val parent: Node = p.parent!!
         parent.childEdges.forEach {
-            if (it.destination == p) {
+            if (it.target == p) {
                 list.add(it)
             }
         }
         val gparent:Node = p.parent.parent!!
         gparent.childEdges.forEach {
-            if (it.destination == p) {
+            if (it.target == p) {
                 list.add(it)
             }
         }

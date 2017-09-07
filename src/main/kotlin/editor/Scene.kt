@@ -22,7 +22,7 @@ data class Interaction(val operation: Operation, val type: EventType){
 }
 */
 
-class Viewport(val editor: GraphFileEditor) : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener, KeyListener {
+class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener, KeyListener {
     var idx: Int = 0
     val root = RootNode(this)
     var currentSize = Dimension(1200, 800)
