@@ -137,3 +137,7 @@ fun hex2Rgb(colorStr: String): Color {
             Integer.valueOf(colorStr.substring(3, 5), 16)!!,
             Integer.valueOf(colorStr.substring(5, 7), 16)!!)
 }
+
+fun colorToHexstring(color: Color): String {
+    return "#" + Integer.toHexString(color.getRGB()).substring(2);
+}
