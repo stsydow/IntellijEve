@@ -49,7 +49,6 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     init {
         assert(this is RootNode || parent != null)
         positionChildren()
-        name = id
     }
 
     open fun positionChildren() {
@@ -59,7 +58,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         }
     }
 
-    internal fun addNode(child: Node) {
+    fun addNode(child: Node) {
         assert(child.parent == this)
         assert(childNodes.add(child))
         onChildChanged(child)
@@ -138,6 +137,10 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
 
     fun getChildNodeById(id: String): Node? {
         return childNodes.find { it.id == id }
+    }
+
+    fun getChildEdgeByPortIds(source: String, target: String): Edge? {
+        return childEdges.find { it.source.id == source && it.target.id == target }
     }
 
     fun onChildChanged(child: Node) {
