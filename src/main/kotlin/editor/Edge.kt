@@ -4,7 +4,7 @@ import javax.swing.JPopupMenu
 
 class Edge(transform: Transform, parent: Node, val source: Port, val target: Port, scene: Viewport) : UIElement(transform, parent, scene) {
     override val bounds: Bounds
-        get() = Bounds.minimalBounds(source_coord, destination_coord)
+        get() = Bounds.minimalBounds(source_coord, target_coord)
 
     init {
         assert(isValidEdge(source, target))
@@ -19,7 +19,7 @@ class Edge(transform: Transform, parent: Node, val source: Port, val target: Por
         }
     }
 
-    val destination_coord: Coordinate get() {
+    val target_coord: Coordinate get() {
         if (target.parent == parent)
             return target.getExternalCoordinate()
         else {
@@ -29,12 +29,12 @@ class Edge(transform: Transform, parent: Node, val source: Port, val target: Por
     }
 
     override fun render(g: GraphicsProxy) {
-        g.line(source_coord, destination_coord)
+        g.line(source_coord, target_coord)
 
-        val dir = (destination_coord - source_coord).normalize()
+        val dir = (target_coord - source_coord).normalize()
         val normal = dir.normal()
-        g.line(destination_coord, destination_coord - 0.5 * UNIT * (dir + 0.5 * normal))
-        g.line(destination_coord, destination_coord - 0.5 * UNIT * (dir - 0.5 * normal))
+        g.line(target_coord, target_coord - 0.5 * UNIT * (dir + 0.5 * normal))
+        g.line(target_coord, target_coord - 0.5 * UNIT * (dir - 0.5 * normal))
     }
 
     override fun getContextMenu(at: Coordinate): JPopupMenu {
@@ -42,7 +42,7 @@ class Edge(transform: Transform, parent: Node, val source: Port, val target: Por
     }
 
     override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform): UIElement? {
-        val dist = shortestDistance(source_coord.x, source_coord.y, destination_coord.x, destination_coord.y, c.x, c.y)
+        val dist = shortestDistance(source_coord.x, source_coord.y, target_coord.x, target_coord.y, c.x, c.y)
         if (operation == Operation.Menu && dist < 5) {
             return this;
         }
