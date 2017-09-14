@@ -8,6 +8,6 @@
     <orderEntry type="jdk" jdkName="IntelliJ just-in-place IC-171.4694.23" jdkType="IDEA JDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
-    <orderEntry type="module" module-name="IntellijEve" />
+    <orderEntry type="module" module-name="IntellijEve" exported="" />
   </component>
 </module>
