@@ -1,9 +1,10 @@
 package editor
 
-import org.tub.eveamcp.graphmlio.*
+import graphmlio.*
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import intellij.GraphFileType
+import java.io.File
 import javax.swing.JMenuItem
 import javax.swing.JOptionPane
 import javax.swing.JPopupMenu
@@ -133,17 +134,25 @@ open class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : 
 
 class RootNodeContextMenu(node: Node, interaction_point: Coordinate) : NodeContextMenu(node, interaction_point) {
     init {
-        val saveGraphItem = JMenuItem("save graph")
+        val loadGraphItem = JMenuItem("load graph")
 
-        saveGraphItem.addActionListener{
+        loadGraphItem.addActionListener{
             val fcDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor(GraphFileType.instance)
-            fcDescriptor.title = "Select file to save"
+            fcDescriptor.title = "Select file to load"
             FileChooser.chooseFile(fcDescriptor, null, null, {fileSelected ->
-                org.tub.eveamcp.graphmlio.write(fileSelected.path, node)
+                val path = fileSelected.path
+                val file = File(path)
+                val oldRoot = node
+                val scene = node.scene
+                val newRoot = read(file, scene)
+                if (newRoot != null) {
+                    scene.root = newRoot
+                    scene.repaint()
+                }
             })
         }
 
-        add(saveGraphItem)
+        add(loadGraphItem)
     }
 }
 

@@ -290,4 +290,8 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         transform += v
         repaint()
     }
+
+    override fun getContextMenu(at: Coordinate): JPopupMenu {
+        return RootNodeContextMenu(this, at)
+    }
 }

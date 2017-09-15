@@ -24,7 +24,7 @@ data class Interaction(val operation: Operation, val type: EventType){
 
 class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener, KeyListener {
     var idx: Int = 0
-    val root = RootNode(this)
+    var root = RootNode(this)
     var currentSize = Dimension(1200, 800)
     var transform = Transform(currentSize.width.toDouble() / 2, currentSize.height.toDouble() / 2, 2.0)
     var focusedElement: UIElement? = null
