@@ -1,10 +1,14 @@
 package editor
 
+import org.tub.eveamcp.graphmlio.*
+import com.intellij.openapi.fileChooser.FileChooser
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
+import intellij.GraphFileType
 import javax.swing.JMenuItem
 import javax.swing.JOptionPane
 import javax.swing.JPopupMenu
 
-class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopupMenu() {
+open class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopupMenu() {
     init {
         val createNodeItem = JMenuItem("create node")
         val deleteNodeItem = JMenuItem("delete node")
@@ -124,6 +128,22 @@ class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopu
         } else {
             add(generateItem)
         }
+    }
+}
+
+class RootNodeContextMenu(node: Node, interaction_point: Coordinate) : NodeContextMenu(node, interaction_point) {
+    init {
+        val saveGraphItem = JMenuItem("save graph")
+
+        saveGraphItem.addActionListener{
+            val fcDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor(GraphFileType.instance)
+            fcDescriptor.title = "Select file to save"
+            FileChooser.chooseFile(fcDescriptor, null, null, {fileSelected ->
+                org.tub.eveamcp.graphmlio.write(fileSelected.path, node)
+            })
+        }
+
+        add(saveGraphItem)
     }
 }
 
