@@ -1,10 +1,16 @@
 package editor
 
+import graphmlio.*
+import com.intellij.openapi.fileChooser.FileChooser
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
+import com.intellij.openapi.ui.Messages
+import intellij.GraphFileType
+import java.io.File
 import javax.swing.JMenuItem
 import javax.swing.JOptionPane
 import javax.swing.JPopupMenu
 
-class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopupMenu() {
+open class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopupMenu() {
     init {
         val createNodeItem = JMenuItem("create node")
         val deleteNodeItem = JMenuItem("delete node")
@@ -124,6 +130,39 @@ class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopu
         } else {
             add(generateItem)
         }
+    }
+}
+
+class RootNodeContextMenu(node: Node, interaction_point: Coordinate) : NodeContextMenu(node, interaction_point) {
+    init {
+        val loadGraphItem = JMenuItem("load graph")
+        val saveGraphItem = JMenuItem("save graph")
+
+        loadGraphItem.addActionListener{
+            val fcDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor(GraphFileType.instance)
+            fcDescriptor.title = "Select file to load"
+            fcDescriptor.isChooseFiles
+            FileChooser.chooseFile(fcDescriptor, null, null, {fileSelected ->
+                val path = fileSelected.path
+                val file = File(path)
+                val oldRoot = node
+                val scene = node.scene
+                val newRoot = read(file, scene)
+                if (newRoot != null) {
+                    scene.root = newRoot
+                    scene.repaint()
+                }
+            })
+        }
+
+        saveGraphItem.addActionListener{
+            val path = Messages.showInputDialog("Please enter filepath relative to your \$HOME", "Save graph to file", null)
+            if ((path != null) && (path.length > 0))
+                write(System.getProperty("user.home") + "/" + path, node)
+        }
+
+        add(loadGraphItem)
+        add(saveGraphItem)
     }
 }
 
