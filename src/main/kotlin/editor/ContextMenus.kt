@@ -135,33 +135,12 @@ open class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : 
 
 class RootNodeContextMenu(node: Node, interaction_point: Coordinate) : NodeContextMenu(node, interaction_point) {
     init {
-        val loadGraphItem = JMenuItem("load graph")
         val saveGraphItem = JMenuItem("save graph")
 
-        loadGraphItem.addActionListener{
-            val fcDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor(GraphFileType.instance)
-            fcDescriptor.title = "Select file to load"
-            fcDescriptor.isChooseFiles
-            FileChooser.chooseFile(fcDescriptor, null, null, {fileSelected ->
-                val path = fileSelected.path
-                val file = File(path)
-                val oldRoot = node
-                val scene = node.scene
-                val newRoot = read(file, scene)
-                if (newRoot != null) {
-                    scene.root = newRoot
-                    scene.repaint()
-                }
-            })
+        saveGraphItem.addActionListener {
+            node.scene.editor!!.save();
         }
 
-        saveGraphItem.addActionListener{
-            val path = Messages.showInputDialog("Please enter filepath relative to your \$HOME", "Save graph to file", null)
-            if ((path != null) && (path.length > 0))
-                write(System.getProperty("user.home") + "/" + path, node)
-        }
-
-        add(loadGraphItem)
         add(saveGraphItem)
     }
 }

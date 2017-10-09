@@ -6,14 +6,27 @@ import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorLocation
 import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
 import editor.Viewport
+import graphmlio.read
+import graphmlio.write
 import java.beans.PropertyChangeListener
+import java.io.File
 import javax.swing.JComponent
 
 class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserDataHolderBase(), FileEditor {
     val panel: Viewport = Viewport(this)
+
+    init {
+        panel.idx = 0
+        val newRoot = read(File(virtualFile.path), panel)
+        if (newRoot != null) {
+            panel.root = newRoot
+            panel.repaint()
+        }
+    }
 
     override fun isModified(): Boolean {
         return false
@@ -76,5 +89,9 @@ class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserD
         } catch(e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    fun save() {
+        write(virtualFile.path, panel.root)
     }
 }
