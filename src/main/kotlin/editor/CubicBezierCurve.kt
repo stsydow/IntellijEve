@@ -5,12 +5,12 @@ class CubicBezierCurve(val parent: Edge, var src: Coordinate, var tgt: Coordinat
         val STEPS = 25  // controls how many interpolation steps are computed
     }
 
+    lateinit var ctrlSrc: Coordinate
+    lateinit var ctrlTgt: Coordinate
+
     init {
         computeControlPoints()
     }
-
-    lateinit var ctrlSrc: Coordinate
-    lateinit var ctrlTgt: Coordinate
 
     var points = Array<Coordinate>(STEPS+1){_ -> Coordinate(0, 0)}
 

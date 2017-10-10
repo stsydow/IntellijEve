@@ -6,8 +6,11 @@ class Edge(transform: Transform, parent: Node, val source: Port, val target: Por
     override val bounds: Bounds
         get() = Bounds.minimalBounds(source_coord, target_coord)
 
+    val curve: CubicBezierCurve
+
     init {
         assert(isValidEdge(source, target))
+        curve = CubicBezierCurve(this, source_coord, target_coord)
     }
 
     val source_coord: Coordinate get() {
@@ -29,7 +32,8 @@ class Edge(transform: Transform, parent: Node, val source: Port, val target: Por
     }
 
     override fun render(g: GraphicsProxy) {
-        g.line(source_coord, target_coord)
+        curve.paint(g)
+        //g.line(source_coord, target_coord)
 
         val dir = (target_coord - source_coord).normalize()
         val normal = dir.normal()
