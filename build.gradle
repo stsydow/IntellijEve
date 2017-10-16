@@ -20,7 +20,7 @@ buildscript {
 }
 
 intellij {
-    version 'LATEST-TRUNK-SNAPSHOT'
+    version 'IC-172.4343.14'
     pluginName 'IntellijEve'
 }
 
