@@ -302,9 +302,10 @@ fn build_initial_instances(graph: &Arc<RwLock<Graph>>) -> (Vec<Arc<Mutex<SourceN
                     builder.append(
                             """
         incoming_port: IncomingPort { receiver: ${it.id}_receiver },
-        event: None""");
+        event: None,""");
                 }
                 builder.append("""
+        instance_storage: None
     }));
 """)
             }
@@ -370,7 +371,7 @@ fn build_threads(source_nodes: &Vec<Arc<Mutex<SourceNode>>>, normal_nodes: &Vec<
         graphs.forEach {
             if (it.childNodes.count() == 0) {
                 builder.append(
-                        """pub mod node_${it.name};
+                        """pub mod node_${it.name.toLowerCase()};
 """
                 )
             }
@@ -384,7 +385,14 @@ use std::sync::Mutex;
 use std::sync::mpsc::TryRecvError;
 
 use eveamcp::OutgoingPort;
-use eveamcp::IncomingPort;
+use eveamcp::IncomingPort;""");
+        graphs.forEach {
+            if (it.childNodes.count() == 0) {
+                builder.append("""
+use nodes::node_${it.name.toLowerCase()}::${it.name}InstanceStorage;""");
+            }
+        }
+        builder.append("""
 #[allow(unused_imports)] use structs::*;
 
 pub trait Node: Send {
@@ -452,6 +460,7 @@ pub struct ${it.name}Instance {
                     }
                     builder.append(
                             """
+    pub instance_storage: Option<${it.name}InstanceStorage>
 }
 
 impl Node for ${it.name}Instance {
@@ -478,10 +487,11 @@ pub struct ${it.name}Instance {
                     }
                     if (!isSourceNode(it)) {
                         builder.append("""
-    pub incoming_port: IncomingPort<u32>""");
+    pub incoming_port: IncomingPort<u32>,""");
                     }
                     builder.append(
                             """
+    pub instance_storage: Option<${it.name}InstanceStorage>
 }
 
 impl Node for ${it.name}Instance {
