@@ -200,9 +200,7 @@ use nodes::Graph;
 use nodes::NormalNodeSet;
 use nodes::SourceNodeSet;
 use nodes::NormalNode;
-use nodes::SourceNode;
-
-""");
+use nodes::SourceNode;""");
         graphs.forEach {
             if (it.childNodes.count() == 0) {
                 builder.append(
@@ -214,6 +212,7 @@ use nodes::${it.name}Instance;"""
 
         builder.append(
                 """
+use structs::*;
 
 pub fn startup() -> Vec<JoinHandle<()>> {
     let graph = build_model();
@@ -266,7 +265,7 @@ fn build_initial_instances(graph: &Arc<RwLock<Graph>>) -> (Vec<Arc<Mutex<SourceN
             if (it.childNodes.count() == 0 && !isSourceNode(it)) {
                 builder.append(
                         """
-    let (${it.id}_sender, ${it.id}_receiver): (Sender<u32>, Receiver<u32>) = channel();""");
+    let (${it.id}_sender, ${it.id}_receiver): (Sender<${it.in_port.message_type}>, Receiver<${it.in_port.message_type}>) = channel();""");
             }
         }
         builder.append(
@@ -456,7 +455,7 @@ pub struct ${it.name}Instance {
     pub instance_id: u64,""");
                     it.out_ports.forEach {
                         builder.append("""
-    pub port_${it.id}: OutgoingPort<u32>,""");
+    pub port_${it.id}: OutgoingPort<${it.message_type}>,""");
                     }
                     builder.append(
                             """
@@ -480,14 +479,14 @@ impl Node for ${it.name}Instance {
                             """
 pub struct ${it.name}Instance {
     pub instance_id: u64,
-    pub event: Option<u32>,""");
+    pub event: Option<${it.in_port.message_type}>,""");
                     it.out_ports.forEach {
                         builder.append("""
-    pub port_${it.id}: OutgoingPort<u32>,""");
+    pub port_${it.id}: OutgoingPort<${it.message_type}>,""");
                     }
                     if (!isSourceNode(it)) {
                         builder.append("""
-    pub incoming_port: IncomingPort<u32>,""");
+    pub incoming_port: IncomingPort<${it.in_port.message_type}>,""");
                     }
                     builder.append(
                             """
