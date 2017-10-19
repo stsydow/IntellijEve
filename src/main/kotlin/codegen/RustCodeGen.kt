@@ -7,7 +7,6 @@ import editor.RootNode
 import java.nio.file.Files
 import java.nio.file.Paths;
 
-
 class RustCodeGenerator {
     fun generateSkeleton(outputDirectory: String) {
         if (!Files.exists(Paths.get(outputDirectory + "/src"))) {
@@ -278,6 +277,7 @@ fn build_initial_instances(graph: &Arc<RwLock<Graph>>) -> (Vec<Arc<Mutex<SourceN
     let ${it.id}_instance: Arc<Mutex<${it.name}Instance>> = Arc::new(Mutex::new(${it.name}Instance {
         instance_id: 0,""");
                 it.out_ports.forEach {
+                    val port = it;
                     builder.append(
                             """
         port_${it.id}: OutgoingPort {
@@ -285,12 +285,15 @@ fn build_initial_instances(graph: &Arc<RwLock<Graph>>) -> (Vec<Arc<Mutex<SourceN
             successors: vec!(""");
                     val edges = getOutgoingEdges(it)
                     edges.forEach {
-                        builder.append("""
+                        val sinks = findSinks(port)
+                        sinks.forEach {
+                            builder.append("""
                 SuccessorInstanceList {
                     senders: vec!(
-                        ${it.target.parent!!.id}_sender.clone()
+                        ${it.parent!!.id}_sender.clone()
                     )
                 },""");
+                        }
                     }
                     builder.append(
                             """
@@ -735,4 +738,18 @@ fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
         }
         return list
     }
+
+    fun findSinks(src: Port): Collection<Port> {
+        val list = mutableListOf<Port>()
+        getOutgoingEdges(src).forEach { edge ->
+            val dst = edge.target
+            if (getOutgoingEdges(dst).isNotEmpty()) {
+                list.addAll(findSinks(dst))
+            } else {
+                list.add(dst)
+            }
+        }
+        return list
+    }
+
 }
