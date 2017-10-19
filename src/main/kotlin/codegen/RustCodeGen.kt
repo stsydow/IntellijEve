@@ -574,6 +574,9 @@ impl EveThread {
             for node in self.source_nodes.as_mut_slice() {
                 (*node.lock().unwrap()).init();
             }
+            for node in self.normal_nodes.as_mut_slice() {
+                (*node.lock().unwrap()).init();
+            }
             self.run(graph);
         })
     }
