@@ -408,10 +408,9 @@ pub trait SourceNode: Node {
     fn init(&mut self);
 }
 pub trait NormalNodeInternal: Node {
-    fn try_recv(&mut self) -> Status;
+    fn tick(&mut self) -> bool;
 }
 pub trait NormalNode: NormalNodeInternal {
-    fn handle_event(&mut self);
     fn init(&mut self);
 }
 
@@ -442,11 +441,6 @@ pub struct NormalNodeSet {
 pub enum NodeType {
     Source,
     Normal
-}
-pub enum Status {
-    Awaiting,
-    Empty,
-    Finished
 }
 """);
         graphs.forEach {
@@ -509,14 +503,14 @@ impl Node for ${it.name}Instance {
     fn get_type(&self) -> NodeType { NodeType::Normal }
 }
 impl NormalNodeInternal for ${it.name}Instance {
-    fn try_recv(&mut self) -> Status {
+    fn tick(&mut self) -> bool {
         match self.incoming_port.try_receive() {
             Ok(e) => {
-                self.event = Some(e);
-                Status::Awaiting
+                self.handle_event(e);
+                true
             },
-            Err(TryRecvError::Empty) => Status::Empty,
-            Err(TryRecvError::Disconnected) => Status::Finished
+            Err(TryRecvError::Empty) => true,
+            Err(TryRecvError::Disconnected) => false
         }
     }
 }""");
@@ -541,7 +535,6 @@ use std::thread::JoinHandle;
 use nodes::Graph;
 use nodes::NormalNode;
 use nodes::SourceNode;
-use nodes::Status;
 
 /// An EveThread is a processing object that can handle multiple node instances
 ///
@@ -593,25 +586,15 @@ impl EveThread {
     }
 
     pub fn tick_normal(&mut self, i: usize, g:&Arc<RwLock<Graph>>) -> bool {
-        let retain;
         let mut node = self.normal_nodes[i].lock().unwrap();
-        match node.try_recv() {
-            Status::Awaiting => {
-                node.handle_event();
-                retain = true
-            },
-            Status::Empty => {
-                retain = true
-            },
-            _ => {
-                let i_id = node.get_instance_id();
-                let m_id = node.get_model_id();
-                remove_instance(i_id, m_id, g);
-                retain = false;
-            }
+        if !node.tick() {
+            let i_id = node.get_instance_id();
+            let m_id = node.get_model_id();
+            remove_instance(i_id, m_id, g);
+            false
+        } else {
+            true
         }
-
-        retain
     }
 
     /// Ticks all source node instances that belong to this EveThread
