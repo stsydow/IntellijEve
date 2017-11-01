@@ -1,5 +1,6 @@
 package editor
 
+import java.awt.Color
 import javax.swing.JPopupMenu
 
 class Edge(transform: Transform, parent: Node, val source: Port, val target: Port, scene: Viewport) : UIElement(transform, parent, scene) {
@@ -7,9 +8,21 @@ class Edge(transform: Transform, parent: Node, val source: Port, val target: Por
         get() = Bounds.minimalBounds(source_coord, target_coord)
 
     val curve: CubicBezierCurve
+    var drawArrowTips = true
 
     init {
         assert(isValidEdge(source, target))
+
+        // check if this is a forwarding edge from a child outport to a parent outport
+        // for these we don't want to draw the arrow tip
+        val srcDir = source.direction
+        val dstDir = target.direction
+        val srcNode = source.parent!!
+        val dstNode = target.parent!!
+        if (srcNode.parent == dstNode && srcDir == Direction.OUT && dstDir == Direction.OUT) {
+            drawArrowTips = false
+        }
+
         curve = CubicBezierCurve(this, source_coord, target_coord)
     }
 
@@ -35,10 +48,17 @@ class Edge(transform: Transform, parent: Node, val source: Port, val target: Por
         curve.paint(g)
         //g.line(source_coord, target_coord)
 
-        val dir = (target_coord - source_coord).normalize()
+        val dir = (target_coord - Coordinate(target_coord.x - 0.5*UNIT, target_coord.y)).normalize()
         val normal = dir.normal()
-        g.line(target_coord, target_coord - 0.5 * UNIT * (dir + 0.5 * normal))
-        g.line(target_coord, target_coord - 0.5 * UNIT * (dir - 0.5 * normal))
+
+        if (drawArrowTips) {
+            val arrowShape = transform * listOf(
+                    target_coord,
+                    target_coord - 0.5 * UNIT * (dir + 0.4 * normal),
+                    target_coord - 0.5 * UNIT * (dir - 0.4 * normal)
+            )
+            g.polygon(Color.BLACK, arrowShape, true)
+        }
     }
 
     override fun getContextMenu(at: Coordinate): JPopupMenu {
