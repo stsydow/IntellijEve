@@ -303,8 +303,7 @@ fn build_initial_instances(graph: &Arc<RwLock<Graph>>) -> (Vec<Arc<Mutex<SourceN
                 if (!isSourceNode(it)) {
                     builder.append(
                             """
-        incoming_port: IncomingPort { receiver: ${it.id}_receiver },
-        event: None,""");
+        incoming_port: IncomingPort { receiver: ${it.id}_receiver },""");
                 }
                 builder.append("""
         instance_storage: None
@@ -475,8 +474,7 @@ impl Node for ${it.name}Instance {
                     builder.append(
                             """
 pub struct ${it.name}Instance {
-    pub instance_id: u64,
-    pub event: Option<${it.in_port.message_type}>,""");
+    pub instance_id: u64,""");
                     it.out_ports.forEach {
                         builder.append("""
     pub port_${it.id}: OutgoingPort<${it.message_type}>,""");
