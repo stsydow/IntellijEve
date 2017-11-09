@@ -12,7 +12,7 @@ fun read(graphml : File, scene: Viewport) : RootNode?{
     try {
         val doc = docBuilder.parse(graphml)
         doc.documentElement.normalize()
-        val root = RootNode(scene)
+        val root = RootNode(scene, false)
         val childNodes = doc.documentElement.childNodes
         for (i in 0..childNodes.length-1){
             val graph = childNodes.item(i)
@@ -21,6 +21,7 @@ fun read(graphml : File, scene: Viewport) : RootNode?{
                 createsEdgesOfGraphFromDOM(root, graph, scene)
             }
         }
+        root.keepInSync = true
         return root
     } catch (e : Exception) {
         e.printStackTrace()
