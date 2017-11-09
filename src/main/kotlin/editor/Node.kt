@@ -1,5 +1,6 @@
 package editor
 
+import com.intellij.openapi.vfs.VirtualFile
 import java.awt.Color
 import javax.swing.JPopupMenu
 
@@ -143,7 +144,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         return childEdges.find { it.source.id == source && it.target.id == target }
     }
 
-    fun onChildChanged(child: Node) {
+    open fun onChildChanged(child: Node) {
         val c_bounds = child.externalBounds()
         //TODO grow parent and push other nodes aside
         if (c_bounds !in innerBounds) {
@@ -247,11 +248,16 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
 }
 
 class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null, viewport) {
+    var keepInSync = true
+
     init {
         innerBounds = Bounds.infinite()
     }
 
     constructor(viewport: Viewport) : this(viewport, Transform())
+    constructor(viewport: Viewport, sync: Boolean) : this(viewport, Transform()){
+        keepInSync = sync
+    }
 
     override fun render(g: GraphicsProxy) {
         val localGraphics = g.stack(transform)
@@ -289,6 +295,17 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
     override fun moveGlobal(v: Vector) {
         transform += v
         repaint()
+    }
+
+    override fun onChildChanged(child: Node) {
+        val c_bounds = child.externalBounds()
+        //TODO grow parent and push other nodes aside
+        if (c_bounds !in innerBounds) {
+            innerBounds += c_bounds
+            positionChildren()
+        }
+        if (keepInSync)
+            scene.editor!!.save()
     }
 
     override fun getContextMenu(at: Coordinate): JPopupMenu {

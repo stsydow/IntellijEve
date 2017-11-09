@@ -133,17 +133,7 @@ open class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : 
     }
 }
 
-class RootNodeContextMenu(node: Node, interaction_point: Coordinate) : NodeContextMenu(node, interaction_point) {
-    init {
-        val saveGraphItem = JMenuItem("save graph")
-
-        saveGraphItem.addActionListener {
-            node.scene.editor!!.save();
-        }
-
-        add(saveGraphItem)
-    }
-}
+class RootNodeContextMenu(node: Node, interaction_point: Coordinate) : NodeContextMenu(node, interaction_point)
 
 class PortContextMenu(val port: Port, val interaction_point: Coordinate) : JPopupMenu() {
     init {
