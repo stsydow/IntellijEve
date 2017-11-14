@@ -1,9 +1,6 @@
 package codegen
 
-import editor.Edge
-import editor.Node
-import editor.Port
-import editor.RootNode
+import editor.*
 import java.nio.file.Files
 import java.nio.file.Paths;
 
@@ -99,6 +96,7 @@ class RustCodeGenerator {
     fun getEveamcpModRs(): String {
         var s =
                 """use std::vec::Vec;
+use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::TryRecvError;
@@ -118,7 +116,8 @@ pub struct OutgoingPort<T> {
 ///
 /// The SuccessorInstanceList owns a sender for every instance of a particular successor. Outgoing data is sent to one of them.
 pub struct SuccessorInstanceList<T> {
-    pub senders: Vec<Sender<T>>
+    pub senders: Vec<Sender<T>>,
+    pub filter: Vec<Arc<Fn(&T) -> bool + Send + Sync>>
 }
 
 /// Sends data to one instance of every successor node
@@ -135,23 +134,35 @@ impl <T: Clone> OutgoingPort<T> {
             },
             1 => {
                 let ref target = targets_vector[0];
-                self.idx %= target.senders.len();
-                target.senders[self.idx].send(t.clone()).unwrap();
-                self.idx += 1;
+                let mut filter: bool  = true;
+                for f in &target.filter {
+                    filter &= f(&t);
+                }
+                if filter {
+                    self.idx %= target.senders.len();
+                    target.senders[self.idx].send(t.clone()).unwrap();
+                    self.idx += 1;
+                }
             },
             _ => {
                 for target in targets_vector {
-                    match target.senders.len() {
-                        0 => {
-                            panic!();
-                        },
-                        1 => {
-                            target.senders[0].send(t.clone()).unwrap();
-                        },
-                        _ => {
-                            self.idx %= target.senders.len();
-                            target.senders[self.idx].send(t.clone()).unwrap();
-                            self.idx += 1;
+                    let mut filter: bool  = true;
+                    for f in &target.filter {
+                        filter &= f(&t);
+                    }
+                    if filter {
+                        match target.senders.len() {
+                            0 => {
+                                panic!();
+                            },
+                            1 => {
+                                target.senders[0].send(t.clone()).unwrap();
+                            },
+                            _ => {
+                                self.idx %= target.senders.len();
+                                target.senders[self.idx].send(t.clone()).unwrap();
+                                self.idx += 1;
+                            }
                         }
                     }
                 }
@@ -262,9 +273,13 @@ fn build_initial_instances(graph: &Arc<RwLock<Graph>>) -> (Vec<Arc<Mutex<SourceN
 """);
         graphs.forEach {
             if (it.childNodes.count() == 0 && !isSourceNode(it)) {
-                builder.append(
-                        """
+                builder.append("""
     let (${it.id}_sender, ${it.id}_receiver): (Sender<${it.in_port.message_type}>, Receiver<${it.in_port.message_type}>) = channel();""");
+            }
+            val filter = it.getProperty(PropertyType.Filter)
+            if (filter != null) {
+                builder.append("""
+    let ${it.id}_filter: Arc<Fn(&${findSinks(it.in_port)[0].message_type}) -> bool + Send + Sync> = Arc::new(|e| e.${filter});""")
             }
         }
         builder.append(
@@ -285,12 +300,19 @@ fn build_initial_instances(graph: &Arc<RwLock<Graph>>) -> (Vec<Arc<Mutex<SourceN
             successors: vec!(""");
                     val edges = getOutgoingEdges(it)
                     edges.forEach {
-                        val sinks = findSinks(port)
-                        sinks.forEach {
+                        val filteredSinks = findSinksWithFilters(it)
+                        filteredSinks.forEach {
                             builder.append("""
                 SuccessorInstanceList {
                     senders: vec!(
-                        ${it.parent!!.id}_sender.clone()
+                        ${it.first.parent!!.id}_sender.clone()
+                    ),
+                    filter: vec!(""");
+                            it.second.forEach {
+                                builder.append("""
+                        $it.clone(),""")
+                            }
+                            builder.append("""
                     )
                 },""");
                         }
@@ -723,17 +745,52 @@ fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
         return list
     }
 
-    fun findSinks(src: Port): Collection<Port> {
+    fun findSinks(src: Port): List<Port> {
         val list = mutableListOf<Port>()
-        getOutgoingEdges(src).forEach { edge ->
-            val dst = edge.target
-            if (getOutgoingEdges(dst).isNotEmpty()) {
-                list.addAll(findSinks(dst))
-            } else {
-                list.add(dst)
+        val edges = getOutgoingEdges(src)
+        if (edges.isNotEmpty()) {
+            edges.forEach {
+                val dst = it.target
+                if (getOutgoingEdges(dst).isNotEmpty()) {
+                    list.addAll(findSinks(dst))
+                } else {
+                    list.add(dst)
+                }
             }
+        } else {
+            list.add(src)
         }
         return list
     }
 
+    fun findSinksWithFilters(src: Edge): MutableCollection<Pair<Port, MutableCollection<String>>> {
+        val list = mutableListOf<Pair<Port, MutableCollection<String>>>()
+        val filter_expr = src.target.parent!!.getProperty(PropertyType.Filter)
+        val filter: String?;
+        if (filter_expr != null) {
+            filter = """${src.target.parent.id}_filter"""
+        } else {
+            filter = null
+        }
+
+        val outgoing = getOutgoingEdges(src.target)
+        if (outgoing.isNotEmpty()) {
+            outgoing.forEach {
+                val childSinks = findSinksWithFilters(it)
+                if (filter != null) {
+                    childSinks.forEach {
+                        it.second.add(filter)
+                    }
+                }
+                list.addAll(childSinks)
+            }
+        } else {
+            if (filter != null) {
+                list.add(Pair(src.target, mutableListOf(filter)))
+            } else {
+                list.add(Pair(src.target, mutableListOf()))
+            }
+        }
+        return list
+    }
 }
