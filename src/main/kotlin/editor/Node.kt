@@ -121,6 +121,9 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         } else if (child is Port) {
             assert(child.direction == Direction.OUT)
             assert(out_ports.remove(child))
+            removeEdgesConnectedToPort(child)
+            if (parent != null)
+                parent.removeEdgesConnectedToPort(child)
             positionChildren()
         } else if (child is Edge) {
             assert(childEdges.remove(child))
@@ -142,6 +145,13 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
 
     fun getChildEdgeByPortIds(source: String, target: String): Edge? {
         return childEdges.find { it.source.id == source && it.target.id == target }
+    }
+
+    fun removeEdgesConnectedToPort(port: Port) {
+        for (edge in childEdges){
+            if (edge.source == port || edge.target == port)
+                childEdges.remove(edge)
+        }
     }
 
     open fun onChildChanged(child: Node) {
