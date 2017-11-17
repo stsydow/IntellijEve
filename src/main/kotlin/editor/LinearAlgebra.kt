@@ -183,4 +183,24 @@ data class Transform(val x_offset: Double, val y_offset: Double, val scale: Doub
                     y_offset + scale * (1 - factor) * c.y,
                     scale * factor)
 }
+/*
+    Calculate the shortest between the point (x3, y3) and the line (x1, y1) -- (x2, y2)
+ */
+fun shortestDistancePointToLine(x1: Double, y1: Double, x2: Double, y2: Double, x3: Double, y3: Double): Double {
+    val px = x2 - x1
+    val py = y2 - y1
+    val temp = px * px + py * py
+    var u = ((x3 - x1) * px + (y3 - y1) * py) / temp
+    if (u > 1) {
+        u = 1.0
+    } else if (u < 0) {
+        u = 0.0
+    }
+    val x = x1 + u * px
+    val y = y1 + u * py
+
+    val dx = x - x3
+    val dy = y - y3
+    return Math.sqrt((dx * dx + dy * dy).toDouble())
+}
 

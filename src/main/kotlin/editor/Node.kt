@@ -120,10 +120,10 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             assert(childNodes.remove(child))
         } else if (child is Port) {
             assert(child.direction == Direction.OUT)
-            assert(out_ports.remove(child))
-            removeEdgesConnectedToPort(child)
             if (parent != null)
                 parent.removeEdgesConnectedToPort(child)
+            removeEdgesConnectedToPort(child)
+            assert(out_ports.remove(child))
             positionChildren()
         } else if (child is Edge) {
             assert(childEdges.remove(child))
@@ -148,9 +148,11 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     }
 
     fun removeEdgesConnectedToPort(port: Port) {
-        for (edge in childEdges){
+        val iter = childEdges.listIterator()
+        while (iter.hasNext()){
+            val edge = iter.next()
             if (edge.source == port || edge.target == port)
-                childEdges.remove(edge)
+                iter.remove()
         }
     }
 
@@ -288,11 +290,19 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
     }
 
     override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform): UIElement? {
+        var picked: UIElement?
         val local_c = !transform * c
 
-        val iter = childNodes.iterator()
-
         assert(screenTransform == viewport.transform)
+
+        childEdges.forEach {
+            picked = it.pick(local_c, operation, screenTransform * transform)
+            if (picked != null) {
+                return picked
+            }
+        }
+
+        val iter = childNodes.iterator()
         while (iter.hasNext()) {
             val child = iter.next()
             val picked_child = child.pick(local_c, operation, screenTransform * transform)

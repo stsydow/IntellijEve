@@ -14,9 +14,6 @@ class CubicBezierCurve(val parent: Edge) {
         computeControlPoints()
     }
 
-    /*
-        This array holds our curve points.
-     */
     var points = Array<Coordinate>(STEPS+1){_ -> Coordinate(0, 0)}
 
     /*
@@ -82,5 +79,22 @@ class CubicBezierCurve(val parent: Edge) {
             points[i] = Coordinate(x, y)
             t += inc
         }
+    }
+
+    /*
+        Calculate the shortest distance between the given point (x, y) and this curve.
+        The function relies on the linear interpolation of the curve just like the paint
+        function.
+     */
+    fun shortestDistancePointToCurve(x: Double, y: Double): Double {
+        var distMin = Double.MAX_VALUE
+
+        for (i in 0 .. points.size-2){
+            val dist = shortestDistancePointToLine(points[i].x, points[i].y, points[i+1].x, points[i+1].y, x, y)
+            if (dist < distMin)
+                distMin = dist
+        }
+
+        return distMin
     }
 }

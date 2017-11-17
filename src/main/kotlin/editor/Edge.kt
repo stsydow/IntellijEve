@@ -4,6 +4,10 @@ import java.awt.Color
 import javax.swing.JPopupMenu
 
 class Edge(transform: Transform, parent: Node, val source: Port, val target: Port, scene: Viewport) : UIElement(transform, parent, scene) {
+    companion object {
+        val PICK_DISTANCE = 5
+    }
+
     val curve: CubicBezierCurve
 
     init {
@@ -40,8 +44,8 @@ class Edge(transform: Transform, parent: Node, val source: Port, val target: Por
     }
 
     override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform): UIElement? {
-        val dist = shortestDistance(source_coord.x, source_coord.y, target_coord.x, target_coord.y, c.x, c.y)
-        if (operation == Operation.Menu && dist < 5) {
+        val dist = curve.shortestDistancePointToCurve(c.x, c.y)
+        if (dist < PICK_DISTANCE) {
             return this;
         }
         return null
@@ -64,22 +68,4 @@ fun isValidEdge(source: Port, destination: Port): Boolean {
         return true /* a direct edge from a sibling outport to a sibling inport is ok, but not from a nodes output to its input */
     }
     return false
-}
-
-private fun shortestDistance(x1: Double, y1: Double, x2: Double, y2: Double, x3: Double, y3: Double): Double {
-    val px = x2 - x1
-    val py = y2 - y1
-    val temp = px * px + py * py
-    var u = ((x3 - x1) * px + (y3 - y1) * py) / temp
-    if (u > 1) {
-        u = 1.0
-    } else if (u < 0) {
-        u = 0.0
-    }
-    val x = x1 + u * px
-    val y = y1 + u * py
-
-    val dx = x - x3
-    val dy = y - y3
-    return Math.sqrt((dx * dx + dy * dy).toDouble())
 }
