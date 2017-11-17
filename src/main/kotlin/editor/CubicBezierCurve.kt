@@ -36,20 +36,20 @@ class CubicBezierCurve(val parent: Edge) {
         }
 
         // paint end and control points as well as lines between them
-        var diamondShape = Transform(0.0, 0.0, UNIT) * listOf(
-                Coordinate(-0.05, 0.0),
-                Coordinate(0.0, 0.05),
-                Coordinate(0.05, 0.0),
-                Coordinate(0.0, -0.05))
-        // endpoints
-        g.polygon(Color.BLUE, Transform(parent.source_coord.x, parent.source_coord.y, 1.0) * diamondShape, true)
-        g.polygon(Color.BLUE, Transform(parent.target_coord.x, parent.target_coord.y, 1.0) * diamondShape, true)
-        // control points
-        g.polygon(Color.RED, Transform(ctrlSrc.x, ctrlSrc.y, 1.0) * diamondShape, true)
-        g.polygon(Color.RED, Transform(ctrlTgt.x, ctrlTgt.y, 1.0) * diamondShape, true)
-        // control lines
-        g.line(parent.source_coord, ctrlSrc)
-        g.line(parent.target_coord, ctrlTgt)
+//        var diamondShape = Transform(0.0, 0.0, UNIT) * listOf(
+//                Coordinate(-0.05, 0.0),
+//                Coordinate(0.0, 0.05),
+//                Coordinate(0.05, 0.0),
+//                Coordinate(0.0, -0.05))
+//        // endpoints
+//        g.polygon(Color.BLUE, Transform(parent.source_coord.x, parent.source_coord.y, 1.0) * diamondShape, true)
+//        g.polygon(Color.BLUE, Transform(parent.target_coord.x, parent.target_coord.y, 1.0) * diamondShape, true)
+//        // control points
+//        g.polygon(Color.RED, Transform(ctrlSrc.x, ctrlSrc.y, 1.0) * diamondShape, true)
+//        g.polygon(Color.RED, Transform(ctrlTgt.x, ctrlTgt.y, 1.0) * diamondShape, true)
+//        // control lines
+//        g.line(parent.source_coord, ctrlSrc)
+//        g.line(parent.target_coord, ctrlTgt)
     }
 
     /*
