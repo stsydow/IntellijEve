@@ -8,7 +8,7 @@ class Edge(transform: Transform, parent: Node, val source: Port, val target: Por
         get() = Bounds.minimalBounds(source_coord, target_coord)
 
     val curve: CubicBezierCurve
-    var drawArrowTips = true
+    var drawArrowTips = false
 
     init {
         assert(isValidEdge(source, target))
