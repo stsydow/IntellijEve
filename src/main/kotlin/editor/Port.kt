@@ -71,7 +71,7 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
         if (g.transform.scale > 0.5) {
             localGraphics.text(message_type, text_pos, DEFAULT_FONT)
         }
-        localGraphics.polygon(Color.BLACK, poly, false)
+        localGraphics.polygon(Color.BLACK, poly, true)
     }
 
     override fun getContextMenu(at: Coordinate): JPopupMenu {
