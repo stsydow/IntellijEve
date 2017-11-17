@@ -1,6 +1,7 @@
 package editor
 
 import intellij.GraphFileEditor
+import java.awt.Color
 import java.awt.Dimension
 import java.awt.Graphics
 import java.awt.Graphics2D
@@ -32,6 +33,7 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
     var focusedElementOriginalTransform: Transform? = null
     var focusedElementOriginalParentBounds: LinkedList<Bounds>? = null
     var lastMovementPosition: Coordinate? = null
+    var lastMousePosition: Coordinate? = null
     var currentOperation = Operation.None
     var operationsStack = Stack<UIOperation>()
     var reversedOperationsStack = Stack<UIOperation>()
@@ -62,11 +64,14 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
 
         val srcPort = focusedElement
         if (srcPort != null && srcPort is Port) {
-            globalGraphics.line(srcPort.getGlobalTransform() * srcPort.connectionPoint, lastMovementPosition!!)
+            globalGraphics.line(srcPort.getGlobalTransform() * srcPort.connectionPointRight, lastMovementPosition!!)
         }
 
-        g.dispose()
-
+        // display the mouse position
+        if (lastMousePosition != null){
+            val textPos = lastMousePosition!!
+            globalGraphics.text("" + textPos.x.toInt() + " : " + textPos.y.toInt(), textPos, Font(FontStyle.REGULAR, 4.0))
+        }
     }
 
     fun getSceneCoordinate(e: MouseEvent) = !transform * Coordinate(e.x, e.y)
@@ -141,6 +146,24 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
                 else -> Operation.None
             }
         }
+
+        if (e.button == M_BUTTON_MIDDLE) {
+            val picked = root.pick(view_pos, currentOperation, transform)
+            if (picked != null) {
+                var str = ""
+                if (picked is Port)
+                    str += "Port: "
+                else if (picked is Edge)
+                    str += "Edge: "
+                else if (picked is Node)
+                    str += "Node: "
+                else
+                    str += "<Unknown>: "
+                str += "bounds " + picked.bounds + "\n\t"
+                str += "external bounds " + picked.externalBounds()
+                println(str)
+            }
+        }
         lastMovementPosition = view_pos
     }
 
@@ -205,6 +228,7 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
     override fun mouseDragged(e: MouseEvent) {
         val view_pos = transform.applyInverse(Coordinate(e.x, e.y))
         val delta_pos = view_pos - lastMovementPosition!!
+        lastMousePosition = getSceneCoordinate(e)
         lastMovementPosition = view_pos
         when (currentOperation) {
             Operation.Move -> {
@@ -224,6 +248,8 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
     }
 
     override fun mouseMoved(e: MouseEvent) {
+        lastMousePosition = getSceneCoordinate(e)
+        repaint()
     }
 
     override fun componentHidden(e: ComponentEvent?) { /*don't care*/

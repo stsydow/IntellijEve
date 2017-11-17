@@ -27,14 +27,19 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
 
     var name: String = ""
 
-    val connectionPoint: Coordinate get() {
+    val connectionPointLeft: Coordinate get() {
         if (direction == Direction.IN)
-            return Coordinate(IN_SIZE.x_min, IN_SIZE.height / 2)
-        else
-            return Coordinate(OUT_SIZE.x_max, OUT_SIZE.height / 2)
+            return Transform(0.0, 0.0, UNIT) * Coordinate(0.0, 0.5)
+        else // Direction.OUT
+            return Transform(0.0, 0.0, UNIT) * Coordinate(-0.2, 0.5)
     }
 
-    fun getExternalCoordinate() = transform * connectionPoint
+    val connectionPointRight: Coordinate get() {
+        if (direction == Direction.IN)
+            return Transform(0.0, 0.0, UNIT) * Coordinate(0.8, 0.5)
+        else // Direction.OUT
+            return Transform(0.0, 0.0, UNIT) * Coordinate(0.0, 0.5)
+    }
 
     override fun render(g: GraphicsProxy) {
         val localGraphics = g.stack(transform)

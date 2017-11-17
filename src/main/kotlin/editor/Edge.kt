@@ -4,61 +4,35 @@ import java.awt.Color
 import javax.swing.JPopupMenu
 
 class Edge(transform: Transform, parent: Node, val source: Port, val target: Port, scene: Viewport) : UIElement(transform, parent, scene) {
-    override val bounds: Bounds
-        get() = Bounds.minimalBounds(source_coord, target_coord)
-
     val curve: CubicBezierCurve
-    var drawArrowTips = true
 
     init {
         assert(isValidEdge(source, target))
+        curve = CubicBezierCurve(this)}
 
-        // check if this is a forwarding edge from a child outport to a parent outport
-        // for these we don't want to draw the arrow tip
-        val srcDir = source.direction
-        val dstDir = target.direction
-        val srcNode = source.parent!!
-        val dstNode = target.parent!!
-        if (srcNode.parent == dstNode && srcDir == Direction.OUT && dstDir == Direction.OUT) {
-            drawArrowTips = false
-        }
-
-        curve = CubicBezierCurve(this, source_coord, target_coord)
-    }
+    override val bounds: Bounds
+        get() = Bounds.minimalBounds(source_coord, target_coord)
 
     val source_coord: Coordinate get() {
-        if (source.parent == parent)
-            return source.getExternalCoordinate()
-        else {
+        if (source.parent == parent)    // edge from in port to inner node
+            return source.transform * source.connectionPointRight
+        else {  // edge between two nodes on same level
             assert(source.parent!!.parent == parent)
-            return source.parent.transform * source.getExternalCoordinate()
+            return source.parent.transform * source.transform * source.connectionPointRight
         }
     }
 
     val target_coord: Coordinate get() {
-        if (target.parent == parent)
-            return target.getExternalCoordinate()
-        else {
+        if (target.parent == parent)    // edge from inner node to out port
+            return target.transform * target.connectionPointLeft
+        else {  // edge between two nodes on same level
             assert(target.parent!!.parent == parent)
-            return target.parent.transform * target.getExternalCoordinate()
+            return target.parent.transform * target.transform * target.connectionPointLeft
         }
     }
 
     override fun render(g: GraphicsProxy) {
         curve.paint(g)
-        //g.line(source_coord, target_coord)
-
-        val dir = (target_coord - Coordinate(target_coord.x - 0.5*UNIT, target_coord.y)).normalize()
-        val normal = dir.normal()
-
-        if (drawArrowTips) {
-            val arrowShape = transform * listOf(
-                    target_coord,
-                    target_coord - 0.5 * UNIT * (dir + 0.4 * normal),
-                    target_coord - 0.5 * UNIT * (dir - 0.4 * normal)
-            )
-            g.polygon(Color.BLACK, arrowShape, true)
-        }
     }
 
     override fun getContextMenu(at: Coordinate): JPopupMenu {
@@ -108,5 +82,4 @@ private fun shortestDistance(x1: Double, y1: Double, x2: Double, y2: Double, x3:
     val dx = x - x3
     val dy = y - y3
     return Math.sqrt((dx * dx + dy * dy).toDouble())
-
 }

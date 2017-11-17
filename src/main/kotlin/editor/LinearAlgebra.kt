@@ -1,5 +1,6 @@
 package editor
 
+import org.jetbrains.debugger.sourcemap.MAPPING_COMPARATOR_BY_GENERATED_POSITION
 import java.awt.Point
 import java.awt.geom.Point2D
 import java.awt.geom.Rectangle2D
@@ -108,11 +109,22 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
     val topLeft: Coordinate get() = Coordinate(x_min, y_min)
     val bottomRight: Coordinate get() = Coordinate(x_max, y_max)
     val topRight: Coordinate get() = Coordinate(x_max, y_min)
-    val bottomLeft: Coordinate get() = Coordinate(x_min, y_min)
+    val bottomLeft: Coordinate get() = Coordinate(x_min, y_max)
 
 
     val width: Double get() = x_max - x_min
     val height: Double get() = y_max - y_min
+
+    override fun toString(): String {
+        var str = ""
+
+        str += "topLeft (" + Math.round(x_min) + "," + Math.round(y_min) + ") "
+        str += "topRight (" + Math.round(x_max) + "," + Math.round(y_min) + ") "
+        str += "bottomRight (" + Math.round(x_max) + "," + Math.round(y_max) + ") "
+        str += "bottomLeft (" + Math.round(x_min) + "," + Math.round(y_max) + ")"
+
+        return str
+    }
 }
 
 data class Padding(val top: Double = 0.0, val right: Double = 0.0,
