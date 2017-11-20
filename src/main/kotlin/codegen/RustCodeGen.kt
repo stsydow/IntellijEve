@@ -96,7 +96,6 @@ class RustCodeGenerator {
     fun getEveamcpModRs(): String {
         var s =
                 """use std::vec::Vec;
-use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::TryRecvError;
@@ -117,7 +116,7 @@ pub struct OutgoingPort<T> {
 /// The SuccessorInstanceList owns a sender for every instance of a particular successor. Outgoing data is sent to one of them.
 pub struct SuccessorInstanceList<T> {
     pub senders: Vec<Sender<T>>,
-    pub filter: Vec<Arc<Fn(&T) -> bool + Send + Sync>>
+    pub filter: Vec<Box<Fn(&T) -> bool + Send + Sync>>
 }
 
 /// Sends data to one instance of every successor node
@@ -265,7 +264,18 @@ fn build_model() -> Arc<RwLock<Graph>> {""");
                 """
     })))
 }
-
+""");
+        graphs.forEach {
+            val filter = it.getProperty(PropertyType.Filter)
+            if (filter != null) {
+                builder.append("""
+fn ${it.id}_filter(e: &${it.in_port.message_type}) -> bool {
+    e.${filter}
+}
+""")
+            }
+        }
+        builder.append("""
 fn build_initial_instances(graph: &Arc<RwLock<Graph>>) -> (Vec<Arc<Mutex<SourceNode>>>, Vec<Arc<Mutex<NormalNode>>>) {
     let ref _graph: Graph = *graph.read().unwrap();
     let mut source_nodes: Vec<Arc<Mutex<SourceNode>>> = vec!();
@@ -275,11 +285,6 @@ fn build_initial_instances(graph: &Arc<RwLock<Graph>>) -> (Vec<Arc<Mutex<SourceN
             if (it.childNodes.count() == 0 && !isSourceNode(it)) {
                 builder.append("""
     let (${it.id}_sender, ${it.id}_receiver): (Sender<${it.in_port.message_type}>, Receiver<${it.in_port.message_type}>) = channel();""");
-            }
-            val filter = it.getProperty(PropertyType.Filter)
-            if (filter != null) {
-                builder.append("""
-    let ${it.id}_filter: Arc<Fn(&${findSinks(it.in_port)[0].message_type}) -> bool + Send + Sync> = Arc::new(|e| e.${filter});""")
             }
         }
         builder.append(
@@ -310,7 +315,7 @@ fn build_initial_instances(graph: &Arc<RwLock<Graph>>) -> (Vec<Arc<Mutex<SourceN
                     filter: vec!(""");
                             it.second.forEach {
                                 builder.append("""
-                        $it.clone(),""")
+                        Box::new(${it}),""")
                             }
                             builder.append("""
                     )
