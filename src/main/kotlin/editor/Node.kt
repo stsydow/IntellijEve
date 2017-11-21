@@ -66,15 +66,20 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         repaint()
     }
 
-    fun addEdge(child: Edge) {
+    // NOTE: this function is overloaded in the RootNode class!
+    open fun addEdge(child: Edge) {
         assert(child.parent == this)
         assert(childEdges.add(child))
+        if (parent != null)
+            parent.onChildChanged(this)
         repaint()
     }
 
     fun addPort(child: Port) {
         out_ports.add(child)
         positionChildren()
+        if (parent != null)
+            parent.onChildChanged(this)
         repaint();
     }
 
@@ -114,10 +119,12 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         return this
     }
 
-    fun remove(child: UIElement) {
+    // NOTE: this function is overloaded in the RootNode class
+    open fun remove(child: UIElement) {
         assert(child.parent == this)
         if (child is Node) {
             assert(childNodes.remove(child))
+            onChildChanged(child)
         } else if (child is Port) {
             assert(child.direction == Direction.OUT)
             if (parent != null)
@@ -125,8 +132,12 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             removeEdgesConnectedToPort(child)
             assert(out_ports.remove(child))
             positionChildren()
+            if (parent != null)
+                parent.onChildChanged(this)
         } else if (child is Edge) {
             assert(childEdges.remove(child))
+            if (parent != null)
+                parent.onChildChanged(this)
         }
         repaint()
     }
@@ -162,8 +173,8 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         if (c_bounds !in innerBounds) {
             innerBounds += c_bounds
             positionChildren()
-            parent?.onChildChanged(this)
         }
+        parent?.onChildChanged(this)
     }
 
     fun minimalBounds(): Bounds {
@@ -280,6 +291,27 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         childEdges.forEach {
             it.render(localGraphics)
         }
+    }
+
+    override fun remove(child: UIElement) {
+        assert(child.parent == this)
+        if (child is Node) {
+            assert(childNodes.remove(child))
+            onChildChanged(child)
+        } else if (child is Edge) {
+            assert(childEdges.remove(child))
+            if (keepInSync)
+                scene.editor!!.save()
+        }
+        repaint()
+    }
+
+    override fun addEdge(child: Edge) {
+        assert(child.parent == this)
+        assert(childEdges.add(child))
+        if (keepInSync)
+            scene.editor!!.save()
+        repaint()
     }
 
     override fun positionChildren() {
