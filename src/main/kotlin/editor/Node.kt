@@ -22,6 +22,13 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         val DEFAULT_BOUNDS = Bounds(0.0, 0.0, 20 * UNIT, 15 * UNIT)
         var SCALE_FACTOR = 0.5
         val DEFAULT_TRANSFORM = Transform(0.0, 0.0, SCALE_FACTOR)
+
+        val CHILD_NODE_SYMBOL = Transform(0.0, 0.0, UNIT) * listOf(
+                Coordinate(0.0, 0.0),
+                Coordinate(5.0, 0.0),
+                Coordinate(5.0, 3.0),
+                Coordinate(0.0, 3.0)
+        )
     }
 
     val in_port = Port(Direction.IN, "Any", this, scene)
@@ -208,7 +215,8 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         localGraphics.line(titleBottom, titleBottom + Vector(bounds.width, 0.0))
 
         if (properties.size > 0) {
-            localGraphics.polygon(color, listOf(bounds.topLeft + Vector(0.0, propertiesPadding.top),
+            localGraphics.polygon(color, listOf(
+                    bounds.topLeft + Vector(0.0, propertiesPadding.top),
                     bounds.topLeft,
                     bounds.topRight - Vector(propertiesPadding.top, 0.0),
                     bounds.topRight + Vector(0.0, propertiesPadding.top)),
@@ -231,15 +239,55 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             port.render(localGraphics)
         }
 
+        if ((g.transform.scale < 1) && (childNodeCount > 0)){
+            // draw a symbolization of child nodes
+            var lineA = listOf<Coordinate>().toMutableList()
+            var lineB = listOf<Coordinate>().toMutableList()
+            // first node shape
+            var topLeft = bounds.topLeft + Vector(80.0, 160.0)
+            var nodeOffset = topLeft
+            var offsetTransform = Transform(nodeOffset.x, nodeOffset.y, 1.0)
+            var nodePoly = offsetTransform * CHILD_NODE_SYMBOL
+            localGraphics.polygon(Color.DARK_GRAY, nodePoly, true)
 
-        if (g.transform.scale < 1) return
+            // starting point for first line
+            val pointA1 = Coordinate(nodePoly[2].x, nodePoly[1].y + (nodePoly[2].y-nodePoly[1].y)/2.0)
 
-        childNodes.forEach { child ->
-            child.render(localGraphics)
-        }
+            // second node shape
+            nodeOffset += Vector(20.0, 100.0)
+            offsetTransform = Transform(nodeOffset.x, nodeOffset.y, 1.0)
+            nodePoly = offsetTransform * CHILD_NODE_SYMBOL
+            localGraphics.polygon(Color.DARK_GRAY, nodePoly, true)
 
-        childEdges.forEach {
-            it.render(localGraphics)
+            // starting point for second line
+            val pointB1 = Coordinate(nodePoly[2].x, nodePoly[1].y + (nodePoly[2].y-nodePoly[1].y)/2.0)
+
+            // third node shape
+            nodeOffset += Vector(170.0, -60.0)
+            offsetTransform = Transform(nodeOffset.x, nodeOffset.y, 1.0)
+            nodePoly = offsetTransform * CHILD_NODE_SYMBOL
+            localGraphics.polygon(Color.DARK_GRAY, nodePoly, true)
+
+            // other points for first line
+            val pointA4 = Coordinate(nodePoly[3].x, nodePoly[1].y + (nodePoly[3].y-nodePoly[0].y)/2.5)
+            val pointA3 = Coordinate(pointA4.x-pointA4.x/15.0, pointA4.y)
+            val pointA2 = Coordinate(pointA3.x, pointA1.y)
+            lineA.addAll(listOf(pointA1, pointA2, pointA3, pointA4))
+            localGraphics.lines(Color.DARK_GRAY, lineA)
+
+            // other points for second line
+            val pointB4 = Coordinate(nodePoly[3].x, nodePoly[1].y + (nodePoly[3].y-nodePoly[0].y)/1.5)
+            val pointB3 = Coordinate(pointB4.x-pointB4.x/10.0, pointB4.y)
+            val pointB2 = Coordinate(pointB3.x, pointB1.y)
+            lineB.addAll(listOf(pointB1, pointB2, pointB3, pointB4))
+            localGraphics.lines(Color.DARK_GRAY, lineB)
+        } else {
+            childNodes.forEach { child ->
+                child.render(localGraphics)
+            }
+            childEdges.forEach {
+                it.render(localGraphics)
+            }
         }
     }
 
