@@ -366,6 +366,25 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     open fun hideGeometry(){
         showGeometry = false
         childNodes.forEach{it.hideGeometry()}
+        
+    override fun toString(): String {
+        return toString(0)
+    }
+
+    fun toString(n: Int): String {
+        val prefix = get2NSpaces(n)
+
+        var str = prefix + "Node[id: $id; name: $name]{\n"
+        str += in_port.toString(n+1)
+        out_ports.forEach{
+            str += it.toString(n+1)
+        }
+        childNodes.forEach{
+            str += it.toString(n+1)
+        }
+        str += prefix + "}\n"
+
+        return str
     }
 }
 

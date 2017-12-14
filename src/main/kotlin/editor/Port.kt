@@ -94,4 +94,11 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
             }
         }
     }
+
+    fun toString(n: Int): String {
+        val prefix = get2NSpaces(n)
+
+        var str = prefix + "Port[id: $id; direction: $direction]\n"
+        return str
+    }
 }

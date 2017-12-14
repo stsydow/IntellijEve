@@ -53,3 +53,14 @@ fun getCommonAncestorForEdge(src: Port, dst: Port): Node? {
     return null
 }
 
+
+
+fun get2NSpaces(n: Int) : String {
+    val res = StringBuffer()
+    for (i in 0..n){
+        res.append(' ')
+        res.append(' ')
+    }
+    return res.toString()
+}
+

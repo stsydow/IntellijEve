@@ -18,6 +18,7 @@ fun read(graphml : File, scene: Viewport) : RootNode?{
             val graph = childNodes.item(i)
             if ((graph is Element) && (graph.tagName == "graph")){
                 createNodesOfGraphFromDOM(root, graph, scene)
+                println(root.toString())
                 createsEdgesOfGraphFromDOM(root, graph, scene)
             }
         }
