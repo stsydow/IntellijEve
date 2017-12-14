@@ -187,12 +187,14 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     }
 
     fun minimalBounds(): Bounds {
-        return childNodes.map {
-            c ->
-            c.externalBounds()
-        }.reduce {
-            groupBounds, bounds ->
-            groupBounds + bounds
+        if (childNodes.size > 0) {
+            return childNodes.map { c ->
+                c.externalBounds()
+            }.reduce { groupBounds, bounds ->
+                groupBounds + bounds
+            }
+        } else {
+            return DEFAULT_BOUNDS
         }
     }
 
@@ -382,6 +384,7 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
 
     override fun render(g: GraphicsProxy) {
         val localGraphics = g.stack(transform)
+
         childNodes.forEach { child ->
             child.render(localGraphics)
         }
