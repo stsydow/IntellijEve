@@ -20,6 +20,9 @@ open class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : 
         val setContextId = JMenuItem("set context")
         val setFilter = JMenuItem("set filter")
         val setName = JMenuItem("set name")
+        val shrinkItem = JMenuItem("shrink to minimal size")
+        val showGeometryItem = JMenuItem("show node geometry")
+        val hideGeometryItem = JMenuItem("hide node geometry")
         val generateItem = JMenuItem("generate")
 
         createNodeItem.addActionListener {
@@ -114,6 +117,19 @@ open class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : 
                 node.repaint()
             }
         }
+        shrinkItem.addActionListener(){
+            val inBounds = node.innerBounds
+            val minBounds = node.minimalBounds()
+            val newBounds = Bounds(inBounds.x_min, inBounds.y_min, minBounds.x_max, minBounds.y_max)
+            node.innerBounds = newBounds
+            node.repaint()
+        }
+        showGeometryItem.addActionListener{
+            node.showGeometry()
+        }
+        hideGeometryItem.addActionListener{
+            node.hideGeometry()
+        }
         generateItem.addActionListener {
             node.scene.editor!!.generate()
         }
@@ -127,13 +143,39 @@ open class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : 
             add(setContextId)
             add(setFilter)
             add(setName)
+            add(shrinkItem)
+            add(showGeometryItem)
+            add(hideGeometryItem)
         } else {
             add(generateItem)
         }
     }
 }
 
-class RootNodeContextMenu(node: Node, interaction_point: Coordinate) : NodeContextMenu(node, interaction_point)
+class RootNodeContextMenu(node: RootNode, interaction_point: Coordinate) : NodeContextMenu(node, interaction_point){
+    init {
+        val showTransformsItem = JMenuItem("visualize transforms")
+        val hideTransformsItem = JMenuItem("hide transforms")
+        val showGeometryItem = JMenuItem("show node geometry")
+        val hideGeometryItem = JMenuItem("hide node geometry")
+        showTransformsItem.addActionListener(){
+            node.visualizeTransforms()
+        }
+        hideTransformsItem.addActionListener(){
+            node.hideTransforms()
+        }
+        showGeometryItem.addActionListener{
+            node.showGeometry()
+        }
+        hideGeometryItem.addActionListener{
+            node.hideGeometry()
+        }
+        add(showTransformsItem)
+        add(hideTransformsItem)
+        add(showGeometryItem)
+        add(hideGeometryItem)
+    }
+}
 
 class PortContextMenu(val port: Port, val interaction_point: Coordinate) : JPopupMenu() {
     init {

@@ -17,6 +17,15 @@ data class Coordinate(val x: Double, val y: Double) {
     fun toIntPoint(): Point {
         return Point(x.toInt(), y.toInt())
     }
+    fun toString(n: Int): String{
+        val res = StringBuffer()
+        res.append("Coordinate(x=")
+        res.append("%.${n}f".format(x))
+        res.append(", y=")
+        res.append("%.${n}f".format(y))
+        res.append(")")
+        return res.toString()
+    }
 }
 
 data class Vector(val x: Double, val y: Double) {
@@ -125,6 +134,17 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
 
         return str
     }
+
+    fun toCoordinates(): List<Coordinate>{
+        val res = MutableList<Coordinate>(0, {it -> Coordinate(0, 0)})
+
+        res.add(topLeft)
+        res.add(topRight)
+        res.add(bottomRight)
+        res.add(bottomLeft)
+
+        return res.toList()
+    }
 }
 
 data class Padding(val top: Double = 0.0, val right: Double = 0.0,
@@ -182,6 +202,18 @@ data class Transform(val x_offset: Double, val y_offset: Double, val scale: Doub
             Transform(x_offset + scale * (1 - factor) * c.x,
                     y_offset + scale * (1 - factor) * c.y,
                     scale * factor)
+
+    fun toString(n: Int): String {
+        val res = StringBuffer()
+        res.append("Transform(x_offset=")
+        res.append("%.${n}f".format(x_offset))
+        res.append(", y_offset=")
+        res.append("%.${n}f".format(y_offset))
+        res.append(", scale=")
+        res.append("%.${n}f".format(scale))
+        res.append(")")
+        return res.toString()
+    }
 }
 /*
     Calculate the shortest between the point (x3, y3) and the line (x1, y1) -- (x2, y2)

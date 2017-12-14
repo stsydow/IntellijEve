@@ -72,6 +72,22 @@ class GraphicsProxy(graphics: Graphics2D, val transform: Transform) {
                 intArrayOf(y_min, y_min, y_max, y_max), 4)
     }
 
+    fun circle(col: Color, center: Coordinate, radius: Double){
+        val oldColor = awt_graphics.color
+        val global_bounds = transform*Bounds(center.x-radius, center.y-radius, center.x+radius, center.y+radius)
+
+        val x = global_bounds.x_min.toInt()
+        val y = global_bounds.y_min.toInt()
+        val width = (global_bounds.x_max - x).toInt()
+        val height = (global_bounds.y_max - y).toInt()
+
+        awt_graphics.color = col
+        awt_graphics.fillOval(x, y, width, height)
+        awt_graphics.color = oldColor
+
+        awt_graphics.drawArc(x, y, width, height, 0, 360)
+    }
+
     fun line(begin: Coordinate, end: Coordinate) {
         val global_begin = transform * begin
         val global_end = transform * end
