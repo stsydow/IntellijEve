@@ -31,6 +31,8 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         )
     }
 
+    var showGeometry = true
+
     val in_port = Port(Direction.IN, "Any", this, scene)
     val out_ports = mutableListOf<Port>()
     val childEdges = mutableListOf<Edge>()
@@ -206,6 +208,19 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         repaint()
     }
 
+    fun drawTransformLines(g: GraphicsProxy, parentOrigin: Coordinate, parentTransform: Transform){
+        val childOrigin = parentTransform * transform * Coordinate(0.0, 0.0)
+        g.line(parentOrigin, childOrigin)
+        g.circle(Color.BLACK, childOrigin, 1.0 * transform.scale)
+        val childDirection = (childOrigin - parentOrigin).normalize()
+        val length = (childOrigin - parentOrigin).length()
+        var textPos = parentOrigin + childDirection * (length / 2)
+        g.text(transform.toString(2), textPos, Font(FontStyle.REGULAR, 0.3 * transform.scale * UNIT))
+        childNodes.forEach { child ->
+            child.drawTransformLines(g, childOrigin, parentTransform * transform)
+        }
+    }
+
     override fun render(g: GraphicsProxy) {
         val localGraphics = g.stack(transform)
 
@@ -288,6 +303,30 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             childEdges.forEach {
                 it.render(localGraphics)
             }
+            // draw debug information about nodes geometry
+            if (showGeometry){
+                val fontSize = 1.0*transform.scale* UNIT
+                val nodeOrigin = Coordinate(0.0, 0.0)
+                localGraphics.rect(Color.RED, Bounds(-2.0, -2.0, 2.0, 2.0))
+                localGraphics.text(nodeOrigin.toString(0), nodeOrigin+Vector(2.0, -2.0), Font(FontStyle.REGULAR, fontSize))
+
+                var textPos = innerBounds.topLeft + Vector(2.0, fontSize)
+                localGraphics.polygon(Color.RED, innerBounds.toCoordinates(), false)
+                localGraphics.text("innerbounds", textPos, Font(FontStyle.REGULAR, fontSize))
+
+                textPos = bounds.topLeft + Vector(2.0, fontSize)
+                localGraphics.polygon(Color.RED, bounds.toCoordinates(), false)
+                localGraphics.text("bounds = innerBounds + padding + propertiesPadding", textPos, Font(FontStyle.REGULAR, fontSize))
+
+                textPos = (innerBounds + padding).topLeft + Vector(2.0, fontSize)
+                localGraphics.polygon(Color.RED, (innerBounds + padding).toCoordinates(), false)
+                localGraphics.text("innerBounds + padding", textPos, Font(FontStyle.REGULAR, fontSize))
+
+                val minBounds = minimalBounds()
+                textPos = minBounds.topLeft + Vector(2.0, fontSize)
+                localGraphics.polygon(Color.RED, minBounds.toCoordinates(), false)
+                localGraphics.text("minimalBounds()", textPos, Font(FontStyle.REGULAR, fontSize))
+            }
         }
     }
 
@@ -316,10 +355,21 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     fun removeProperty(type: PropertyType) {
         properties.retainAll { it.type != type }
     }
+
+    open fun showGeometry(){
+        showGeometry = true
+        childNodes.forEach{it.showGeometry()}
+    }
+
+    open fun hideGeometry(){
+        showGeometry = false
+        childNodes.forEach{it.hideGeometry()}
+    }
 }
 
 class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null, viewport) {
     var keepInSync = true
+    var showTransforms = true
 
     init {
         innerBounds = Bounds.infinite()
@@ -338,6 +388,23 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
 
         childEdges.forEach {
             it.render(localGraphics)
+        }
+
+        // draw lines to visualize the transforms system
+        if (showTransforms){
+            // draw line from scene origin to origin of root node
+            val sceneOrigin = !transform * Coordinate(0, 0)
+            val rootOrigin = Coordinate(0, 0)
+            localGraphics.circle(Color.BLACK, sceneOrigin, 1.0*transform.scale)
+            localGraphics.circle(Color.BLACK, rootOrigin, 1.0*transform.scale)
+            localGraphics.line(sceneOrigin, rootOrigin)
+            var textPos = sceneOrigin + Vector((rootOrigin.x - sceneOrigin.x)/2.0, (rootOrigin.y - sceneOrigin.y)/2.0)
+            localGraphics.text(transform.toString(2), textPos, Font(FontStyle.REGULAR, 0.3*transform.scale* UNIT))
+
+            // draw line with transform caption for every child node
+            childNodes.forEach(){ child ->
+                child.drawTransformLines(localGraphics, rootOrigin, Transform(0.0, 0.0, 1.0))
+            }
         }
     }
 
@@ -410,5 +477,21 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
 
     override fun getContextMenu(at: Coordinate): JPopupMenu {
         return RootNodeContextMenu(this, at)
+    }
+
+    fun visualizeTransforms(){
+        showTransforms = true
+    }
+
+    fun hideTransforms(){
+        showTransforms = false
+    }
+
+    override fun showGeometry(){
+        childNodes.forEach { it.showGeometry() }
+    }
+
+    override fun hideGeometry() {
+        childNodes.forEach { it.hideGeometry() }
     }
 }

@@ -134,6 +134,17 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
 
         return str
     }
+
+    fun toCoordinates(): List<Coordinate>{
+        val res = MutableList<Coordinate>(0, {it -> Coordinate(0, 0)})
+
+        res.add(topLeft)
+        res.add(topRight)
+        res.add(bottomRight)
+        res.add(bottomLeft)
+
+        return res.toList()
+    }
 }
 
 data class Padding(val top: Double = 0.0, val right: Double = 0.0,
