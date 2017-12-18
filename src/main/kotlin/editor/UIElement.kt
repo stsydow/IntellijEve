@@ -64,3 +64,16 @@ fun get2NSpaces(n: Int) : String {
     return res.toString()
 }
 
+// extract integer number from UIElement default names, like 23 out of "uielement23"
+fun extractIndexFromString(str: String): Int?{
+    val defaultNamePattern = Regex("^uielement[0-9][0-9]*$")
+    if (defaultNamePattern.matches(str)){
+        val digitPattern = Regex("[0-9][0-9]*")
+        val digitMatch = digitPattern.find(str, 0)
+        if (digitMatch != null){
+            return digitMatch.value.toIntOrNull()
+        }
+    }
+    return null
+}
+
