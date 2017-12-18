@@ -31,7 +31,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         )
     }
 
-    var showGeometry = true
+    var showGeometry = false
 
     val in_port = Port(Direction.IN, "Any", this, scene)
     val out_ports = mutableListOf<Port>()
@@ -391,7 +391,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
 
 class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null, viewport) {
     var keepInSync = true
-    var showTransforms = true
+    var showTransforms = false
 
     init {
         innerBounds = Bounds.infinite()
