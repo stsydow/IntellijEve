@@ -32,6 +32,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     }
 
     var showGeometry = false
+    var childrenPickable = true
 
     val in_port = Port(Direction.IN, "Any", this, scene)
     val out_ports = mutableListOf<Port>()
@@ -101,10 +102,13 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             return this
         }
 
-        childEdges.forEach {
-            picked = it.pick(local_c, operation, screenTransform * transform)
-            if (picked != null) {
-                return picked
+        // edges are not pickable when the children nodes are not rendered
+        if (childrenPickable){
+            childEdges.forEach {
+                picked = it.pick(local_c, operation, screenTransform * transform)
+                if (picked != null) {
+                    return picked
+                }
             }
         }
 
@@ -118,12 +122,14 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             }
         }
 
-        val iter = childNodes.iterator()
-        while (iter.hasNext()) {
-            val child = iter.next()
-            val picked_child = child.pick(local_c, operation, screenTransform * transform)
-            if (picked_child != null)
-                return picked_child
+        if (childrenPickable) {
+            val iter = childNodes.iterator()
+            while (iter.hasNext()) {
+                val child = iter.next()
+                val picked_child = child.pick(local_c, operation, screenTransform * transform)
+                if (picked_child != null)
+                    return picked_child
+            }
         }
         return this
     }
@@ -256,7 +262,12 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             port.render(localGraphics)
         }
 
+        // reset the flag for the children not being pickable
+        childrenPickable = true
+
         if ((g.transform.scale < 1) && (childNodeCount > 0)){
+            // set a flag that this node's children are not pickable
+            childrenPickable = false
             // draw a symbolization of child nodes
             var lineA = listOf<Coordinate>().toMutableList()
             var lineB = listOf<Coordinate>().toMutableList()
