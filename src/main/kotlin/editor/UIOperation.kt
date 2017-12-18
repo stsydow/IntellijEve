@@ -32,6 +32,18 @@ class MoveOperation(val element: UIElement, val oldParentBounds: LinkedList<Boun
     }
 }
 
+class ResizeNodeOperation(val node: Node, val oldBounds: Bounds, val newBounds: Bounds): UIOperation() {
+    override fun apply() {
+        node.innerBounds = newBounds
+        node.repaint()
+    }
+
+    override fun reverse() {
+        node.innerBounds = oldBounds
+        node.repaint()
+    }
+}
+
 class AddPortOperation(val parent: Node, val element: Port): UIOperation() {
     override fun reverse() {
         parent.remove(element)

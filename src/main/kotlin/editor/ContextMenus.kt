@@ -121,8 +121,9 @@ open class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : 
             val inBounds = node.innerBounds
             val minBounds = node.minimalBounds()
             val newBounds = Bounds(inBounds.x_min, inBounds.y_min, minBounds.x_max, minBounds.y_max)
-            node.innerBounds = newBounds
-            node.repaint()
+            val op = ResizeNodeOperation(node, node.innerBounds, newBounds)
+            op.apply()
+            node.scene.pushOperation(op)
         }
         showGeometryItem.addActionListener{
             node.showGeometry()
