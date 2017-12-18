@@ -48,6 +48,7 @@ private fun createPortFromDOM(parent: Node, port: Element, scene: Viewport){
         throw DOMException(DOMException.INVALID_STATE_ERR, "Port needs nonnull id")
     if (portId == "")
         throw DOMException(DOMException.INVALID_STATE_ERR, "Port needs nonempty id")
+    updateSceneUIElementIndex(portId, scene)
     // get port message type
     var portMsgType = extractDataStringValue(port, "port_message_type")
     if (portMsgType == null)
@@ -85,6 +86,7 @@ private fun createNodeFromDOM(parent: Node, node: Element, scene: Viewport){
     var newNode: Node
     // get node id
     val nodeId = node.getAttribute("id")
+    updateSceneUIElementIndex(nodeId, scene)
     if (parent.getChildNodeById(nodeId) != null)
         throw DOMException(DOMException.INVALID_STATE_ERR, "Node name $nodeId is already taken by another Node.")
     else {
@@ -195,5 +197,12 @@ private fun createsEdgesOfGraphFromDOM(parent: Node, graph: Element, scene: View
         if ((edge is Element) && (edge.tagName == "edge")){
             createEdgeFromDOM(parent, edge, scene)
         }
+    }
+}
+
+private fun updateSceneUIElementIndex(id: String, scene: Viewport){
+    val index = extractIndexFromString(id)
+    if (index != null) {
+        scene.idx = Math.max(scene.idx, index)
     }
 }
