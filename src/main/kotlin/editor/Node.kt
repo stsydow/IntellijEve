@@ -363,9 +363,10 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         childNodes.forEach{it.showGeometry()}
     }
 
-    open fun hideGeometry(){
+    open fun hideGeometry() {
         showGeometry = false
-        childNodes.forEach{it.hideGeometry()}
+        childNodes.forEach { it.hideGeometry() }
+    }
         
     override fun toString(): String {
         return toString(0)
