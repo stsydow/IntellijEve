@@ -99,12 +99,14 @@ class RustCodeGenerator {
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::TryRecvError;
+use std::fmt;
 
 pub mod evethread;
 
 /// An OutgoingPort is a port capable of sending data to [IncomingPorts](struct.IncomingPort.html)
 ///
 /// The OutgoingPort owns a [SuccessorInstanceList](struct.SuccessorInstanceList.html) for every successor node, of whom each will receive the data sent through this port.
+#[derive(Debug)]
 pub struct OutgoingPort<T> {
     pub successors: Vec<SuccessorInstanceList<T>>,
     /// TODO move this to the instance lists
@@ -119,11 +121,17 @@ pub struct SuccessorInstanceList<T> {
     pub filter: Vec<Box<Fn(&T) -> bool + Send + Sync>>
 }
 
+impl<T> fmt::Debug for SuccessorInstanceList<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "SuccessorInstanceList")
+    }
+}
+
 /// Sends data to one instance of every successor node
 ///
 /// # Arguments
 /// * `t` - The data to be sent.
-impl <T: Clone> OutgoingPort<T> {
+impl <T: Clone + fmt::Debug> OutgoingPort<T> {
     #[allow(dead_code)]
     pub fn send(&mut self, t: T) {
         let ref targets_vector = self.successors;
@@ -173,8 +181,10 @@ impl <T: Clone> OutgoingPort<T> {
 /// An IncomingPort is a port capable of receiving data sent from [OutgoingPorts](struct.OutgoingPort.html)
 ///
 /// The IncomingPort of an instance owns the respective receiver of senders belonging to every instance of every predecessor node.
+#[derive(Debug)]
 pub struct IncomingPort<T> {
-    pub receiver: Receiver<T>
+    pub receiver: Receiver<T>,
+    pub dummy_sender: Sender<T>
 }
 impl<T> IncomingPort<T> {
     /// Tries to receive data from the receiver
@@ -196,32 +206,14 @@ impl<T> IncomingPort<T> {
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::RwLock;
-use std::sync::mpsc::Sender;
-use std::sync::mpsc::Receiver;
-use std::sync::mpsc::channel;
 use std::thread::JoinHandle;
 
 use eveamcp::evethread::EveThread;
-use eveamcp::IncomingPort;
-use eveamcp::OutgoingPort;
-use eveamcp::SuccessorInstanceList;
 use nodes::Graph;
 use nodes::NormalNodeSet;
 use nodes::SourceNodeSet;
 use nodes::NormalNode;
-use nodes::SourceNode;""");
-        graphs.forEach {
-            if (it.childNodes.count() == 0) {
-                builder.append(
-                        """
-use nodes::${it.name}Instance;"""
-                );
-            }
-        }
-
-        builder.append(
-                """
-use structs::*;
+use nodes::SourceNode;
 
 pub fn startup() -> Vec<JoinHandle<()>> {
     let graph = build_model();
@@ -265,110 +257,22 @@ fn build_model() -> Arc<RwLock<Graph>> {""");
     })))
 }
 """);
-        graphs.forEach {
-            val filter = it.getProperty(PropertyType.Filter)
-            if (filter != null) {
-                builder.append("""
-fn ${it.id}_filter(e: &${it.in_port.message_type}) -> bool {
-    e.${filter}
-}
-""")
-            }
-        }
         builder.append("""
 fn build_initial_instances(graph: &Arc<RwLock<Graph>>) -> (Vec<Arc<Mutex<SourceNode>>>, Vec<Arc<Mutex<NormalNode>>>) {
-    let ref _graph: Graph = *graph.read().unwrap();
     let mut source_nodes: Vec<Arc<Mutex<SourceNode>>> = vec!();
     let mut normal_nodes: Vec<Arc<Mutex<NormalNode>>> = vec!();
 """);
         graphs.forEach {
-            if (it.childNodes.count() == 0 && !isSourceNode(it)) {
-                builder.append("""
-    let (${it.id}_sender, ${it.id}_receiver): (Sender<${it.in_port.message_type}>, Receiver<${it.in_port.message_type}>) = channel();""");
-            }
-        }
-        builder.append(
-                """
-""");
-        graphs.forEach {
-            if (it.childNodes.count() == 0) {
-                builder.append(
-                        """
-    let ${it.id}_instance: Arc<Mutex<${it.name}Instance>> = Arc::new(Mutex::new(${it.name}Instance {
-        instance_id: 0,""");
-                it.out_ports.forEach {
-                    val port = it;
-                    builder.append(
-                            """
-        port_${it.id}: OutgoingPort {
-            idx: 0,
-            successors: vec!(""");
-                    val edges = getOutgoingEdges(it)
-                    edges.forEach {
-                        val filteredSinks = findSinksWithFilters(it)
-                        filteredSinks.forEach {
-                            builder.append("""
-                SuccessorInstanceList {
-                    senders: vec!(
-                        ${it.first.parent!!.id}_sender.clone()
-                    ),
-                    filter: vec!(""");
-                            it.second.forEach {
-                                builder.append("""
-                        Box::new(${it}),""")
-                            }
-                            builder.append("""
-                    )
-                },""");
-                        }
-                    }
-                    builder.append(
-                            """
-            ),
-        },""");
-                }
-                if (!isSourceNode(it)) {
-                    builder.append(
-                            """
-        incoming_port: IncomingPort { receiver: ${it.id}_receiver },""");
-                }
-                builder.append("""
-        instance_storage: None
-    }));
-""")
-            }
-        }
-        graphs.forEach {
-            if (it.childNodes.count() == 0) {
-                builder.append(
-                        """
-    let ref mut ${it.id}_set = *_graph.${it.id}.lock().unwrap();""");
-            }
-        }
-        builder.append("\n")
-        graphs.forEach {
-            if (it.childNodes.count() == 0) {
-                builder.append(
-                        """
-    ${it.id}_set.instances.insert(0, ${it.id}_instance.clone());""");
-            }
-        }
-        builder.append("\n")
-        graphs.forEach {
             if (it.childNodes.count() == 0) {
                 if (isSourceNode(it)) {
-                    builder.append(
-                            """
-    source_nodes.push(${it.id}_instance);""");
+                    builder.append("""
+    source_nodes.push(::nodes::construct_new_${it.id}_instance(&graph));""")
                 } else {
-                    builder.append(
-                            """
-    normal_nodes.push(${it.id}_instance);""");
+                    builder.append("""
+    normal_nodes.push(::nodes::construct_new_${it.id}_instance(&graph));""")
                 }
             }
-
         }
-
         builder.append(
                     """
 
@@ -408,12 +312,18 @@ fn build_threads(source_nodes: &Vec<Arc<Mutex<SourceNode>>>, normal_nodes: &Vec<
                 """
 use std::any::Any;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::mpsc::TryRecvError;
+use std::sync::RwLock;
+use std::sync::mpsc::Sender;
+use std::sync::mpsc::Receiver;
+use std::sync::mpsc::channel;
 
 use eveamcp::OutgoingPort;
-use eveamcp::IncomingPort;""");
+use eveamcp::IncomingPort;
+use eveamcp::SuccessorInstanceList;""");
         graphs.forEach {
             if (it.childNodes.count() == 0) {
                 builder.append("""
@@ -423,7 +333,7 @@ use nodes::node_${it.name.toLowerCase()}::${it.name}InstanceStorage;""");
         builder.append("""
 #[allow(unused_imports)] use structs::*;
 
-pub trait Node: Send {
+pub trait Node: Send + Debug {
     fn get_instance_id(&self) -> u64;
     fn get_model_id(&self) -> &str;
     fn as_any(&mut self) -> &mut Any;
@@ -470,15 +380,47 @@ pub enum NodeType {
 }
 """);
         graphs.forEach {
-            if(it.childNodes.count() == 0) {
-                if(isSourceNode(it)) {
+            val graph = it
+            if(graph.childNodes.count() == 0) {
+                if(isSourceNode(graph)) {
+                    var i = 0
+                    graph.out_ports.forEach {
+                        val port = it
+                        val successorConnections = getConnectionsToSuccessors(port)
+                        val successorDisctinctConnections = successorConnections.distinctBy{ it.destination.parent!!}
+                        builder.append("""
+#[derive(Debug)]
+pub struct ${graph.name}OutPort$i {""")
+                        successorDisctinctConnections.forEach {
+                            builder.append("""
+    pub ${it.destination.id}: OutgoingPort<${it.destination.message_type}>,""")
+                        }
+                        builder.append("""
+}
+
+impl ${graph.name}OutPort$i {
+    pub fn send(&mut self, t: ${it.message_type}) {
+        """)
+                        successorDisctinctConnections.forEach {
+                            builder.append("""
+        self.${it.destination.id}.send(t.clone());""")
+                        }
+                        builder.append("""
+    }
+}""")
+                        i+=1
+                    }
                     builder.append(
-                            """
+"""
+
+#[derive(Debug)]
 pub struct ${it.name}Instance {
     pub instance_id: u64,""");
+                    i=0
                     it.out_ports.forEach {
                         builder.append("""
-    pub port_${it.id}: OutgoingPort<${it.message_type}>,""");
+    pub port_${it.id}: ${graph.name}OutPort$i,""");
+                        i+=1
                     }
                     builder.append(
                             """
@@ -498,13 +440,31 @@ impl Node for ${it.name}Instance {
     fn get_type(&self) -> NodeType { NodeType::Source }
 }""");
                 } else {
+                    var i = 0
+                    graph.out_ports.forEach {
+                        val port = it
+                        val successorConnections = getConnectionsToSuccessors(port)
+                        val successorNodes = successorConnections.distinctBy{ it.destination.parent!!}
+                        builder.append("""
+#[derive(Debug)]
+pub struct ${graph.name}OutPort$i {""")
+                        successorNodes.forEach {
+                            builder.append("""
+    pub ${it.destination.id}: OutgoingPort<${it.destination.message_type}>,
+""")
+                        }
+                        i+=1
+                    }
                     builder.append(
                             """
+#[derive(Debug)]
 pub struct ${it.name}Instance {
     pub instance_id: u64,""");
+                    i = 0
                     it.out_ports.forEach {
                         builder.append("""
-    pub port_${it.id}: OutgoingPort<${it.message_type}>,""");
+    pub port_${it.id}: ${graph.name}OutPort$i,""");
+                        i+=1
                     }
                     if (!isSourceNode(it)) {
                         builder.append("""
@@ -538,18 +498,182 @@ impl NormalNodeInternal for ${it.name}Instance {
             Err(TryRecvError::Disconnected) => false
         }
     }
-}""");
+}
+""");
                 }
 
             }
         }
 
-        //TODO add create methods
+        graphs.forEach {
+            if (it.childNodes.count() == 0) {
+                val node = it;
+                val msgType = node.in_port.message_type
+                val predecessorConnections = getConnectionsToPredecessors(it.in_port)
+                val predecessorNodesDisctinct = predecessorConnections.map { it.sourcePort.parent!! }.distinct()
+                val successorConnections = mutableListOf<EveConnection>()
+                node.out_ports.forEach {
+                    successorConnections.addAll(getConnectionsToSuccessors(it))
+                }
+                val successorNodesDisctinct = successorConnections.map { it.destination.parent!! }.distinct()
+                builder.append("""
+#[allow(dead_code)]
+pub fn construct_new_${it.id}_instance(graph: &Arc<RwLock<Graph>>) -> Arc<Mutex<${it.name}Instance>> {
+    // lock predecessor, our, and successor sets
+    let graph: &Graph = &*graph.read().unwrap();""")
+                predecessorNodesDisctinct.forEach {
+                    builder.append("""
+    let ${it.id}_set = &mut *graph.${it.id}.lock().unwrap();""")
+                }
+
+                builder.append("""
+    let ${node.id}_set = &mut *graph.${node.id}.lock().unwrap();""")
+                successorNodesDisctinct.forEach {
+                    builder.append("""
+    let ${it.id}_set = &mut *graph.${it.id}.lock().unwrap();""")
+                }
+                builder.append("""
+
+    // create new instance
+    ${node.id}_set.idx += 1;""")
+                if (!isSourceNode(node)) {
+                    builder.append("""
+    let (${node.id}_sender, ${node.id}_receiver): (Sender<$msgType>, Receiver<$msgType>) = channel();""")
+                }
+                builder.append("""
+    let ${node.id}_instance = Arc::new(Mutex::new(${node.name}Instance {
+        instance_id: ${node.id}_set.idx,""")
+                if (!isSourceNode(node)) {
+                    builder.append("""
+        incoming_port: IncomingPort {
+            receiver: ${node.id}_receiver,
+            dummy_sender: ${node.id}_sender.clone()
+        },""")
+                }
+                var i = 0
+                node.out_ports.forEach {
+                    builder.append("""
+        port_${it.id}: ${node.name}OutPort$i {""")
+                    val connections = getConnectionsToSuccessors(it)
+                    val destinations = connections.map { it.destination }.distinct()
+                    destinations.forEach {
+                        val destination = it
+                        val destinationConnections = connections.filter { it.destination == destination }
+                        builder.append("""
+            ${destination.id}: OutgoingPort {
+                successors: vec!(""")
+                        destinationConnections.forEach {
+                            builder.append("""
+                    SuccessorInstanceList {
+                        senders: vec!(),
+                        filter: vec!(""")
+                            it.filters.forEach {
+                                builder.append("""
+                            Box::new(${it}_filter),""")
+                            }
+                            builder.append("""
+                        )
+                    },""")
+                        }
+                        builder.append("""),
+                idx: 0""")
+                        builder.append("""
+            },""")
+                    }
+                    builder.append("""
+        },""")
+                    i+=1
+                }
+                builder.append("""
+        instance_storage: None
+    }));
+    ${node.id}_set.instances.insert(${node.id}_set.idx, ${node.id}_instance.clone());
+""");
+                if (predecessorNodesDisctinct.size > 0) {
+                    builder.append("""
+    // add sender to predecessors""")
+                    predecessorNodesDisctinct.forEach {
+                        val predecessorNode = it
+                        val predecessorNodeConnections = predecessorConnections.filter { it.sourcePort.parent!! == predecessorNode }
+                        builder.append("""
+    for (_instance_id, instance_mutex) in &${predecessorNode.id}_set.instances {
+        let instance: &mut SourceNode = &mut *instance_mutex.lock().unwrap();
+        let instance: &mut ${predecessorNode.name}Instance = instance.as_any().downcast_mut::<${predecessorNode.name}Instance>().unwrap();""")
+                        predecessorNodeConnections.forEach {
+                            val connection = it
+                            builder.append("""
+        for successor_list in &mut instance.port_${connection.sourcePort.id}.${connection.destination.id}.successors {
+            successor_list.senders.push(${node.id}_sender.clone())
+        }""")
+                        }
+                        builder.append("""
+    }""")
+                    }
+                }
+                if (node.out_ports.size > 0) {
+                    builder.append("""
+    // fetch senders from successors
+    {""")
+                    builder.append("""
+        let ${node.id}_instance = &mut *${node.id}_instance.lock().unwrap();""")
+                    node.out_ports.forEach {
+                        val port = it
+                        val connections = getConnectionsToSuccessors(port)
+                        val destinations = connections.map { it.destination }.distinct()
+                        destinations.forEach {
+                            val destination = it
+                            val destinationParent = it.parent!!
+                            val connectionsToDestination = connections.filter {it.destination == destination}
+                            builder.append("""
+        for successor_instance_list in &mut ${node.id}_instance.port_${port.id}.${destination.id}.successors {""")
+                            connectionsToDestination.forEach {
+                                builder.append("""
+             for (_${destinationParent.id}, ${destinationParent.id}_mutex) in &${destinationParent.id}_set.instances {
+                let instance: &mut NormalNode = &mut *${destinationParent.id}_mutex.lock().unwrap();
+                let instance: &mut ${destinationParent.name}Instance = instance.as_any().downcast_mut::<${destinationParent.name}Instance>().unwrap();
+                successor_instance_list.senders.push(instance.incoming_port.dummy_sender.clone())
+             }""")
+                            }
+                            builder.append("""
+        }""")
+                        }
+                        /*
+                        builder.append("""
+        for successor_instance_list in &mut ${node.id}_instance.port_${port.id}.${connections[0].destination.id}.successors {""")
+                        connections.forEach {
+                            val connection = it
+                            builder.append("""
+            for (_${connection.destination.parent!!.id}_id, ${connection.destination.parent.id}_mutex) in &${connection.destination.parent.id}_set.instances {
+
+            }""")
+                        }
+                        */
+                    }
+                    builder.append("""
+    }""")
+                }
+
+                builder.append("""
+    ${node.id}_instance
+}
+""")
+            }
+        }
+        graphs.forEach {
+            val filter = it.getProperty(PropertyType.Filter)
+            if (filter != null) {
+                builder.append("""
+fn ${it.id}_filter(e: &${it.in_port.message_type}) -> bool {
+    e.${filter}
+}
+""")
+            }
+        }
         return builder.toString();
     }
 
     fun getEvethreadRs(rootGraph: RootNode, graphs: Collection<Node>): String {
-        var builder = StringBuilder();
+        val builder = StringBuilder();
         builder.append(
                 """use std::sync::Arc;
 use std::sync::Mutex;
@@ -750,52 +874,58 @@ fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
         return list
     }
 
-    fun findSinks(src: Port): List<Port> {
-        val list = mutableListOf<Port>()
-        val edges = getOutgoingEdges(src)
-        if (edges.isNotEmpty()) {
-            edges.forEach {
-                val dst = it.target
-                if (getOutgoingEdges(dst).isNotEmpty()) {
-                    list.addAll(findSinks(dst))
+    fun getConnectionsToPredecessors(p: Port): List<EveConnection> {
+        return getConnections(p, p,true)
+    }
+
+    fun getConnectionsToSuccessors(p: Port): List<EveConnection> {
+        return getConnections(p, p,false)
+    }
+
+    fun getConnections(p: Port, destination: Port, traverseWest: Boolean): List<EveConnection> {
+        val l = mutableListOf<EveConnection>()
+        val inc = getIncomingEdges(p)
+        if (traverseWest) {
+            if (p.direction == Direction.OUT) {
+                if (inc.size > 0) {
+                    inc.forEach {
+                        val c = getConnections(it.source, destination, traverseWest)
+                        l.addAll(c)
+                    }
                 } else {
-                    list.add(dst)
+                    l.add(EveConnection(p, destination, mutableListOf()))
+                }
+            } else {
+                inc.forEach {
+                    l.addAll(getConnections(it.source, destination, traverseWest))
                 }
             }
         } else {
-            list.add(src)
-        }
-        return list
-    }
-
-    fun findSinksWithFilters(src: Edge): MutableCollection<Pair<Port, MutableCollection<String>>> {
-        val list = mutableListOf<Pair<Port, MutableCollection<String>>>()
-        val filter_expr = src.target.parent!!.getProperty(PropertyType.Filter)
-        val filter: String?;
-        if (filter_expr != null) {
-            filter = """${src.target.parent.id}_filter"""
-        } else {
-            filter = null
-        }
-
-        val outgoing = getOutgoingEdges(src.target)
-        if (outgoing.isNotEmpty()) {
-            outgoing.forEach {
-                val childSinks = findSinksWithFilters(it)
-                if (filter != null) {
-                    childSinks.forEach {
-                        it.second.add(filter)
+            val out = getOutgoingEdges(p)
+            if (out.size > 0) {
+                out.forEach {
+                    val c = getConnections(it.target, destination, traverseWest)
+                    val filter = p.parent!!.getProperty(PropertyType.Filter)
+                    if (filter != null) {
+                        c.forEach {
+                            it.filters.add(p.parent.id)
+                        }
+                    }
+                    l.addAll(c)
+                }
+            } else {
+                if (p.direction == Direction.IN) {
+                    val filter = p.parent!!.getProperty(PropertyType.Filter)
+                    if (filter != null) {
+                        l.add(EveConnection(destination, p, mutableListOf(p.parent.id)))
+                    } else {
+                        l.add(EveConnection(destination, p, mutableListOf()))
                     }
                 }
-                list.addAll(childSinks)
-            }
-        } else {
-            if (filter != null) {
-                list.add(Pair(src.target, mutableListOf(filter)))
-            } else {
-                list.add(Pair(src.target, mutableListOf()))
             }
         }
-        return list
+        return l
     }
 }
+
+class EveConnection(val sourcePort: Port, val destination: Port, val filters: MutableList<String>)

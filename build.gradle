@@ -4,7 +4,7 @@ plugins {
 }
 
 intellij {
-    version 'IC-172.4574.11'
+    version 'IC-173.3942.27'
     pluginName 'IntellijEve'
 }
 
@@ -26,7 +26,7 @@ repositories {
 prepareSandbox {
     doLast {
         copy {
-            from System.getProperty("user.home")+'/.IdeaIC2017.2/config/plugins/'
+            from System.getProperty("user.home")+'/.IdeaIC2017.3/config/plugins/'
             into './build/idea-sandbox/plugins/'
         }
     }
