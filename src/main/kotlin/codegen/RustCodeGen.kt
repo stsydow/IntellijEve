@@ -184,7 +184,7 @@ impl <T: Clone + fmt::Debug> OutgoingPort<T> {
 #[derive(Debug)]
 pub struct IncomingPort<T> {
     pub receiver: Receiver<T>,
-    pub dummy_sender: Sender<T>
+    pub dummy_sender: Option<Sender<T>>
 }
 impl<T> IncomingPort<T> {
     /// Tries to receive data from the receiver
@@ -547,7 +547,7 @@ pub fn construct_new_${it.id}_instance(graph: &Arc<RwLock<Graph>>) -> Arc<Mutex<
                     builder.append("""
         incoming_port: IncomingPort {
             receiver: ${node.id}_receiver,
-            dummy_sender: ${node.id}_sender.clone()
+            dummy_sender: Some(${node.id}_sender.clone())
         },""")
                 }
                 var i = 0
@@ -628,11 +628,11 @@ pub fn construct_new_${it.id}_instance(graph: &Arc<RwLock<Graph>>) -> Arc<Mutex<
         for successor_instance_list in &mut ${node.id}_instance.port_${port.id}.${destination.id}.successors {""")
                             connectionsToDestination.forEach {
                                 builder.append("""
-             for (_${destinationParent.id}, ${destinationParent.id}_mutex) in &${destinationParent.id}_set.instances {
+            for (_${destinationParent.id}, ${destinationParent.id}_mutex) in &${destinationParent.id}_set.instances {
                 let instance: &mut NormalNode = &mut *${destinationParent.id}_mutex.lock().unwrap();
                 let instance: &mut ${destinationParent.name}Instance = instance.as_any().downcast_mut::<${destinationParent.name}Instance>().unwrap();
-                successor_instance_list.senders.push(instance.incoming_port.dummy_sender.clone())
-             }""")
+                successor_instance_list.senders.push(instance.incoming_port.dummy_sender.to_owned().unwrap())
+            }""")
                             }
                             builder.append("""
         }""")
