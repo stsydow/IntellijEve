@@ -684,6 +684,14 @@ use std::thread::JoinHandle;
 use nodes::Graph;
 use nodes::NormalNode;
 use nodes::SourceNode;
+""")
+        graphs.forEach {
+            if (it.childNodes.count() == 0 && !isSourceNode(it)) {
+                builder.append("""
+use nodes::${it.name}Instance;""");
+            }
+        }
+        builder.append("""
 
 /// An EveThread is a processing object that can handle multiple node instances
 ///
@@ -815,13 +823,47 @@ fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
     println!("remove instance {} of node {}", i_id, m_id);
     match m_id {""");
         graphs.forEach {
-            if(it.childNodes.count() == 0) {
+            val graph = it
+            if(graph.childNodes.count() == 0) {
+                val all_successor_nodes = mutableListOf<Node>()
+                graph.out_ports.forEach {
+                    all_successor_nodes.addAll(getConnectionsToSuccessors(it).map { it.destination.parent!! })
+                }
+                val successor_nodes = all_successor_nodes.distinct()
                 builder.append(
                         """
         "${it.id}" => {
             let g: &Graph = &*g.read().unwrap();
-            let ref mut s = *g.${it.id}.lock().unwrap();
+            let ref mut s = *g.${graph.id}.lock().unwrap();
             s.instances.remove(&i_id);
+            if s.instances.len() == 0 {""")
+                successor_nodes.forEach {
+                    val successor = it
+                    val other_predecessors = getConnectionsToPredecessors(successor.in_port).map { it.sourcePort.parent!! }.filter { it != graph }.distinct()
+                    builder.append("""
+                { // checking successor ${successor.name}""")
+                    other_predecessors.forEach {
+                        builder.append("""
+                    let ref mut ${it.id}_set = *g.${it.id}.lock().unwrap();""")
+                    }
+                    builder.append("""
+                    if """)
+                    other_predecessors.forEach {
+                        builder.append("""${it.id}_set.instances.len() == 0 && """)
+                    }
+                    builder.append("""true {
+                        let ref mut ${successor.id}_set = *g.${successor.id}.lock().unwrap();
+                        for (_instance_id, instance_mutex) in &${successor.id}_set.instances {
+                            let instance: &mut NormalNode = &mut *instance_mutex.lock().unwrap();
+                            let instance: &mut ${successor.name}Instance = instance.as_any().downcast_mut::<${successor.name}Instance>().unwrap();
+                            instance.incoming_port.dummy_sender = None
+                        }
+                    }""")
+                    builder.append("""
+                }""")
+                }
+                builder.append("""
+            }
         },""");
             }
         }
