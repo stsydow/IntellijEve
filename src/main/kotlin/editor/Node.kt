@@ -1,7 +1,11 @@
 package editor
 
-import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.LocalFileSystem
 import java.awt.Color
+import java.io.File
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Paths
 import javax.swing.JPopupMenu
 
 enum class PropertyType {Filter, Order, ContextId }
@@ -34,6 +38,8 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     var showGeometry = false
     var childrenPickable = true
 
+    var linkedFilePath = ""
+
     val in_port = Port(Direction.IN, "Any", this, scene)
     val out_ports = mutableListOf<Port>()
     val childEdges = mutableListOf<Edge>()
@@ -54,12 +60,21 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
 
     constructor(parent: Node, scene: Viewport) : this(DEFAULT_TRANSFORM, parent, scene)
     constructor(t: Transform, parent: Node, scene: Viewport) : this(t, DEFAULT_NAME, parent, scene) {
+        println("Created Node for parent ${parent.id} with name $name and id $id")
         parent.addNode(this)
     }
 
     init {
         assert(this is RootNode || parent != null)
         positionChildren()
+    }
+
+    fun constructNodeNameFromId(id: String): String{
+        val num = extractIndexFromString(id)
+        if (num != null){
+            return "Node" + num
+        }
+        return "Node" + scene.idx
     }
 
     open fun positionChildren() {
@@ -381,6 +396,25 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         
     override fun toString(): String {
         return toString(0)
+    }
+
+    fun constructFilepathForNode(){
+        // check whether the ./nodes subdir exists
+        val nodesDir = LocalFileSystem.getInstance().findFileByIoFile(File(scene.editor!!.project.basePath, "./src/nodes"))
+        if (nodesDir == null)
+            throw IOException("Directory ./src/nodes can not be found in project directory")
+
+        linkedFilePath = nodesDir.path + "/" + name + ".rs"
+    }
+
+    fun incrementFilepath(): String{
+        val prefix = linkedFilePath.substringBeforeLast('.')
+        val suffix = linkedFilePath.substringAfterLast('.')
+        if ((suffix == "rs") && (prefix.length > 0)){
+            return prefix + "_1." + suffix
+        } else {
+            throw Exception("Invalid Filepath for node with id $id: $linkedFilePath")
+        }
     }
 
     fun toString(n: Int): String {

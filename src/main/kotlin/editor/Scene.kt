@@ -1,11 +1,17 @@
 package editor
 
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.vfs.LocalFileSystem
 import intellij.GraphFileEditor
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.event.*
+import java.io.File
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.*
 import javax.swing.JPanel
 
@@ -14,7 +20,7 @@ val M_BUTTON_LEFT = 1
 val M_BUTTON_MIDDLE = 2
 val M_BUTTON_RIGHT = 3
 
-enum class Operation {Select, Move, Menu, None, DrawEdge }
+enum class Operation {Select, Move, Menu, None, DrawEdge, OpenRustFile }
 
 /*
 enum class EventType {Single, Start, FollowUp, End}
@@ -98,15 +104,45 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
     }
 
     override fun mouseClicked(e: MouseEvent) {
-        val op = when (e.button) {
-            M_BUTTON_LEFT -> Operation.Select
-            M_BUTTON_RIGHT -> Operation.Menu
-            else -> Operation.None
+        var op = Operation.None
+        if ((e.clickCount == 2) && (!e.isConsumed)){
+            e.consume()
+            op = when (e.button) {
+                M_BUTTON_LEFT -> Operation.OpenRustFile
+                else -> Operation.None
+            }
+        } else {
+            op = when (e.button) {
+                M_BUTTON_LEFT -> Operation.Select
+                M_BUTTON_RIGHT -> Operation.Menu
+                else -> Operation.None
+            }
         }
-
-        if (op == Operation.None) return
+        if (op == Operation.None)
+            return
         val c = getSceneCoordinate(e)
-        root.pick(c, op, transform)
+        val picked = root.pick(c, op, transform)
+        if ((picked == root) || (picked is Port) || (picked is Edge))
+            return
+        picked as Node
+        if (op == Operation.OpenRustFile){
+            if (picked.linkedFilePath == "") {
+                println("No file linked to node ${picked.id}, creating one now.")
+                picked.constructFilepathForNode()
+                while (Files.exists(Paths.get(picked.linkedFilePath!!))){
+                    picked.linkedFilePath = picked.incrementFilepath()
+                }
+                Files.createFile(Paths.get(picked.linkedFilePath!!))
+                LocalFileSystem.getInstance().refresh(false)
+                picked.parent!!.onChildChanged(picked)
+            }
+            if (!Files.exists(Paths.get(picked.linkedFilePath))){
+                Files.createFile(Paths.get(picked.linkedFilePath))
+                LocalFileSystem.getInstance().refresh(false)
+            }
+            val file = LocalFileSystem.getInstance().findFileByPath(picked.linkedFilePath)
+            FileEditorManager.getInstance(editor!!.project).openFile(file!!, true)
+        }
         //TODO Selection?
     }
 
