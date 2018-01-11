@@ -18,7 +18,6 @@ fun read(graphml : File, scene: Viewport) : RootNode?{
             val graph = childNodes.item(i)
             if ((graph is Element) && (graph.tagName == "graph")){
                 createNodesOfGraphFromDOM(root, graph, scene)
-                println(root.toString())
                 createsEdgesOfGraphFromDOM(root, graph, scene)
             }
         }
@@ -110,6 +109,10 @@ private fun createNodeFromDOM(parent: Node, node: Element, scene: Viewport){
         val nodeOrderProperty = extractDataStringValue(node, "node_order")
         if (nodeOrderProperty != null)
             newNode.setProperty(PropertyType.Order, nodeOrderProperty)
+        // get path of linked file
+        val linkedFile = extractDataStringValue(node, "linked_file")
+        if (linkedFile != null)
+            newNode.linkedFilePath = linkedFile
         // get node color
         val nodeColor = extractDataStringValue(node, "node_color")
         if (nodeColor != null)

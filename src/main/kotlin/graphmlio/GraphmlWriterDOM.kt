@@ -66,6 +66,8 @@ class EveamcpConstants() {
         val NODE_NAME_NAME = "name"
         val NODE_ORDER = "node_order"
         val NODE_ORDER_NAME = "order"
+        val NODE_LINKED_FILE = "linked_file"
+        val NODE_LINKED_FILE_NAME = "node_linked_file"
         val NODE_TRANSFORM_SCALE = "node_transform_scale"
         val NODE_TRANSFORM_SCALE_NAME = "transform_scale"
         val NODE_TRANSFORM_X = "node_transform_x"
@@ -152,6 +154,9 @@ private fun writeKeyInfo(writer: XMLStreamWriter){
             EveamcpConstants.NODE_ORDER, GraphmlConstants.NODE,
             EveamcpConstants.NODE_ORDER_NAME, GraphmlConstants.STRING)
     writeKeyElement(writer,
+            EveamcpConstants.NODE_LINKED_FILE, GraphmlConstants.NODE,
+            EveamcpConstants.NODE_LINKED_FILE_NAME, GraphmlConstants.STRING)
+    writeKeyElement(writer,
             EveamcpConstants.NODE_TRANSFORM_SCALE, GraphmlConstants.NODE,
             EveamcpConstants.NODE_TRANSFORM_SCALE_NAME, GraphmlConstants.DOUBLE)
     writeKeyElement(writer,
@@ -222,6 +227,9 @@ private fun writeNodeElement(writer: XMLStreamWriter, node: Node){
         val order = node.getProperty(PropertyType.Order)
         if (order != null)
             writeDataElement(writer, EveamcpConstants.NODE_ORDER, order)
+        val linkedFile = node.linkedFilePath
+        if (linkedFile != "")
+            writeDataElement(writer, EveamcpConstants.NODE_LINKED_FILE, linkedFile)
         writeDataElement(writer,
                 EveamcpConstants.NODE_TRANSFORM_SCALE, node.transform.scale.toString())
         writeDataElement(writer,
