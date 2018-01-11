@@ -43,6 +43,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     var currentOperation = Operation.None
     var operationsStack = Stack<UIOperation>()
     var reversedOperationsStack = Stack<UIOperation>()
+    var selectedNodes = mutableListOf<Node>()
 
     init {
         addMouseListener(this)
@@ -121,9 +122,14 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         if (op == Operation.None)
             return
         val c = getSceneCoordinate(e)
-        val picked = root.pick(c, op, transform, UIElementKind.All)
-        if ((picked == root) || (picked is Port) || (picked is Edge))
+        val picked = root.pick(c, op, transform)
+
+        if ((picked is Port) || (picked is Edge))
             return
+        if (picked == root){
+            selectedNodes.forEach { node -> node.isSelected = false }
+            selectedNodes.clear()
+        }
         picked as Node
         if (op == Operation.OpenRustFile){
             /*
@@ -154,6 +160,16 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
             val file = LocalFileSystem.getInstance().findFileByPath(picked.linkedFilePath)
             FileEditorManager.getInstance(editor!!.project).openFile(file!!, true)
             */
+        }
+        if (op == Operation.Select){
+            if (picked.isSelected){
+                picked.isSelected = false
+                selectedNodes.remove(picked)
+            }
+            else {
+                picked.isSelected = true
+                selectedNodes.add(picked)
+            }
         }
         //TODO Selection?
     }

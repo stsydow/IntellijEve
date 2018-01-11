@@ -33,6 +33,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     var childrenPickable = true
 
     var fileName = name + ".rs"
+    var isSelected = false
 
     val in_port = Port(Direction.IN, "Any", this, scene)
     val out_ports = mutableListOf<Port>()
@@ -354,6 +355,22 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
                 textPos = minBounds.topLeft + Vector(2.0, fontSize)
                 localGraphics.polygon(Color.RED, minBounds.toCoordinates(), false)
                 localGraphics.text("minimalBounds()", textPos, Font(FontStyle.REGULAR, fontSize))
+            }
+        }
+
+        // highlight a selected node
+        if (isSelected){
+            if (properties.size <= 0){
+                val boundsToDraw = bounds - propertiesPadding
+                localGraphics.polygon(Color.MAGENTA, boundsToDraw.toCoordinates(), false)
+            } else {
+                localGraphics.polygon(Color.MAGENTA, listOf(
+                        bounds.topLeft,
+                        bounds.bottomLeft,
+                        bounds.bottomRight,
+                        bounds.topRight + Vector(0.0, propertiesPadding.top),
+                        bounds.topRight - Vector(propertiesPadding.top, 0.0)),
+                        false)
             }
         }
     }
