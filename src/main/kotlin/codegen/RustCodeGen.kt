@@ -108,9 +108,7 @@ pub mod evethread;
 /// The OutgoingPort owns a [SuccessorInstanceList](struct.SuccessorInstanceList.html) for every successor node, of whom each will receive the data sent through this port.
 #[derive(Debug)]
 pub struct OutgoingPort<T> {
-    pub successors: Vec<SuccessorInstanceList<T>>,
-    /// TODO move this to the instance lists
-    pub idx: usize
+    pub successors: Vec<SuccessorInstanceList<T>>
 }
 
 /// A SuccessorInstanceList is a container of senders to instances of the same successor
@@ -118,7 +116,9 @@ pub struct OutgoingPort<T> {
 /// The SuccessorInstanceList owns a sender for every instance of a particular successor. Outgoing data is sent to one of them.
 pub struct SuccessorInstanceList<T> {
     pub senders: Vec<Sender<T>>,
-    pub filter: Vec<Box<Fn(&T) -> bool + Send + Sync>>
+    pub senders_idx: usize,
+    pub filter: Vec<Box<Fn(&T) -> bool + Send + Sync>>,
+    pub context_aware_sender: Option<Sender<T>>
 }
 
 impl<T> fmt::Debug for SuccessorInstanceList<T> {
@@ -134,21 +134,19 @@ impl<T> fmt::Debug for SuccessorInstanceList<T> {
 impl <T: Clone + fmt::Debug> OutgoingPort<T> {
     #[allow(dead_code)]
     pub fn send(&mut self, t: T) {
-        let ref targets_vector = self.successors;
+        let ref mut targets_vector = self.successors;
         match targets_vector.len() {
             0 => {
                 panic!();
             },
             1 => {
-                let ref target = targets_vector[0];
+                let ref mut target = targets_vector[0];
                 let mut filter: bool  = true;
                 for f in &target.filter {
                     filter &= f(&t);
                 }
                 if filter {
-                    self.idx %= target.senders.len();
-                    target.senders[self.idx].send(t.clone()).unwrap();
-                    self.idx += 1;
+                    Self::send_to_successor(&t, target)
                 }
             },
             _ => {
@@ -158,19 +156,29 @@ impl <T: Clone + fmt::Debug> OutgoingPort<T> {
                         filter &= f(&t);
                     }
                     if filter {
-                        match target.senders.len() {
-                            0 => {
-                                panic!();
-                            },
-                            1 => {
-                                target.senders[0].send(t.clone()).unwrap();
-                            },
-                            _ => {
-                                self.idx %= target.senders.len();
-                                target.senders[self.idx].send(t.clone()).unwrap();
-                                self.idx += 1;
-                            }
-                        }
+                        Self::send_to_successor(&t, target)
+                    }
+                }
+            }
+        }
+    }
+
+    fn send_to_successor(t: &T, successor: &mut SuccessorInstanceList<T>) {
+        match successor.context_aware_sender {
+            Some(ref cas) => {
+                cas.send(t.clone());
+            }, None => {
+                match successor.senders.len() {
+                    0 => {
+                        panic!();
+                    },
+                    1 => {
+                        successor.senders[0].send(t.clone()).unwrap();
+                    },
+                    _ => {
+                        successor.senders_idx %= successor.senders.len();
+                        successor.senders[successor.senders_idx].send(t.clone()).unwrap();
+                        successor.senders_idx += 1;
                     }
                 }
             }
@@ -566,18 +574,19 @@ pub fn construct_new_${it.id}_instance(graph: &Arc<RwLock<Graph>>) -> Arc<Mutex<
                             builder.append("""
                     SuccessorInstanceList {
                         senders: vec!(),
+                        senders_idx: 0,
                         filter: vec!(""")
                             it.filters.forEach {
                                 builder.append("""
                             Box::new(${it}_filter),""")
                             }
                             builder.append("""
-                        )
+                        ),
+                        context_aware_sender: None
                     },""")
                         }
-                        builder.append("""),
-                idx: 0""")
                         builder.append("""
+                )
             },""")
                     }
                     builder.append("""
