@@ -4,11 +4,18 @@ import graphmlio.*
 import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFile
 import intellij.GraphFileType
 import java.io.File
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Paths
+import javax.swing.JFileChooser
 import javax.swing.JMenuItem
 import javax.swing.JOptionPane
 import javax.swing.JPopupMenu
+import javax.swing.filechooser.FileNameExtensionFilter
 
 open class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : JPopupMenu() {
     init {
@@ -20,6 +27,7 @@ open class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : 
         val setContextId = JMenuItem("set context")
         val setFilter = JMenuItem("set filter")
         val setName = JMenuItem("set name")
+        val linkWithFile = JMenuItem("link with file")
         val shrinkItem = JMenuItem("shrink to minimal size")
         val showGeometryItem = JMenuItem("show node geometry")
         val hideGeometryItem = JMenuItem("hide node geometry")
@@ -117,6 +125,31 @@ open class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : 
                 node.repaint()
             }
         }
+        linkWithFile.addActionListener{
+            val old = node.linkedFilePath
+            val chooser = JFileChooser()
+            val filter = FileNameExtensionFilter("Rust code files", "rs")
+            chooser.fileFilter = filter
+            var nodesDir = File("")
+            if (old != "") {
+                nodesDir = File(old.substringBeforeLast('/'))
+            } else {
+                nodesDir = File(node.scene.editor!!.project.basePath, "./src/nodes")
+                if (nodesDir == null) {
+                    throw IOException("Directory ./src/nodes can not be found in project directory")
+                }
+            }
+            chooser.currentDirectory = nodesDir
+            val retVal = chooser.showOpenDialog(node.scene)
+            if (retVal == JFileChooser.APPROVE_OPTION){
+                node.linkedFilePath = chooser.selectedFile.absolutePath
+                if (!Files.exists(Paths.get(node.linkedFilePath))){
+                    Files.createFile(Paths.get(node.linkedFilePath))
+                    LocalFileSystem.getInstance().refresh(true)
+                }
+                node.parent!!.onChildChanged(node)
+            }
+        }
         shrinkItem.addActionListener(){
             val inBounds = node.innerBounds
             val minBounds = node.minimalBounds()
@@ -144,6 +177,7 @@ open class NodeContextMenu(val node: Node, val interaction_point: Coordinate) : 
             add(setContextId)
             add(setFilter)
             add(setName)
+            add(linkWithFile)
             add(shrinkItem)
             add(showGeometryItem)
             add(hideGeometryItem)
