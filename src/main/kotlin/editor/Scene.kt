@@ -171,7 +171,6 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 selectedNodes.add(picked)
             }
         }
-        //TODO Selection?
     }
 
 
