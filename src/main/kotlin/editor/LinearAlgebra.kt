@@ -58,6 +58,7 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
     }
 
     constructor() : this(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY)
+    constructor(p1: Coordinate, p2: Coordinate) : this(p1.x, p1.y, p2.x, p2.y)
     constructor(r: Rectangle2D) : this(r.minX, r.minY, r.maxX, r.maxY)
 
     companion object {
