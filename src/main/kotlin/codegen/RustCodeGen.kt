@@ -165,7 +165,7 @@ impl <T: Clone + fmt::Debug> OutgoingPort<T> {
 
     fn send_to_successor(t: &T, successor: &mut SuccessorInstanceList<T>) {
         if let Some(ref context) = successor.context {
-            successor.senders[context(t)].send(t.clone()).unwrap();
+            successor.senders[context(t) % successor.senders.len()].send(t.clone()).unwrap();
         } else {
             match successor.senders.len() {
                 0 => {
@@ -405,8 +405,7 @@ pub struct ${graph.name}OutPort$i {""")
 }
 
 impl ${graph.name}OutPort$i {
-    pub fn send(&mut self, t: ${it.message_type}) {
-        """)
+    pub fn send(&mut self, t: ${it.message_type}) {""")
                         successorDisctinctConnections.forEach {
                             builder.append("""
         self.${it.destination.id}.send(t.clone());""")
@@ -580,7 +579,13 @@ pub fn construct_new_${it.id}_instance(graph: &Arc<RwLock<Graph>>) -> Arc<Mutex<
                             }
                             builder.append("""
                         ),
-                        context: None
+                        context: """)
+                            if (it.contexts.size > 0) {
+                                builder.append("""Some(Box::new(${it.contexts[0]}_context_index))""")
+                            } else {
+                                builder.append("""None""")
+                            }
+                            builder.append("""
                     },""")
                         }
                         builder.append("""
@@ -953,7 +958,7 @@ fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
                         l.addAll(c)
                     }
                 } else {
-                    l.add(EveConnection(p, destination, mutableListOf()))
+                    l.add(EveConnection(p, destination, mutableListOf(), mutableListOf()))
                 }
             } else {
                 inc.forEach {
@@ -965,22 +970,40 @@ fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
             if (out.size > 0) {
                 out.forEach {
                     val c = getConnections(it.target, destination, traverseWest)
+                    val filters = mutableListOf<String>()
+                    val contexts = mutableListOf<String>()
+
                     val filter = p.parent!!.getProperty(PropertyType.Filter)
                     if (filter != null) {
-                        c.forEach {
-                            it.filters.add(p.parent.id)
-                        }
+                        filters.add(p.parent.id)
+                    }
+
+                    val context = p.parent.getProperty(PropertyType.ContextId)
+                    if (context != null) {
+                        contexts.add(p.parent.id)
+                    }
+                    c.forEach {
+                        it.filters.addAll(filters)
+                        it.contexts.addAll(contexts)
                     }
                     l.addAll(c)
                 }
             } else {
                 if (p.direction == Direction.IN) {
+                    val filters = mutableListOf<String>()
+                    val contexts = mutableListOf<String>()
+
                     val filter = p.parent!!.getProperty(PropertyType.Filter)
                     if (filter != null) {
-                        l.add(EveConnection(destination, p, mutableListOf(p.parent.id)))
-                    } else {
-                        l.add(EveConnection(destination, p, mutableListOf()))
+                        filters.add(p.parent.id)
                     }
+
+                    val context = p.parent.getProperty(PropertyType.ContextId)
+                    if (context != null) {
+                        contexts.add(p.parent.id)
+                    }
+
+                    l.add(EveConnection(destination, p, filters, contexts))
                 }
             }
         }
@@ -988,4 +1011,4 @@ fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
     }
 }
 
-class EveConnection(val sourcePort: Port, val destination: Port, val filters: MutableList<String>)
+class EveConnection(val sourcePort: Port, val destination: Port, val filters: MutableList<String>, val contexts: MutableList<String>)
