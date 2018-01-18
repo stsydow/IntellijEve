@@ -118,7 +118,7 @@ pub struct SuccessorInstanceList<T> {
     pub senders: Vec<Sender<T>>,
     pub senders_idx: usize,
     pub filter: Vec<Box<Fn(&T) -> bool + Send + Sync>>,
-    pub context_aware_sender: Option<Sender<T>>
+    pub context: Option<Box<Fn(&T) -> usize + Send + Sync>>
 }
 
 impl<T> fmt::Debug for SuccessorInstanceList<T> {
@@ -164,22 +164,20 @@ impl <T: Clone + fmt::Debug> OutgoingPort<T> {
     }
 
     fn send_to_successor(t: &T, successor: &mut SuccessorInstanceList<T>) {
-        match successor.context_aware_sender {
-            Some(ref cas) => {
-                cas.send(t.clone());
-            }, None => {
-                match successor.senders.len() {
-                    0 => {
-                        panic!();
-                    },
-                    1 => {
-                        successor.senders[0].send(t.clone()).unwrap();
-                    },
-                    _ => {
-                        successor.senders_idx %= successor.senders.len();
-                        successor.senders[successor.senders_idx].send(t.clone()).unwrap();
-                        successor.senders_idx += 1;
-                    }
+        if let Some(ref context) = successor.context {
+            successor.senders[context(t)].send(t.clone()).unwrap();
+        } else {
+            match successor.senders.len() {
+                0 => {
+                    panic!();
+                },
+                1 => {
+                    successor.senders[0].send(t.clone()).unwrap();
+                },
+                _ => {
+                    successor.senders_idx %= successor.senders.len();
+                    successor.senders[successor.senders_idx].send(t.clone()).unwrap();
+                    successor.senders_idx += 1;
                 }
             }
         }
@@ -582,7 +580,7 @@ pub fn construct_new_${it.id}_instance(graph: &Arc<RwLock<Graph>>) -> Arc<Mutex<
                             }
                             builder.append("""
                         ),
-                        context_aware_sender: None
+                        context: None
                     },""")
                         }
                         builder.append("""
@@ -674,6 +672,17 @@ pub fn construct_new_${it.id}_instance(graph: &Arc<RwLock<Graph>>) -> Arc<Mutex<
                 builder.append("""
 fn ${it.id}_filter(e: &${it.in_port.message_type}) -> bool {
     e.${filter}
+}
+""")
+            }
+        }
+
+        graphs.forEach {
+            val filter = it.getProperty(PropertyType.ContextId)
+            if (filter != null) {
+                builder.append("""
+fn ${it.id}_context_index(e: &${it.in_port.message_type}) -> usize {
+    e.${filter.removePrefix("(").removeSuffix(")")} as usize
 }
 """)
             }
