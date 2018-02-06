@@ -142,6 +142,7 @@ private fun createNodeFromDOM(parent: Node, node: Element, scene: Viewport){
                     nodeBoundsYMin.toDouble(),
                     nodeBoundsXMax.toDouble(),
                     nodeBoundsYMax.toDouble())
+        newNode.positionChildren()
     }
     createPortsForNodeFromDOM(newNode, node, scene)
     val nodeSubgraphs = node.childNodes
