@@ -330,4 +330,10 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
 
     override fun keyReleased(e: KeyEvent?) {
     }
+
+    fun save() {
+        if (editor != null) {
+            editor.save()
+        }
+    }
 }

@@ -45,7 +45,6 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
         val localGraphics = g.stack(transform)
         val shape: List<Coordinate>
         val text_pos: Coordinate
-
         val text_bounds = localGraphics.textBounds(message_type, DEFAULT_FONT)
 
         when (direction) {

@@ -52,7 +52,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     override val bounds: Bounds get() = innerBounds + padding + propertiesPadding
     val titleBottom: Coordinate get() = (bounds - propertiesPadding).min() + Vector(0.0, TITLE_HEIGHT)
 
-    var padding = DEFAULT_PADDING
+    val padding = DEFAULT_PADDING
     var innerBounds = DEFAULT_BOUNDS
     var color = Color.GREEN
 
@@ -393,7 +393,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         showGeometry = false
         childNodes.forEach { it.hideGeometry() }
     }
-        
+
     override fun toString(): String {
         return toString(0)
     }
@@ -539,8 +539,9 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
             innerBounds += c_bounds
             positionChildren()
         }
-        if (keepInSync)
-            scene.editor!!.save()
+        if (keepInSync) {
+            scene.save()
+        }
     }
 
     override fun getContextMenu(at: Coordinate): JPopupMenu {
