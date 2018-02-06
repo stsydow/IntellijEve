@@ -112,7 +112,8 @@ private fun createNodeFromDOM(parent: Node, node: Element, scene: Viewport){
         // get path of linked file
         val linkedFile = extractDataStringValue(node, "linked_file")
         if (linkedFile != null)
-            newNode.linkedFilePath = linkedFile
+            TODO()
+            //newNode.linkedFilePath = linkedFile
         // get node color
         val nodeColor = extractDataStringValue(node, "node_color")
         if (nodeColor != null)

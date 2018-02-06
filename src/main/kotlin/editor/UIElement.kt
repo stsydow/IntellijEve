@@ -7,7 +7,7 @@ const val FONT_SIZE = 22.0
 const val UNIT = FONT_SIZE
 val DEFAULT_FONT = Font(FontStyle.REGULAR, FONT_SIZE)
 
-abstract class UIElement(var transform: Transform, val parent: Node?, var scene: Viewport) {
+abstract class UIElement(var transform: Transform, val parent: Node?, protected var scene: Viewport) {
     var id: String = "uielement"+scene.idx++
 
     abstract fun render(g: GraphicsProxy)

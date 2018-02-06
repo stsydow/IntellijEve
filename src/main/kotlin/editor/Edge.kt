@@ -40,7 +40,7 @@ class Edge(transform: Transform, parent: Node, val source: Port, val target: Por
     }
 
     override fun getContextMenu(at: Coordinate): JPopupMenu {
-        return EdgeContextMenu(this, at)
+        return EdgeContextMenu(this, this.scene, at)
     }
 
     override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform): UIElement? {

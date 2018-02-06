@@ -74,7 +74,7 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
     }
 
     override fun getContextMenu(at: Coordinate): JPopupMenu {
-        return PortContextMenu(this, at)
+        return PortContextMenu(this, this.scene, at)
     }
 
     override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform): UIElement? {

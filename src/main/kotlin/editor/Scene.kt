@@ -3,7 +3,6 @@ package editor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.vfs.LocalFileSystem
 import intellij.GraphFileEditor
-import java.awt.Color
 import java.awt.Dimension
 import java.awt.Graphics
 import java.awt.Graphics2D
@@ -29,7 +28,7 @@ data class Interaction(val operation: Operation, val type: EventType){
 }
 */
 
-class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener, KeyListener {
+class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener, KeyListener {
     var idx: Int = 0
     var root = RootNode(this)
 
@@ -126,8 +125,19 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
             return
         picked as Node
         if (op == Operation.OpenRustFile){
-            if (picked.linkedFilePath == "") {
+            /*
+            if (picked.relativeFileLocation == "") {
                 println("No file linked to node ${picked.id}, creating one now.")
+                val fs = LocalFileSystem.getInstance()
+                val nodesDir = fs.findFileByIoFile(File(editor!!.project.basePath, "./src/nodes"))
+                if (nodesDir == null)
+                    throw IOException("Directory ./src/nodes can not be found in project directory")
+
+                //val linkedFilePath = nodesDir.path + "/" + picked.name + ".rs"
+
+                var realtivePath = picked.name + ".rs"
+
+
                 picked.constructFilepathForNode()
                 while (Files.exists(Paths.get(picked.linkedFilePath!!))){
                     picked.linkedFilePath = picked.incrementFilepath()
@@ -142,13 +152,14 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
             }
             val file = LocalFileSystem.getInstance().findFileByPath(picked.linkedFilePath)
             FileEditorManager.getInstance(editor!!.project).openFile(file!!, true)
+            */
         }
         //TODO Selection?
     }
 
 
     override fun mousePressed(e: MouseEvent) {
-        val view_pos = getSceneCoordinate(e)
+        val view_pos:Coordinate = getSceneCoordinate(e)
 
         if (currentOperation != Operation.None) {
             println("An operation is already active: ${currentOperation}")
@@ -174,11 +185,14 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
             val picked = root.pick(view_pos, currentOperation, transform)
             if (picked != null) {
                 picked.getContextMenu(view_pos).show(e.component, e.x, e.y)
+                // TODO move context menu to scene
             } else {
                 error("root did not catch our pick!")
             }
             currentOperation = when (picked) {
                 is Node -> Operation.Menu
+                is Port -> Operation.Menu
+                is Edge -> Operation.Menu
                 else -> Operation.None
             }
         }
@@ -217,7 +231,7 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
                 if (picked is Port && oldFocus is Port) {
                     val ancestor = getCommonAncestorForEdge(oldFocus, picked)
                     if (ancestor != null) {
-                        val edge = Edge(Transform(0.0, 0.0, 1.0), ancestor, oldFocus, picked, picked.scene)
+                        val edge = Edge(Transform(0.0, 0.0, 1.0), ancestor, oldFocus, picked, this)
                         println("adding edge to ancestor $ancestor")
                         ancestor.addEdge(edge)
                         pushOperation(AddEdgeOperation(ancestor, edge))
@@ -241,6 +255,7 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
             } //don't care
             Operation.Select -> {
             } //don't care
+            Operation.OpenRustFile -> TODO()
         }
         focusedElementOriginalTransform = null
         repaint()
@@ -334,6 +349,12 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
     fun save() {
         if (editor != null) {
             editor.save()
+        }
+    }
+
+    fun generateCode(){
+        if (editor != null) {
+            editor.generate()
         }
     }
 }

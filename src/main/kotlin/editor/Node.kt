@@ -38,7 +38,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     var showGeometry = false
     var childrenPickable = true
 
-    var linkedFilePath = ""
+    //var relativeFileLocation = ""
 
     val in_port = Port(Direction.IN, "Any", this, scene)
     val out_ports = mutableListOf<Port>()
@@ -359,7 +359,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     }
 
     override fun getContextMenu(at: Coordinate): JPopupMenu {
-        return NodeContextMenu(this, at)
+        return NodeContextMenu(this, scene, at)
     }
 
     fun getProperty(type: PropertyType): String? {
@@ -398,6 +398,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         return toString(0)
     }
 
+    /*
     fun constructFilepathForNode(){
         // check whether the ./nodes subdir exists
         val nodesDir = LocalFileSystem.getInstance().findFileByIoFile(File(scene.editor!!.project.basePath, "./src/nodes"))
@@ -416,6 +417,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             throw Exception("Invalid Filepath for node with id $id: $linkedFilePath")
         }
     }
+    */
 
     fun toString(n: Int): String {
         val prefix = get2NSpaces(n)
@@ -484,7 +486,7 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         } else if (child is Edge) {
             assert(childEdges.remove(child))
             if (keepInSync)
-                scene.editor!!.save()
+                scene.save()
         }
         repaint()
     }
@@ -493,7 +495,7 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         assert(child.parent == this)
         assert(childEdges.add(child))
         if (keepInSync)
-            scene.editor!!.save()
+            scene.save()
         repaint()
     }
 
@@ -545,7 +547,7 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
     }
 
     override fun getContextMenu(at: Coordinate): JPopupMenu {
-        return RootNodeContextMenu(this, at)
+        return RootNodeContextMenu(this, scene, at)
     }
 
     fun visualizeTransforms(){
