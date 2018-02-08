@@ -1,10 +1,12 @@
 plugins {
+    id 'java-gradle-plugin'
     id "org.jetbrains.intellij" version "0.2.18"
     id "org.jetbrains.kotlin.jvm" version "1.2.21"
 }
 
 intellij {
     version 'IC-173.4548.28'
+    //version 'LATEST-EAP-SNAPSHOT'
     pluginName 'IntellijEve'
 }
 
@@ -30,4 +32,8 @@ prepareSandbox {
             into './build/idea-sandbox/plugins/'
         }
     }
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib:1.2.21"
 }
