@@ -1,11 +1,8 @@
 package editor
 
-import java.awt.Color
-import javax.swing.JPopupMenu
-
 class Edge(transform: Transform, parent: Node, val source: Port, val target: Port, scene: Viewport) : UIElement(transform, parent, scene) {
     companion object {
-        val PICK_DISTANCE = 5
+        const val PICK_DISTANCE = 5
     }
 
     val curve: CubicBezierCurve
@@ -37,10 +34,6 @@ class Edge(transform: Transform, parent: Node, val source: Port, val target: Por
 
     override fun render(g: GraphicsProxy) {
         curve.paint(g)
-    }
-
-    override fun getContextMenu(at: Coordinate): JPopupMenu {
-        return EdgeContextMenu(this, this.scene, at)
     }
 
     override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform, filter: UIElementKind): UIElement? {

@@ -19,7 +19,6 @@ abstract class UIElement(var transform: Transform, val parent: Node?, protected 
     var id: String = "uielement"+scene.idx++
 
     abstract fun render(g: GraphicsProxy)
-    abstract fun getContextMenu(at: Coordinate): JPopupMenu
     abstract fun pick(c: Coordinate, operation: Operation, screenTransform: Transform, filter: UIElementKind): UIElement?
 
     open fun repaint() {

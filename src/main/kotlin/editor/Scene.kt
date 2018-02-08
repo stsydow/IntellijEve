@@ -13,6 +13,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.*
 import javax.swing.JPanel
+import javax.swing.JPopupMenu
 
 val M_BUTTON_NONE = 0
 val M_BUTTON_LEFT = 1
@@ -182,37 +183,51 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         }
 
         if (e.button == M_BUTTON_RIGHT) {
-            val picked = root.pick(view_pos, currentOperation, transform,  UIElementKind.All)
-            if (picked != null) {
-                picked.getContextMenu(view_pos).show(e.component, e.x, e.y)
-                // TODO move context menu to scene
-            } else {
-                error("root did not catch our pick!")
+            val picked = root.pick(view_pos, currentOperation, transform, UIElementKind.All)
+            val menu:JPopupMenu
+
+            if(picked == root){
+                menu = RootNodeContextMenu(root, this, view_pos)
+                currentOperation = Operation.Menu
+            }else {
+                when (picked) {
+                    is Node -> {
+                        menu = NodeContextMenu(picked, this, view_pos)
+                        currentOperation = Operation.Menu
+                    }
+                    is Port -> {
+                        menu = PortContextMenu(picked, this, view_pos)
+                        currentOperation = Operation.Menu
+                    }
+                    is Edge -> {
+                        menu = EdgeContextMenu(picked, this, view_pos)
+                        currentOperation = Operation.Menu
+                    }
+                    else -> {
+
+                        currentOperation = Operation.None
+                        error("root did not catch our pick!")
+                    }
+                }
             }
-            currentOperation = when (picked) {
-                is Node -> Operation.Menu
-                is Port -> Operation.Menu
-                is Edge -> Operation.Menu
-                else -> Operation.None
-            }
+
+            menu.show(e.component, e.x, e.y)
         }
 
         if (e.button == M_BUTTON_MIDDLE) {
             val picked = root.pick(view_pos, currentOperation, transform, UIElementKind.All)
-            if (picked != null) {
-                var str = ""
-                if (picked is Port)
-                    str += "Port: "
-                else if (picked is Edge)
-                    str += "Edge: "
-                else if (picked is Node)
-                    str += "Node: "
-                else
-                    str += "<Unknown>: "
-                str += "bounds " + picked.bounds + "\n\t"
-                str += "external bounds " + picked.externalBounds()
-                println(str)
+            val elem = when(picked) {
+                is Port -> "Port"
+                is Node -> "Node"
+                is Edge -> "Edge"
+                else -> "<Unknown>"
             }
+            if(picked != null) {
+                println("$elem: bounds ${picked.bounds} \n\t external bounds ${picked.externalBounds()} ")
+            }else{
+                println("picked no element")
+            }
+
         }
         lastMovementPosition = view_pos
     }

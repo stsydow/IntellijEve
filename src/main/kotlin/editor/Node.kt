@@ -1,12 +1,6 @@
 package editor
 
-import com.intellij.openapi.vfs.LocalFileSystem
 import java.awt.Color
-import java.io.File
-import java.io.IOException
-import java.nio.file.Files
-import java.nio.file.Paths
-import javax.swing.JPopupMenu
 
 enum class PropertyType {Filter, Order, ContextId }
 
@@ -19,10 +13,10 @@ class Property(val type: PropertyType, var expression: String) {
 // assert Nodes may not overlap
 open class Node(transform: Transform, var name: String, parent: Node?, scene: Viewport) : UIElement(transform, parent, scene) {
     companion object {
-        val TITLE_HEIGHT = 2 * UNIT
+        const val TITLE_HEIGHT = 2 * UNIT
         val INNER_PADDING = Padding(0.2 * UNIT)
         val DEFAULT_PADDING = Padding(TITLE_HEIGHT, Port.OUT_SIZE.width, 0.0, Port.IN_SIZE.width) + INNER_PADDING
-        val DEFAULT_NAME = "<anonymous>"
+        const val DEFAULT_NAME = "<anonymous>"
         val DEFAULT_BOUNDS = Bounds(0.0, 0.0, 20 * UNIT, 15 * UNIT)
         var SCALE_FACTOR = 0.5
         val DEFAULT_TRANSFORM = Transform(0.0, 0.0, SCALE_FACTOR)
@@ -364,10 +358,6 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         }
     }
 
-    override fun getContextMenu(at: Coordinate): JPopupMenu {
-        return NodeContextMenu(this, scene, at)
-    }
-
     fun getProperty(type: PropertyType): String? {
         properties.forEach {
             if (it.type == type)
@@ -557,10 +547,6 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         if (keepInSync) {
             scene.save()
         }
-    }
-
-    override fun getContextMenu(at: Coordinate): JPopupMenu {
-        return RootNodeContextMenu(this, scene, at)
     }
 
     fun visualizeTransforms(){
