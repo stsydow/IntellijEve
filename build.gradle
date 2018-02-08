@@ -33,7 +33,3 @@ prepareSandbox {
         }
     }
 }
-
-dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib:1.2.21"
-}

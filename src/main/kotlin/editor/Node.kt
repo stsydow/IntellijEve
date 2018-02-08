@@ -99,7 +99,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         positionChildren()
         if (parent != null)
             parent.onChildChanged(this)
-        repaint();
+        repaint()
     }
 
     override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform, filter: UIElementKind): UIElement? {
@@ -237,7 +237,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         g.circle(Color.BLACK, childOrigin, 1.0 * transform.scale)
         val childDirection = (childOrigin - parentOrigin).normalize()
         val length = (childOrigin - parentOrigin).length()
-        var textPos = parentOrigin + childDirection * (length / 2)
+        val textPos = parentOrigin + childDirection * (length / 2)
         g.text(transform.toString(2), textPos, Font(FontStyle.REGULAR, 0.3 * transform.scale * UNIT))
         childNodes.forEach { child ->
             child.drawTransformLines(g, childOrigin, parentTransform * transform)

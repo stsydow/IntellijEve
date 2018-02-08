@@ -292,11 +292,11 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
 
     override fun mouseDragged(e: MouseEvent) {
         val view_pos = transform.applyInverse(Coordinate(e.x, e.y))
-        val delta_pos = view_pos - lastMovementPosition!!
         lastMousePosition = getSceneCoordinate(e)
-        lastMovementPosition = view_pos
+
         when (currentOperation) {
             Operation.Move -> {
+                val delta_pos = view_pos - lastMovementPosition!!
                 val target = focusedElement as Node
                 target.moveGlobal(delta_pos)
             }
@@ -308,8 +308,13 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
             } //don't care
             Operation.Select -> {
             } //don't care
-            Operation.None -> error("drag without active operation")
+            Operation.None -> {
+                // don't care
+                //error("drag without active operation")
+            }
+            Operation.OpenRustFile -> TODO()
         }
+        lastMovementPosition = view_pos
     }
 
     override fun mouseMoved(e: MouseEvent) {
@@ -349,10 +354,11 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     }
 
     override fun keyPressed(e: KeyEvent?) {
-        if ((e!!.keyCode == KeyEvent.VK_Z) && e.modifiers and KeyEvent.CTRL_MASK != 0) {
+        if (e == null) return
+        if ((e.keyCode == KeyEvent.VK_Z) && e.modifiers and KeyEvent.CTRL_MASK != 0) {
             popOperation()
         }
-        if ((e!!.keyCode == KeyEvent.VK_Y) && e.modifiers and KeyEvent.CTRL_MASK != 0) {
+        if ((e.keyCode == KeyEvent.VK_Y) && e.modifiers and KeyEvent.CTRL_MASK != 0) {
             popReverseOperation()
         }
     }
