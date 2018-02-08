@@ -43,12 +43,15 @@ class Edge(transform: Transform, parent: Node, val source: Port, val target: Por
         return EdgeContextMenu(this, this.scene, at)
     }
 
-    override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform): UIElement? {
+    override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform, filter: UIElementKind): UIElement? {
         val dist = curve.shortestDistancePointToCurve(c.x, c.y)
-        if (dist < PICK_DISTANCE) {
-            return this;
+        return when (filter) {
+            UIElementKind.NotEdge -> null
+            UIElementKind.Port -> null
+            UIElementKind.All -> this
+            UIElementKind.Node -> null
+            UIElementKind.Edge -> this
         }
-        return null
     }
 }
 

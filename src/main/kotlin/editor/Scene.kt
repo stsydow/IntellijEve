@@ -120,7 +120,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         if (op == Operation.None)
             return
         val c = getSceneCoordinate(e)
-        val picked = root.pick(c, op, transform)
+        val picked = root.pick(c, op, transform, UIElementKind.All)
         if ((picked == root) || (picked is Port) || (picked is Edge))
             return
         picked as Node
@@ -167,7 +167,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         }
 
         if (e.button == M_BUTTON_LEFT) {
-            val picked = root.pick(view_pos, Operation.Select, transform)
+            val picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
             focusedElement = picked
             currentOperation = when (picked) {
                 is Port -> Operation.DrawEdge
@@ -182,7 +182,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         }
 
         if (e.button == M_BUTTON_RIGHT) {
-            val picked = root.pick(view_pos, currentOperation, transform)
+            val picked = root.pick(view_pos, currentOperation, transform,  UIElementKind.All)
             if (picked != null) {
                 picked.getContextMenu(view_pos).show(e.component, e.x, e.y)
                 // TODO move context menu to scene
@@ -198,7 +198,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         }
 
         if (e.button == M_BUTTON_MIDDLE) {
-            val picked = root.pick(view_pos, currentOperation, transform)
+            val picked = root.pick(view_pos, currentOperation, transform, UIElementKind.All)
             if (picked != null) {
                 var str = ""
                 if (picked is Port)
@@ -219,8 +219,6 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
 
     override fun mouseReleased(e: MouseEvent) {
         val view_pos = getSceneCoordinate(e)
-        val picked = root.pick(view_pos, currentOperation, transform)
-        println("mouseReleased picked $picked")
 
         val oldFocus = focusedElement
         focusedElement = null
@@ -228,6 +226,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
 
         when (currentOperation) {
             Operation.DrawEdge -> {
+                val picked = root.pick(view_pos, currentOperation, transform,  UIElementKind.Port)
                 if (picked is Port && oldFocus is Port) {
                     val ancestor = getCommonAncestorForEdge(oldFocus, picked)
                     if (ancestor != null) {
