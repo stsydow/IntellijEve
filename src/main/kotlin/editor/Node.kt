@@ -146,8 +146,13 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
                     return picked_child
             }
         }
-        if (filter == UIElementKind.All || filter == UIElementKind.Node) {
-            return this
+        return when (filter) {
+            UIElementKind.NotEdge -> this
+            UIElementKind.Port -> null
+            UIElementKind.All -> this
+            UIElementKind.Node -> this
+            UIElementKind.Edge -> null
+
         }
         return null
     }
@@ -529,10 +534,13 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
             if (picked_child != null)
                 return picked_child
         }
-        if (filter == UIElementKind.All || filter == UIElementKind.Node) {
-            return this
-        } else {
-            return null;
+        return when (filter) {
+            UIElementKind.NotEdge -> this
+            UIElementKind.Port -> null
+            UIElementKind.All -> this
+            UIElementKind.Node -> null
+            UIElementKind.Edge -> null
+
         }
     }
 

@@ -79,8 +79,15 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
 
     override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform, filter: UIElementKind): UIElement? {
         val local_c = !transform * c
-        if (local_c in bounds && (filter == UIElementKind.Port || filter == UIElementKind.Node))
-            return this
+        if (local_c in bounds)
+            return when (filter) {
+                UIElementKind.NotEdge -> this
+                UIElementKind.Port -> this
+                UIElementKind.All -> this
+                UIElementKind.Node -> null
+                UIElementKind.Edge -> null
+
+            }
         return null
     }
 

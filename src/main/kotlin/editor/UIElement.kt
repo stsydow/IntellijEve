@@ -11,7 +11,8 @@ enum class UIElementKind {
     Node,
     Port,
     Edge,
-    All
+    All,
+    NotEdge
 }
 
 abstract class UIElement(var transform: Transform, val parent: Node?, protected var scene: Viewport) {
