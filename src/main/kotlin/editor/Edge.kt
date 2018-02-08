@@ -45,6 +45,8 @@ class Edge(transform: Transform, parent: Node, val source: Port, val target: Por
 
     override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform, filter: UIElementKind): UIElement? {
         val dist = curve.shortestDistancePointToCurve(c.x, c.y)
+        if(dist > PICK_DISTANCE) return null
+
         return when (filter) {
             UIElementKind.NotEdge -> null
             UIElementKind.Port -> null

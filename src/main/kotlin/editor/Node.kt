@@ -152,9 +152,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             UIElementKind.All -> this
             UIElementKind.Node -> this
             UIElementKind.Edge -> null
-
         }
-        return null
     }
 
     // NOTE: this function is overloaded in the RootNode class

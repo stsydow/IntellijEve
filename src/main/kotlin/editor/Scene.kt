@@ -103,7 +103,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     }
 
     override fun mouseClicked(e: MouseEvent) {
-        var op = Operation.None
+        var op:Operation
         if ((e.clickCount == 2) && (!e.isConsumed)){
             e.consume()
             op = when (e.button) {
