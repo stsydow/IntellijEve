@@ -7,12 +7,19 @@ const val FONT_SIZE = 22.0
 const val UNIT = FONT_SIZE
 val DEFAULT_FONT = Font(FontStyle.REGULAR, FONT_SIZE)
 
+enum class UIElementKind {
+    Node,
+    Port,
+    Edge,
+    All
+}
+
 abstract class UIElement(var transform: Transform, val parent: Node?, protected var scene: Viewport) {
     var id: String = "uielement"+scene.idx++
 
     abstract fun render(g: GraphicsProxy)
     abstract fun getContextMenu(at: Coordinate): JPopupMenu
-    abstract fun pick(c: Coordinate, operation: Operation, screenTransform: Transform): UIElement?
+    abstract fun pick(c: Coordinate, operation: Operation, screenTransform: Transform, filter: UIElementKind): UIElement?
 
     open fun repaint() {
         parent?.repaint()

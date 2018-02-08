@@ -77,9 +77,10 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
         return PortContextMenu(this, this.scene, at)
     }
 
-    override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform): UIElement? {
+    override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform, filter: UIElementKind): UIElement? {
         val local_c = !transform * c
-        if (local_c in bounds) return this
+        if (local_c in bounds && (filter == UIElementKind.Port || filter == UIElementKind.Node))
+            return this
         return null
     }
 

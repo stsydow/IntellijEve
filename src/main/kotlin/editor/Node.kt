@@ -108,7 +108,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         repaint();
     }
 
-    override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform): UIElement? {
+    override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform, filter: UIElementKind): UIElement? {
         var picked: UIElement?
         val local_c = !transform * c
         if (local_c !in bounds) return null
@@ -120,18 +120,18 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         // edges are not pickable when the children nodes are not rendered
         if (childrenPickable){
             childEdges.forEach {
-                picked = it.pick(local_c, operation, screenTransform * transform)
+                picked = it.pick(local_c, operation, screenTransform * transform, filter)
                 if (picked != null) {
                     return picked
                 }
             }
         }
 
-        picked = in_port.pick(local_c, operation, screenTransform * transform)
+        picked = in_port.pick(local_c, operation, screenTransform * transform, filter)
         if (picked != null) return picked
 
         for (out in out_ports) {
-            picked = out.pick(local_c, operation, screenTransform * transform)
+            picked = out.pick(local_c, operation, screenTransform * transform, filter)
             if (picked != null) {
                 return picked
             }
@@ -141,12 +141,15 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             val iter = childNodes.iterator()
             while (iter.hasNext()) {
                 val child = iter.next()
-                val picked_child = child.pick(local_c, operation, screenTransform * transform)
+                val picked_child = child.pick(local_c, operation, screenTransform * transform, filter)
                 if (picked_child != null)
                     return picked_child
             }
         }
-        return this
+        if (filter == UIElementKind.All || filter == UIElementKind.Node) {
+            return this
+        }
+        return null
     }
 
     // NOTE: this function is overloaded in the RootNode class
@@ -506,14 +509,14 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         viewport.repaint()
     }
 
-    override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform): UIElement? {
+    override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform, filter: UIElementKind): UIElement? {
         var picked: UIElement?
         val local_c = !transform * c
 
         assert(screenTransform == viewport.transform)
 
         childEdges.forEach {
-            picked = it.pick(local_c, operation, screenTransform * transform)
+            picked = it.pick(local_c, operation, screenTransform * transform, filter)
             if (picked != null) {
                 return picked
             }
@@ -522,11 +525,15 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         val iter = childNodes.iterator()
         while (iter.hasNext()) {
             val child = iter.next()
-            val picked_child = child.pick(local_c, operation, screenTransform * transform)
+            val picked_child = child.pick(local_c, operation, screenTransform * transform, filter)
             if (picked_child != null)
                 return picked_child
         }
-        return this
+        if (filter == UIElementKind.All || filter == UIElementKind.Node) {
+            return this
+        } else {
+            return null;
+        }
     }
 
     override fun moveGlobal(v: Vector) {
