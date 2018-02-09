@@ -20,7 +20,15 @@ val M_BUTTON_LEFT = 1
 val M_BUTTON_MIDDLE = 2
 val M_BUTTON_RIGHT = 3
 
-enum class Operation {Select, Move, Menu, None, DrawEdge, OpenRustFile }
+enum class Operation {
+    AreaSelect,
+    Select,
+    Move,
+    Menu,
+    None,
+    DrawEdge,
+    OpenRustFile
+}
 
 /*
 enum class EventType {Single, Start, FollowUp, End}
@@ -44,6 +52,8 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     var operationsStack = Stack<UIOperation>()
     var reversedOperationsStack = Stack<UIOperation>()
     var selectedNodes = mutableListOf<Node>()
+    var selectionRectangle : Bounds? = null
+    var rectSelectStartPos : Coordinate? = null
 
     init {
         addMouseListener(this)
@@ -78,6 +88,11 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         if (lastMousePosition != null){
             val textPos = lastMousePosition!!
             globalGraphics.text("" + textPos.x.toInt() + " : " + textPos.y.toInt(), textPos, Font(FontStyle.REGULAR, 4.0))
+        }
+
+        // paint a selection rectangle
+        if (selectionRectangle != null){
+            globalGraphics.polygon(Color.MAGENTA, selectionRectangle!!.toCoordinates(), false)
         }
     }
 
@@ -195,6 +210,27 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 val bounds = picked.getParentBoundsList()
                 focusedElementOriginalParentBounds = bounds
             }
+            // if only Ctrl is pressed as modifier
+            if (e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown){
+                currentOperation = Operation.AreaSelect
+                val evSceneCoords = getSceneCoordinate(e)
+                rectSelectStartPos = evSceneCoords
+                selectionRectangle = Bounds(evSceneCoords.x, evSceneCoords.y, evSceneCoords.x, evSceneCoords.y)
+                println("Starting rectangle selection at $rectSelectStartPos")
+            } else {
+                val picked = root.pick(view_pos, Operation.Select, transform)
+                focusedElement = picked
+                currentOperation = when (picked) {
+                    is Port -> Operation.DrawEdge
+                    is Node -> Operation.Move
+                    else -> Operation.None
+                }
+                if (currentOperation == Operation.Move) {
+                    focusedElementOriginalTransform = picked!!.transform
+                    val bounds = picked.getParentBoundsList()
+                    focusedElementOriginalParentBounds = bounds
+                }
+            }
         }
 
         if (e.button == M_BUTTON_RIGHT) {
@@ -280,6 +316,28 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 //TODO menu is still active
                 currentOperation = Operation.None
             }
+            Operation.AreaSelect -> {
+                if (picked is Node){
+                    val nodesContained = mutableListOf<Node>()
+                    picked as Node
+                    if (picked.childrenPickable){
+                        picked.childNodes.forEach {
+                            println("Checking whether $selectionRectangle contains ${it.externalBounds()}")
+                            if (selectionRectangle!!.contains(it.externalBounds()))
+                                nodesContained.add(it)
+                            else
+                                println("... it does NOT")
+                        }
+                    }
+                    nodesContained.forEach {
+                        it.isSelected = true
+                        selectedNodes.add(it)
+                    }
+                }
+                selectionRectangle = null
+                rectSelectStartPos = null
+                currentOperation = Operation.None
+            }
             Operation.None -> {
             } //don't care
             Operation.Select -> {
@@ -317,6 +375,10 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
             }
             Operation.DrawEdge -> {
                 assert(focusedElement is Port)
+                repaint()
+            }
+            Operation.AreaSelect -> {
+                selectionRectangle = Bounds.minimalBounds(rectSelectStartPos!!, lastMovementPosition!!)
                 repaint()
             }
             Operation.Menu -> {
