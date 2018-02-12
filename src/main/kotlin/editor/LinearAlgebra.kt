@@ -1,6 +1,5 @@
 package editor
 
-import org.jetbrains.debugger.sourcemap.MAPPING_COMPARATOR_BY_GENERATED_POSITION
 import java.awt.Point
 import java.awt.geom.Point2D
 import java.awt.geom.Rectangle2D
@@ -233,6 +232,6 @@ fun shortestDistancePointToLine(x1: Double, y1: Double, x2: Double, y2: Double, 
 
     val dx = x - x3
     val dy = y - y3
-    return Math.sqrt((dx * dx + dy * dy).toDouble())
+    return Math.sqrt(dx * dx + dy * dy)
 }
 
