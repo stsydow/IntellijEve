@@ -32,7 +32,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     var showGeometry = false
     var childrenPickable = true
 
-    //var relativeFileLocation = ""
+    var fileName = name + ".rs"
 
     val in_port = Port(Direction.IN, "Any", this, scene)
     val out_ports = mutableListOf<Port>()
@@ -284,10 +284,10 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             // set a flag that this node's children are not pickable
             childrenPickable = false
             // draw a symbolization of child nodes
-            var lineA = listOf<Coordinate>().toMutableList()
-            var lineB = listOf<Coordinate>().toMutableList()
+            val lineA = listOf<Coordinate>().toMutableList()
+            val lineB = listOf<Coordinate>().toMutableList()
             // first node shape
-            var topLeft = bounds.topLeft + Vector(80.0, 160.0)
+            val topLeft = bounds.topLeft + Vector(80.0, 160.0)
             var nodeOffset = topLeft
             var offsetTransform = Transform(nodeOffset.x, nodeOffset.y, 1.0)
             var nodePoly = offsetTransform * CHILD_NODE_SYMBOL
@@ -464,7 +464,7 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
             localGraphics.circle(Color.BLACK, sceneOrigin, 1.0*transform.scale)
             localGraphics.circle(Color.BLACK, rootOrigin, 1.0*transform.scale)
             localGraphics.line(sceneOrigin, rootOrigin)
-            var textPos = sceneOrigin + Vector((rootOrigin.x - sceneOrigin.x)/2.0, (rootOrigin.y - sceneOrigin.y)/2.0)
+            val textPos = sceneOrigin + Vector((rootOrigin.x - sceneOrigin.x)/2.0, (rootOrigin.y - sceneOrigin.y)/2.0)
             localGraphics.text(transform.toString(2), textPos, Font(FontStyle.REGULAR, 0.3*transform.scale* UNIT))
 
             // draw line with transform caption for every child node

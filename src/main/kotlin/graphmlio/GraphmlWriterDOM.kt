@@ -16,70 +16,70 @@ import javax.xml.stream.XMLStreamWriter
 
 class GraphmlConstants() {
     companion object {
-        val ATTR_NAME = "attr.name"
-        val ATTR_TYPE = "attr.type"
-        val DATA = "data"
-        val DEFAULT_GRAPHML_SCHEMA_LOCATION = "http://graphml.graphdrawing.org/xmlns/1.1/graphml.xsd"
-        val DIRECTED = "directed"
-        val DOUBLE = "double"
-        val EDGE = "edge"
-        val EDGEDEFAULT = "edgedefault"
-        val FOR = "for"
-        val GRAPH = "graph"
-        val GRAPHML = "graphml"
-        val GRAPHML_XMLNS = "http://graphml.graphdrawing.org/xmlns"
-        val ID = "id"
-        val KEY = "key"
-        val NAME = "name"
-        val NODE = "node"
-        val PORT = "port"
-        val SOURCE = "source"
-        val SOURCEPORT = "sourceport"
-        val STRING = "string"
-        val TARGET = "target"
-        val TARGETPORT = "targetport"
-        val UTF8_ENCODING = "UTF-8"
-        val XMLNS = "xmlns"
-        val XML_SCHEMA_LOCATION_ATTRIBUTE = "schemaLocation"
-        val XML_SCHEMA_NAMESPACE_TAG = "xsi"
-        val XML_VERSION = "1.0"
+        const val ATTR_NAME = "attr.name"
+        const val ATTR_TYPE = "attr.type"
+        const val DATA = "data"
+        const val DEFAULT_GRAPHML_SCHEMA_LOCATION = "http://graphml.graphdrawing.org/xmlns/1.1/graphml.xsd"
+        const val DIRECTED = "directed"
+        const val DOUBLE = "double"
+        const val EDGE = "edge"
+        const val EDGE_DEFAULT = "edgedefault"
+        const val FOR = "for"
+        const val GRAPH = "graph"
+        const val GRAPHML = "graphml"
+        const val GRAPHML_XMLNS = "http://graphml.graphdrawing.org/xmlns"
+        const val ID = "id"
+        const val KEY = "key"
+        const val NAME = "name"
+        const val NODE = "node"
+        const val PORT = "port"
+        const val SOURCE = "source"
+        const val SOURCE_PORT = "sourceport"
+        const val STRING = "string"
+        const val TARGET = "target"
+        const val TARGET_PORT = "targetport"
+        const val UTF8_ENCODING = "UTF-8"
+        const val XMLNS = "xmlns"
+        const val XML_SCHEMA_LOCATION_ATTRIBUTE = "schemaLocation"
+        const val XML_SCHEMA_NAMESPACE_TAG = "xsi"
+        const val XML_VERSION = "1.0"
     }
 }
 
 class EveamcpConstants() {
     companion object {
-        val NODE_BOUNDS_XMAX = "node_bounds_xmax"
-        val NODE_BOUNDS_XMAX_NAME = "innerBounds_xmax"
-        val NODE_BOUNDS_XMIN = "node_bounds_xmin"
-        val NODE_BOUNDS_XMIN_NAME = "innerBounds_xmin"
-        val NODE_BOUNDS_YMAX = "node_bounds_ymax"
-        val NODE_BOUNDS_YMAX_NAME = "innerBounds_ymax"
-        val NODE_BOUNDS_YMIN = "node_bounds_ymin"
-        val NODE_BOUNDS_YMIN_NAME = "innerBounds_ymin"
-        val NODE_COLOR = "node_color"
-        val NODE_COLOR_NAME = "color"
-        val NODE_CONTEXT = "node_context"
-        val NODE_CONTEXT_NAME = "context"
-        val NODE_FILTER = "node_filter"
-        val NODE_FILTER_NAME = "filter"
-        val NODE_NAME = "node_name"
-        val NODE_NAME_NAME = "name"
-        val NODE_ORDER = "node_order"
-        val NODE_ORDER_NAME = "order"
-        val NODE_LINKED_FILE = "linked_file"
-        val NODE_LINKED_FILE_NAME = "node_linked_file"
-        val NODE_TRANSFORM_SCALE = "node_transform_scale"
-        val NODE_TRANSFORM_SCALE_NAME = "transform_scale"
-        val NODE_TRANSFORM_X = "node_transform_x"
-        val NODE_TRANSFORM_X_NAME = "transform_x_offset"
-        val NODE_TRANSFORM_Y = "node_transform_y"
-        val NODE_TRANSFORM_Y_NAME = "transform_y_offset"
-        val PORT_DIRECTION = "port_direction"
-        val PORT_DIRECTION_NAME = "direction"
-        val PORT_ID = "port_id"
-        val PORT_ID_NAME = "id"
-        val PORT_MESSAGETYPE = "port_message_type"
-        val PORT_MESSAGETYPE_NAME = "message_type"
+        const val NODE_BOUNDS_XMAX = "node_bounds_xmax"
+        const val NODE_BOUNDS_XMAX_NAME = "innerBounds_xmax"
+        const val NODE_BOUNDS_XMIN = "node_bounds_xmin"
+        const val NODE_BOUNDS_XMIN_NAME = "innerBounds_xmin"
+        const val NODE_BOUNDS_YMAX = "node_bounds_ymax"
+        const val NODE_BOUNDS_YMAX_NAME = "innerBounds_ymax"
+        const val NODE_BOUNDS_YMIN = "node_bounds_ymin"
+        const val NODE_BOUNDS_YMIN_NAME = "innerBounds_ymin"
+        const val NODE_COLOR = "node_color"
+        const val NODE_COLOR_NAME = "color"
+        const val NODE_CONTEXT = "node_context"
+        const val NODE_CONTEXT_NAME = "context"
+        const val NODE_FILTER = "node_filter"
+        const val NODE_FILTER_NAME = "filter"
+        const val NODE_NAME = "node_name"
+        const val NODE_NAME_NAME = "name"
+        const val NODE_ORDER = "node_order"
+        const val NODE_ORDER_NAME = "order"
+        const val NODE_FILE = "node_file"
+        const val NODE_FILE_NAME = "file"
+        const val NODE_TRANSFORM_SCALE = "node_transform_scale"
+        const val NODE_TRANSFORM_SCALE_NAME = "transform_scale"
+        const val NODE_TRANSFORM_X = "node_transform_x"
+        const val NODE_TRANSFORM_X_NAME = "transform_x_offset"
+        const val NODE_TRANSFORM_Y = "node_transform_y"
+        const val NODE_TRANSFORM_Y_NAME = "transform_y_offset"
+        const val PORT_DIRECTION = "port_direction"
+        const val PORT_DIRECTION_NAME = "direction"
+        const val PORT_ID = "port_id"
+        const val PORT_ID_NAME = "id"
+        const val PORT_MESSAGE_TYPE = "port_message_type"
+        const val PORT_MESSAGE_TYPE_NAME = "message_type"
     }
 }
 
@@ -154,8 +154,8 @@ private fun writeKeyInfo(writer: XMLStreamWriter){
             EveamcpConstants.NODE_ORDER, GraphmlConstants.NODE,
             EveamcpConstants.NODE_ORDER_NAME, GraphmlConstants.STRING)
     writeKeyElement(writer,
-            EveamcpConstants.NODE_LINKED_FILE, GraphmlConstants.NODE,
-            EveamcpConstants.NODE_LINKED_FILE_NAME, GraphmlConstants.STRING)
+            EveamcpConstants.NODE_FILE, GraphmlConstants.NODE,
+            EveamcpConstants.NODE_FILE_NAME, GraphmlConstants.STRING)
     writeKeyElement(writer,
             EveamcpConstants.NODE_TRANSFORM_SCALE, GraphmlConstants.NODE,
             EveamcpConstants.NODE_TRANSFORM_SCALE_NAME, GraphmlConstants.DOUBLE)
@@ -172,8 +172,8 @@ private fun writeKeyInfo(writer: XMLStreamWriter){
             EveamcpConstants.PORT_ID, GraphmlConstants.PORT,
             EveamcpConstants.PORT_ID_NAME, GraphmlConstants.STRING)
     writeKeyElement(writer,
-            EveamcpConstants.PORT_MESSAGETYPE, GraphmlConstants.PORT,
-            EveamcpConstants.PORT_MESSAGETYPE_NAME, GraphmlConstants.STRING)
+            EveamcpConstants.PORT_MESSAGE_TYPE, GraphmlConstants.PORT,
+            EveamcpConstants.PORT_MESSAGE_TYPE_NAME, GraphmlConstants.STRING)
 }
 
 private fun writeKeyElement(writer: XMLStreamWriter, id: String, forWhat: String, name: String, type: String) {
@@ -188,7 +188,7 @@ private fun writeKeyElement(writer: XMLStreamWriter, id: String, forWhat: String
 private fun writeGraph(writer: XMLStreamWriter, root: Node) {
     writer.writeStartElement(GraphmlConstants.GRAPH)    // start <graph>
         writer.writeAttribute(GraphmlConstants.ID, root.id + ":0")
-        writer.writeAttribute(GraphmlConstants.EDGEDEFAULT, GraphmlConstants.DIRECTED)
+        writer.writeAttribute(GraphmlConstants.EDGE_DEFAULT, GraphmlConstants.DIRECTED)
         // write all children nodes of root node
         root.childNodes.forEach( {iter -> writeNodeElement(writer, iter) })
         // write the top level edges because we will miss them otherwise
@@ -227,10 +227,8 @@ private fun writeNodeElement(writer: XMLStreamWriter, node: Node){
         val order = node.getProperty(PropertyType.Order)
         if (order != null)
             writeDataElement(writer, EveamcpConstants.NODE_ORDER, order)
-        TODO()
-        //val linkedFile = node.linkedFilePath
-        //if (linkedFile != "")
-        //    writeDataElement(writer, EveamcpConstants.NODE_LINKED_FILE, linkedFile)
+        if(node.fileName != "")
+            writeDataElement(writer, EveamcpConstants.NODE_FILE, node.fileName)
         writeDataElement(writer,
                 EveamcpConstants.NODE_TRANSFORM_SCALE, node.transform.scale.toString())
         writeDataElement(writer,
@@ -246,7 +244,7 @@ private fun writePortElement(writer: XMLStreamWriter, port: Port) {
         writeDataElement(writer, EveamcpConstants.PORT_DIRECTION, port.direction.toString())
         writeDataElement(writer, EveamcpConstants.PORT_ID, port.id)
         if (port.message_type.length > 0)
-            writeDataElement(writer, EveamcpConstants.PORT_MESSAGETYPE, port.message_type)
+            writeDataElement(writer, EveamcpConstants.PORT_MESSAGE_TYPE, port.message_type)
     writer.writeEndElement()    // end <port>
 }
 
@@ -254,8 +252,8 @@ private fun writeEdgeElement(writer: XMLStreamWriter, edge: Edge) {
     writer.writeStartElement(GraphmlConstants.EDGE) // start <edge>
         writer.writeAttribute(GraphmlConstants.SOURCE, edge.source.parent!!.id)
         writer.writeAttribute(GraphmlConstants.TARGET, edge.target.parent!!.id)
-        writer.writeAttribute(GraphmlConstants.SOURCEPORT, edge.source.id)
-        writer.writeAttribute(GraphmlConstants.TARGETPORT, edge.target.id)
+        writer.writeAttribute(GraphmlConstants.SOURCE_PORT, edge.source.id)
+        writer.writeAttribute(GraphmlConstants.TARGET_PORT, edge.target.id)
     writer.writeEndElement()    // end <edge>
 }
 

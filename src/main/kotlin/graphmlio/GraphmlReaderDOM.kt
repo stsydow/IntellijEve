@@ -82,7 +82,7 @@ private fun createPortsForNodeFromDOM(parent: Node, node: Element, scene: Viewpo
 }
 
 private fun createNodeFromDOM(parent: Node, node: Element, scene: Viewport){
-    var newNode: Node
+    val newNode: Node
     // get node id
     val nodeId = node.getAttribute("id")
     updateSceneUIElementIndex(nodeId, scene)
@@ -98,7 +98,7 @@ private fun createNodeFromDOM(parent: Node, node: Element, scene: Viewport){
         else
             newNode.name = nodeName
         // get node filter property
-        val nodeFilterProperty = extractDataStringValue(node, "node_filter")
+        val nodeFilterProperty = extractDataStringValue(node, EveamcpConstants.NODE_FILTER)
         if (nodeFilterProperty != null)
             newNode.setProperty(PropertyType.Filter, nodeFilterProperty)
         // get node context property
@@ -110,10 +110,9 @@ private fun createNodeFromDOM(parent: Node, node: Element, scene: Viewport){
         if (nodeOrderProperty != null)
             newNode.setProperty(PropertyType.Order, nodeOrderProperty)
         // get path of linked file
-        val linkedFile = extractDataStringValue(node, "linked_file")
-        if (linkedFile != null)
-            TODO()
-            //newNode.linkedFilePath = linkedFile
+        val nodeFile = extractDataStringValue(node, EveamcpConstants.NODE_FILE)
+        if (nodeFile != null)
+            newNode.fileName = nodeFile
         // get node color
         val nodeColor = extractDataStringValue(node, "node_color")
         if (nodeColor != null)
