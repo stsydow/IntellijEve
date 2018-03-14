@@ -3,6 +3,7 @@ package editor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.vfs.LocalFileSystem
 import intellij.GraphFileEditor
+import java.awt.Color
 import java.awt.Dimension
 import java.awt.Graphics
 import java.awt.Graphics2D
@@ -137,10 +138,8 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         if (op == Operation.None)
             return
         val c = getSceneCoordinate(e)
-        val picked = root.pick(c, op, transform)
+        val picked = root.pick(c, op, transform, UIElementKind.Node)
 
-        if ((picked is Port) || (picked is Edge))
-            return
         if (picked == root){
             selectedNodes.forEach { node -> node.isSelected = false }
             selectedNodes.clear()
@@ -218,7 +217,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 selectionRectangle = Bounds(evSceneCoords.x, evSceneCoords.y, evSceneCoords.x, evSceneCoords.y)
                 println("Starting rectangle selection at $rectSelectStartPos")
             } else {
-                val picked = root.pick(view_pos, Operation.Select, transform)
+                val picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
                 focusedElement = picked
                 currentOperation = when (picked) {
                     is Port -> Operation.DrawEdge
@@ -317,6 +316,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 currentOperation = Operation.None
             }
             Operation.AreaSelect -> {
+                val picked = root.pick(view_pos, currentOperation, transform,  UIElementKind.Node)
                 if (picked is Node){
                     val nodesContained = mutableListOf<Node>()
                     picked as Node
