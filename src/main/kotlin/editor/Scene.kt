@@ -322,8 +322,9 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                     picked as Node
                     if (picked.childrenPickable){
                         picked.childNodes.forEach {
-                            println("Checking whether $selectionRectangle contains ${it.externalBounds()}")
-                            if (selectionRectangle!!.contains(it.externalBounds()))
+                            val globalBounds = it.getGlobalTransform() * it.bounds
+                            println("Checking whether $selectionRectangle contains $globalBounds")
+                            if (selectionRectangle!!.contains(globalBounds))
                                 nodesContained.add(it)
                             else
                                 println("... it does NOT")
