@@ -543,7 +543,7 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
             UIElementKind.NotEdge -> this
             UIElementKind.Port -> null
             UIElementKind.All -> this
-            UIElementKind.Node -> null
+            UIElementKind.Node -> this
             UIElementKind.Edge -> null
 
         }
