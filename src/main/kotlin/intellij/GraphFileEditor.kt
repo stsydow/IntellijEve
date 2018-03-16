@@ -12,6 +12,7 @@ import org.apache.commons.io.input.BOMInputStream
 import editor.Viewport
 import graphmlio.read
 import graphmlio.write
+import graphmlio.validate
 import java.beans.PropertyChangeListener
 import java.io.File
 import java.io.FileInputStream
@@ -24,10 +25,14 @@ class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserD
         panel.idx = 0
         val file = File(virtualFile.path)
         if (!fileIsEmpty(file)) {
-            val newRoot = read(file, panel)
-            if (newRoot != null) {
-                panel.root = newRoot
-                panel.repaint()
+            if (validate(file)){
+                val newRoot = read(file, panel)
+                if (newRoot != null) {
+                    panel.root = newRoot
+                    panel.repaint()
+                }
+            } else {
+                println("Error, given file could not be validated as graphml!")
             }
         }
     }
