@@ -57,12 +57,12 @@ private fun createPortFromDOM(parent: Node, port: Element, scene: Viewport){
     // get port direction
     val portDirection = extractDataStringValue(port, "port_direction")
     if (portDirection == Direction.IN.toString()){
-        parent.in_port.id = portId!!
+        parent.in_port.id = portId
         parent.in_port.message_type = portMsgType
         parent.in_port.name = portName
     } else {
         // check that port id is unique for parent node
-        if (parent.getPortById(portId!!) != null)
+        if (parent.getPortById(portId) != null)
             throw DOMException(DOMException.INVALID_STATE_ERR, "Port id $portId is already taken by other port of node " + parent.name)
         val newPort = Port(Direction.OUT, portMsgType, parent, scene)
         newPort.id = portId
@@ -190,7 +190,7 @@ private fun createEdgeFromDOM(parent: Node, edge: Element, scene: Viewport){
     val tgtPort = tgtNode.getPortById(tgtPortId)
     if (tgtPort == null)
         throw DOMException(DOMException.NOT_FOUND_ERR, "Could not locate target port with id $tgtPortId of node $tgtNodeId")
-    val newEdge = Edge(Transform(), parent, srcPort!!, tgtPort!!, scene)
+    val newEdge = Edge(Transform(), parent, srcPort, tgtPort, scene)
     parent.addEdge(newEdge)
 }
 

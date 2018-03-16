@@ -197,7 +197,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         }
 
         if (e.button == M_BUTTON_LEFT) {
-            val picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
+            var picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
             focusedElement = picked
             currentOperation = when (picked) {
                 is Port -> Operation.DrawEdge
@@ -217,7 +217,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 selectionRectangle = Bounds(evSceneCoords.x, evSceneCoords.y, evSceneCoords.x, evSceneCoords.y)
                 println("Starting rectangle selection at $rectSelectStartPos")
             } else {
-                val picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
+                picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
                 focusedElement = picked
                 currentOperation = when (picked) {
                     is Port -> Operation.DrawEdge
@@ -319,7 +319,6 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 val picked = root.pick(view_pos, currentOperation, transform,  UIElementKind.Node)
                 if (picked is Node){
                     val nodesContained = mutableListOf<Node>()
-                    picked as Node
                     if (picked.childrenPickable){
                         picked.childNodes.forEach {
                             val globalBounds = it.getGlobalTransform() * it.bounds
