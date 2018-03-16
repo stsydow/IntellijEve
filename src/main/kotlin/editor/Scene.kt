@@ -273,7 +273,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 else -> "<Unknown>"
             }
             if(picked != null) {
-                println("$elem: bounds ${picked.bounds} \n\t external bounds ${picked.externalBounds()} ")
+                println("$elem ${picked.id}: bounds ${picked.bounds} \n\t external bounds ${picked.externalBounds()} ")
             }else{
                 println("picked no element")
             }
