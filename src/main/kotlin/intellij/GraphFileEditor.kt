@@ -8,11 +8,13 @@ import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
+import org.apache.commons.io.input.BOMInputStream
 import editor.Viewport
 import graphmlio.read
 import graphmlio.write
 import java.beans.PropertyChangeListener
 import java.io.File
+import java.io.FileInputStream
 import javax.swing.JComponent
 
 class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserDataHolderBase(), FileEditor {
@@ -20,10 +22,13 @@ class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserD
 
     init {
         panel.idx = 0
-        val newRoot = read(File(virtualFile.path), panel)
-        if (newRoot != null) {
-            panel.root = newRoot
-            panel.repaint()
+        val file = File(virtualFile.path)
+        if (!fileIsEmpty(file)) {
+            val newRoot = read(file, panel)
+            if (newRoot != null) {
+                panel.root = newRoot
+                panel.repaint()
+            }
         }
     }
 
@@ -92,5 +97,17 @@ class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserD
 
     fun save() {
         write(virtualFile.path, panel.root)
+    }
+
+    /*
+        Method that checks whether a file is empty while considering UTF-8 Byte Order Marks
+        as suggested in
+        https://stackoverflow.com/questions/1835430/byte-order-mark-screws-up-file-reading-in-java/1835529#1835529
+     */
+    fun fileIsEmpty(file: File): Boolean {
+        val inStream = FileInputStream(file)
+        val bomInStream = BOMInputStream(inStream, false)
+        // file is empty if first read attempt after opening the stream returns -1
+        return (bomInStream.read() < 0)
     }
 }
