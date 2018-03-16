@@ -24,7 +24,7 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
         val OUT_SIZE = Bounds.minimalBounds(OUT_SHAPE)
     }
 
-    var name: String = ""
+    var name: String = id
 
     val connectionPointLeft: Coordinate get() {
         if (direction == Direction.IN)
