@@ -22,10 +22,10 @@ class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserD
     val panel: Viewport = Viewport(this)
 
     init {
-        panel.idx = 0
         val file = File(virtualFile.path)
         if (!fileIsEmpty(file)) {
             if (validate(file)){
+                panel.idx = 0
                 val newRoot = read(file, panel)
                 if (newRoot != null) {
                     panel.root = newRoot
