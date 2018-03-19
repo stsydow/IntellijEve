@@ -24,15 +24,13 @@ class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserD
     init {
         val file = File(virtualFile.path)
         if (!fileIsEmpty(file)) {
-            if (validate(file)){
-                panel.idx = 0
-                val newRoot = read(file, panel)
-                if (newRoot != null) {
-                    panel.root = newRoot
-                    panel.repaint()
-                }
-            } else {
-                println("Error, given file could not be validated as graphml!")
+            if (!validate(file))
+                println("Warning, given file could not be validated as graphml!")
+            panel.idx = 0
+            val newRoot = read(file, panel)
+            if (newRoot != null) {
+                panel.root = newRoot
+                panel.repaint()
             }
         }
     }
