@@ -83,6 +83,10 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
         fun infinite(): Bounds {
             return Bounds(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY)
         }
+
+        fun invalid(): Bounds {
+            return Bounds(Double.NaN, Double.NaN, Double.NaN, Double.NaN)
+        }
     }
 
     operator fun contains(c: Coordinate): Boolean = c.x in x_min..x_max && c.y in y_min..y_max
@@ -111,6 +115,24 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
             x_min + p.left, y_min + p.top,
             x_max - p.right, y_max - p.bottom
     )
+
+    fun intersectsWith(b: Bounds): Boolean {
+        return ((topLeft in b)
+            || (topRight in b)
+            || (bottomLeft in b)
+            || (bottomRight in b))
+    }
+
+    fun intersect(b: Bounds): Bounds {
+        val newXMin = Math.max(x_min, b.x_min)
+        val newXMax = Math.min(x_max, b.x_max)
+        val newYMin = Math.max(y_min, b.y_min)
+        val newYMax = Math.min(y_max, b.y_max)
+        if ((newXMin < newXMax) && (newYMin < newYMax))
+            return Bounds(newXMin, newYMin, newXMax, newYMax)
+        else
+            return Bounds.invalid()
+    }
 
     fun min() = topLeft
     fun max() = topRight
