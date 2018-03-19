@@ -42,7 +42,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
 
     val properties = mutableListOf<Property>()
 
-    val propertiesPadding: Padding get() = Padding((1.2 * properties.size + 0.5) * UNIT, 0.0, 0.0, 0.0)
+    val propertiesPadding: Padding get() = Padding((1.2 * properties.size) * UNIT, 0.0, 0.0, 0.0)
 
     override val bounds: Bounds get() = innerBounds + padding + propertiesPadding
     val titleBottom: Coordinate get() = (bounds - propertiesPadding).min() + Vector(0.0, TITLE_HEIGHT)
