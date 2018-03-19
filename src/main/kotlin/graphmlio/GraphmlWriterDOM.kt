@@ -198,43 +198,43 @@ private fun writeGraph(writer: XMLStreamWriter, root: Node) {
 
 private fun writeNodeElement(writer: XMLStreamWriter, node: Node){
     writer.writeStartElement(GraphmlConstants.NODE) // start <node>
-        writer.writeAttribute(GraphmlConstants.ID, node.id)
-        // write child nodes
-        if (node.childNodes.size > 0)
-            writeGraph(writer, node)
-        // write ports
-        writePortElement(writer, node.in_port)
-        node.out_ports.forEach({ iter -> writePortElement(writer, iter) })
-        // write data fields
-        writeDataElement(writer,
-                EveamcpConstants.NODE_BOUNDS_XMAX, node.innerBounds.x_max.toString())
-        writeDataElement(writer,
-                EveamcpConstants.NODE_BOUNDS_XMIN, node.innerBounds.x_min.toString())
-        writeDataElement(writer,
-                EveamcpConstants.NODE_BOUNDS_YMAX, node.innerBounds.y_max.toString())
-        writeDataElement(writer,
-                EveamcpConstants.NODE_BOUNDS_YMIN, node.innerBounds.y_min.toString())
-        writeDataElement(writer,
-                EveamcpConstants.NODE_COLOR, colorToHexstring(node.color))
-        val context = node.getProperty(PropertyType.ContextId)
-        if (context != null)
-            writeDataElement(writer, EveamcpConstants.NODE_CONTEXT, context)
-        val filter = node.getProperty(PropertyType.Filter)
-        if (filter != null)
-            writeDataElement(writer, EveamcpConstants.NODE_FILTER, filter)
-        writeDataElement(writer,
-                EveamcpConstants.NODE_NAME, node.name)
-        val order = node.getProperty(PropertyType.Order)
-        if (order != null)
-            writeDataElement(writer, EveamcpConstants.NODE_ORDER, order)
-        if(node.fileName != "")
-            writeDataElement(writer, EveamcpConstants.NODE_FILE, node.fileName)
-        writeDataElement(writer,
-                EveamcpConstants.NODE_TRANSFORM_SCALE, node.transform.scale.toString())
-        writeDataElement(writer,
-                EveamcpConstants.NODE_TRANSFORM_X, node.transform.x_offset.toString())
-        writeDataElement(writer,
-                EveamcpConstants.NODE_TRANSFORM_Y, node.transform.y_offset.toString())
+    writer.writeAttribute(GraphmlConstants.ID, node.id)
+    // write ports
+    writePortElement(writer, node.in_port)
+    node.out_ports.forEach({ iter -> writePortElement(writer, iter) })
+    // write data fields
+    writeDataElement(writer,
+            EveamcpConstants.NODE_BOUNDS_XMAX, node.innerBounds.x_max.toString())
+    writeDataElement(writer,
+            EveamcpConstants.NODE_BOUNDS_XMIN, node.innerBounds.x_min.toString())
+    writeDataElement(writer,
+            EveamcpConstants.NODE_BOUNDS_YMAX, node.innerBounds.y_max.toString())
+    writeDataElement(writer,
+            EveamcpConstants.NODE_BOUNDS_YMIN, node.innerBounds.y_min.toString())
+    writeDataElement(writer,
+            EveamcpConstants.NODE_COLOR, colorToHexstring(node.color))
+    val context = node.getProperty(PropertyType.ContextId)
+    if (context != null)
+        writeDataElement(writer, EveamcpConstants.NODE_CONTEXT, context)
+    val filter = node.getProperty(PropertyType.Filter)
+    if (filter != null)
+        writeDataElement(writer, EveamcpConstants.NODE_FILTER, filter)
+    writeDataElement(writer,
+            EveamcpConstants.NODE_NAME, node.name)
+    val order = node.getProperty(PropertyType.Order)
+    if (order != null)
+        writeDataElement(writer, EveamcpConstants.NODE_ORDER, order)
+    if(node.fileName != "")
+        writeDataElement(writer, EveamcpConstants.NODE_FILE, node.fileName)
+    writeDataElement(writer,
+            EveamcpConstants.NODE_TRANSFORM_SCALE, node.transform.scale.toString())
+    writeDataElement(writer,
+            EveamcpConstants.NODE_TRANSFORM_X, node.transform.x_offset.toString())
+    writeDataElement(writer,
+            EveamcpConstants.NODE_TRANSFORM_Y, node.transform.y_offset.toString())
+    // write child nodes
+    if (node.childNodes.size > 0)
+        writeGraph(writer, node)
     writer.writeEndElement()    // end <node>
 }
 
