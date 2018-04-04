@@ -5,7 +5,7 @@ plugins {
 }
 
 intellij {
-    version 'IC-173.4548.28'
+    version 'IC-173.4127.27'
     pluginName 'IntellijEve'
 }
 
