@@ -117,10 +117,10 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
     )
 
     fun intersectsWith(b: Bounds): Boolean {
-        return ((topLeft in b)
-            || (topRight in b)
-            || (bottomLeft in b)
-            || (bottomRight in b))
+        return ((topLeft in b) || (b.topLeft in this)
+            || (topRight in b) || (b.topRight in this)
+            || (bottomLeft in b) || (b.bottomLeft in this)
+            || (bottomRight in b) || (b.bottomRight in this))
     }
 
     fun intersect(b: Bounds): Bounds {
