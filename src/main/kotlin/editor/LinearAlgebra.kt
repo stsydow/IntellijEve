@@ -83,10 +83,6 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
         fun infinite(): Bounds {
             return Bounds(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY)
         }
-
-        fun invalid(): Bounds {
-            return Bounds(Double.NaN, Double.NaN, Double.NaN, Double.NaN)
-        }
     }
 
     operator fun contains(c: Coordinate): Boolean = c.x in x_min..x_max && c.y in y_min..y_max
