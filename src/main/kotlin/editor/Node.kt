@@ -217,25 +217,27 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         childNodes.forEach {
             if (it != child){
                 if (it.externalBounds().intersectsWith(c_bounds)) {
-                    println("Bounds of node ${child.id} and node ${it.id} are intersecting.")
+//                    println("Bounds of node ${child.id} and node ${it.id} are intersecting.")
                     val intersection = it.externalBounds().intersect(c_bounds)
-                    println("intersection: $intersection")
-                    if (intersection.height > intersection.width) {
-                        // push along X axis
-                        if ((intersection.x_max >= c_bounds.x_min) && (intersection.x_min <= c_bounds.x_min))
-                        // push towards lower Xes
-                            it.moveGlobal(Vector(-intersection.width, 0.0))
-                        else if ((intersection.x_max >= c_bounds.x_max) && (intersection.x_min <= c_bounds.x_max))
-                        // push towards higher Xes
-                            it.moveGlobal(Vector(intersection.width, 0.0))
-                    } else {
-                        // push along Y axis
-                        if ((intersection.y_max >= c_bounds.y_min) && (intersection.y_min <= c_bounds.y_min))
-                        // push towards lower Yes
-                            it.moveGlobal(Vector(0.0, -intersection.height))
-                        else if ((intersection.y_max >= c_bounds.y_max) && (intersection.y_min <= c_bounds.y_max))
-                        // push towards higher Yes
-                            it.moveGlobal(Vector(0.0, intersection.height))
+                    if (intersection != null) {
+//                        println("intersection: $intersection")
+                        if (intersection.height > intersection.width) {
+                            // push along X axis
+                            if ((intersection.x_max >= c_bounds.x_min) && (intersection.x_min <= c_bounds.x_min))
+                            // push towards lower Xes
+                                it.moveGlobal(Vector(-intersection.width, 0.0))
+                            else if ((intersection.x_max >= c_bounds.x_max) && (intersection.x_min <= c_bounds.x_max))
+                            // push towards higher Xes
+                                it.moveGlobal(Vector(intersection.width, 0.0))
+                        } else {
+                            // push along Y axis
+                            if ((intersection.y_max >= c_bounds.y_min) && (intersection.y_min <= c_bounds.y_min))
+                            // push towards lower Yes
+                                it.moveGlobal(Vector(0.0, -intersection.height))
+                            else if ((intersection.y_max >= c_bounds.y_max) && (intersection.y_min <= c_bounds.y_max))
+                            // push towards higher Yes
+                                it.moveGlobal(Vector(0.0, intersection.height))
+                        }
                     }
                 }
             }
@@ -590,11 +592,13 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
 
     override fun onChildChanged(child: Node) {
         val c_bounds = child.externalBounds()
-        //TODO grow parent and push other nodes aside
         if (c_bounds !in innerBounds) {
             innerBounds += c_bounds
             positionChildren()
         }
+        // push other nodes aside
+        resolveCollisions(child)
+
         if (keepInSync) {
             scene.save()
         }

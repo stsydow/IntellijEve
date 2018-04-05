@@ -123,15 +123,16 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
             || (bottomRight in b) || (b.bottomRight in this))
     }
 
-    fun intersect(b: Bounds): Bounds {
+    fun intersect(b: Bounds): Bounds? {
         val newXMin = Math.max(x_min, b.x_min)
         val newXMax = Math.min(x_max, b.x_max)
         val newYMin = Math.max(y_min, b.y_min)
         val newYMax = Math.min(y_max, b.y_max)
         if ((newXMin < newXMax) && (newYMin < newYMax))
             return Bounds(newXMin, newYMin, newXMax, newYMax)
-        else
-            return Bounds.invalid()
+        else {
+            return null
+        }
     }
 
     fun min() = topLeft
