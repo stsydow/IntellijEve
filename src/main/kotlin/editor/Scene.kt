@@ -13,13 +13,20 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.*
+import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JPopupMenu
+import javax.swing.KeyStroke
 
 val M_BUTTON_NONE = 0
 val M_BUTTON_LEFT = 1
 val M_BUTTON_MIDDLE = 2
 val M_BUTTON_RIGHT = 3
+
+val CTRL_Z = KeyStroke.getKeyStroke("control Z")
+val CTRL_Y = KeyStroke.getKeyStroke("ctrl y")
+val SPACE_PRESS = KeyStroke.getKeyStroke("pressed SPACE")
+val SPACE_RELEASE = KeyStroke.getKeyStroke("released SPACE")
 
 enum class Operation {
     AreaSelect,
@@ -38,7 +45,7 @@ data class Interaction(val operation: Operation, val type: EventType){
 }
 */
 
-class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener, KeyListener {
+class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener {
     var idx: Int = 0
     var root = RootNode(this)
 
@@ -55,15 +62,26 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     var selectedNodes = mutableListOf<Node>()
     var selectionRectangle : Bounds? = null
     var rectSelectStartPos : Coordinate? = null
+    var spaceBarPressed : Boolean = false
 
     init {
         addMouseListener(this)
         addMouseMotionListener(this)
         addMouseWheelListener(this)
         addComponentListener(this)
-        addKeyListener(this)
         isFocusable = true
         preferredSize = currentSize
+
+        // add our key bindings to the input map
+        val map = getInputMap()
+        map.put(CTRL_Z, "undoAction")
+        map.put(CTRL_Y, "redoAction")
+        map.put(SPACE_PRESS, "spacePressed")
+        map.put(SPACE_RELEASE, "spaceReleased")
+        actionMap.put("undoAction", UndoAction(this))
+        actionMap.put("redoAction", RedoAction(this))
+        actionMap.put("spacePressed", PressSpaceAction(this))
+        actionMap.put("spaceReleased", ReleaseSpaceAction(this))
     }
 
     override fun paintComponent(graphics: Graphics?) {
@@ -425,22 +443,6 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
             transform = transform.zoom(scale, center)
             currentSize = Dimension(width, height)
         }
-    }
-
-    override fun keyTyped(e: KeyEvent?) {
-    }
-
-    override fun keyPressed(e: KeyEvent?) {
-        if (e == null) return
-        if ((e.keyCode == KeyEvent.VK_Z) && e.modifiers and KeyEvent.CTRL_MASK != 0) {
-            popOperation()
-        }
-        if ((e.keyCode == KeyEvent.VK_Y) && e.modifiers and KeyEvent.CTRL_MASK != 0) {
-            popReverseOperation()
-        }
-    }
-
-    override fun keyReleased(e: KeyEvent?) {
     }
 
     fun save() {
