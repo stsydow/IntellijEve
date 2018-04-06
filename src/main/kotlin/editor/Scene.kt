@@ -29,12 +29,13 @@ val SPACE_RELEASE = KeyStroke.getKeyStroke("released SPACE")
 
 enum class Operation {
     AreaSelect,
-    Select,
-    Move,
-    Menu,
-    None,
     DrawEdge,
-    OpenRustFile
+    Menu,
+    Move,
+    MoveCanvas,
+    None,
+    OpenRustFile,
+    Select
 }
 
 /*
