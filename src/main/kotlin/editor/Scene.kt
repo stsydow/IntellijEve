@@ -140,19 +140,10 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     }
 
     override fun mouseClicked(e: MouseEvent) {
-        var op:Operation
-        if ((e.clickCount == 2) && (!e.isConsumed)){
-            e.consume()
-            op = when (e.button) {
-                M_BUTTON_LEFT -> Operation.OpenRustFile
-                else -> Operation.None
-            }
-        } else {
-            op = when (e.button) {
-                M_BUTTON_LEFT -> Operation.Select
-                M_BUTTON_RIGHT -> Operation.Menu
-                else -> Operation.None
-            }
+        var op = when (e.button) {
+            M_BUTTON_LEFT -> Operation.Select
+            M_BUTTON_RIGHT -> Operation.Menu
+            else -> Operation.None
         }
         if (op == Operation.None)
             return
@@ -164,36 +155,6 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
             selectedNodes.clear()
         }
         picked as Node
-        if (op == Operation.OpenRustFile){
-            /*
-            if (picked.relativeFileLocation == "") {
-                println("No file linked to node ${picked.id}, creating one now.")
-                val fs = LocalFileSystem.getInstance()
-                val nodesDir = fs.findFileByIoFile(File(editor!!.project.basePath, "./src/nodes"))
-                if (nodesDir == null)
-                    throw IOException("Directory ./src/nodes can not be found in project directory")
-
-                //val linkedFilePath = nodesDir.path + "/" + picked.name + ".rs"
-
-                var realtivePath = picked.name + ".rs"
-
-
-                picked.constructFilepathForNode()
-                while (Files.exists(Paths.get(picked.linkedFilePath!!))){
-                    picked.linkedFilePath = picked.incrementFilepath()
-                }
-                Files.createFile(Paths.get(picked.linkedFilePath!!))
-                LocalFileSystem.getInstance().refresh(false)
-                picked.parent!!.onChildChanged(picked)
-            }
-            if (!Files.exists(Paths.get(picked.linkedFilePath))){
-                Files.createFile(Paths.get(picked.linkedFilePath))
-                LocalFileSystem.getInstance().refresh(false)
-            }
-            val file = LocalFileSystem.getInstance().findFileByPath(picked.linkedFilePath)
-            FileEditorManager.getInstance(editor!!.project).openFile(file!!, true)
-            */
-        }
         if (op == Operation.Select){
             if (picked.isSelected){
                 picked.isSelected = false
@@ -368,11 +329,9 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 rectSelectStartPos = null
                 currentOperation = Operation.None
             }
-            Operation.None -> {
-            } //don't care
-            Operation.Select -> {
-            } //don't care
-            Operation.OpenRustFile -> TODO()
+            Operation.None -> { } //don't care
+            Operation.Select -> { } //don't care
+            Operation.OpenRustFile -> { } // don't care (yet)
         }
         focusedElementOriginalTransform = null
         repaint()
@@ -411,15 +370,10 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 selectionRectangle = Bounds.minimalBounds(rectSelectStartPos!!, lastMovementPosition!!)
                 repaint()
             }
-            Operation.Menu -> {
-            } //don't care
-            Operation.Select -> {
-            } //don't care
-            Operation.None -> {
-                // don't care
-                //error("drag without active operation")
-            }
-            Operation.OpenRustFile -> TODO()
+            Operation.Menu -> { } //don't care
+            Operation.Select -> { } //don't care
+            Operation.None -> { } // don't care
+            Operation.OpenRustFile -> { } // don't care (yet)
         }
         lastMovementPosition = view_pos
     }
