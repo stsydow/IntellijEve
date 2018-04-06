@@ -18,9 +18,10 @@ import javax.swing.JPanel
 import javax.swing.JPopupMenu
 import javax.swing.KeyStroke
 
-val M_BUTTON_LEFT = 0
-val M_BUTTON_MIDDLE = 1
-val M_BUTTON_RIGHT = 2
+val M_BUTTON_NONE = 0
+val M_BUTTON_LEFT = 1
+val M_BUTTON_MIDDLE = 2
+val M_BUTTON_RIGHT = 3
 
 val CTRL_Z = KeyStroke.getKeyStroke("control Z")
 val CTRL_Y = KeyStroke.getKeyStroke("ctrl y")
