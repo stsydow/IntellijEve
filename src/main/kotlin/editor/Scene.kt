@@ -215,12 +215,20 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         }
 
         if (e.button == M_BUTTON_LEFT) {
-            var picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
-            focusedElement = picked
-            currentOperation = when (picked) {
-                is Port -> Operation.DrawEdge
-                is Node -> Operation.Move
-                else -> Operation.None
+            // if space is pressed we only want to move the canvas (root node)
+            var picked : UIElement?
+            if (spaceBarPressed) {
+                picked = root
+                focusedElement = picked
+                currentOperation = Operation.Move
+            } else {
+                picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
+                focusedElement = picked
+                currentOperation = when (picked) {
+                    is Port -> Operation.DrawEdge
+                    is Node -> Operation.Move
+                    else -> Operation.None
+                }
             }
             if(currentOperation == Operation.Move) {
                 focusedElementOriginalTransform = picked!!.transform
@@ -235,7 +243,10 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 selectionRectangle = Bounds(evSceneCoords.x, evSceneCoords.y, evSceneCoords.x, evSceneCoords.y)
                 println("Starting rectangle selection at $rectSelectStartPos")
             } else {
-                picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
+                if (spaceBarPressed)
+                    picked = root
+                else
+                    picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
                 focusedElement = picked
                 currentOperation = when (picked) {
                     is Port -> Operation.DrawEdge
