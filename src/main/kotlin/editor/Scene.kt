@@ -142,138 +142,170 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     }
 
     override fun mouseClicked(e: MouseEvent) {
-        var op = when (e.button) {
-            M_BUTTON_LEFT -> Operation.Select
-            M_BUTTON_RIGHT -> Operation.Menu
-            else -> Operation.None
-        }
-        if (op == Operation.None)
-            return
-        val c = getSceneCoordinate(e)
-        val picked = root.pick(c, op, transform, UIElementKind.Node)
-
-        if (picked == root){
-            selectedNodes.forEach { node -> node.isSelected = false }
-            selectedNodes.clear()
-        }
-        picked as Node
-        if (op == Operation.Select){
-            if (picked.isSelected){
-                picked.isSelected = false
-                selectedNodes.remove(picked)
+        var op: MyOperation
+        val sceneCoord = getSceneCoordinate(e)
+        var picked: UIElement?
+        when (e.button) {
+            M_BUTTON_LEFT   -> {
+                picked = root.pick(sceneCoord, Operation.None, transform, UIElementKind.Node)
+                op = when (picked) {
+                    is RootNode -> MyOperation.UnselectAllOperation(root)
+                    is Node     -> MyOperation.SelectOperation(root, picked)
+                    else        -> MyOperation.NoOperation()
+                }
             }
-            else {
-                picked.isSelected = true
-                selectedNodes.add(picked)
+            M_BUTTON_MIDDLE -> {
+                picked = root.pick(sceneCoord, Operation.None, transform, UIElementKind.All)
+                op = when (picked) {
+                    null    -> MyOperation.NoOperation()
+                    else    -> MyOperation.PrintDebugOperation(picked)
+                }
+            }
+            M_BUTTON_RIGHT  -> {
+                op = MyOperation.NoOperation()
+            }
+            else -> {
+                op = MyOperation.NoOperation()
             }
         }
+        op.perform()
     }
-
 
     override fun mousePressed(e: MouseEvent) {
-        val view_pos:Coordinate = getSceneCoordinate(e)
-
-        if (currentOperation != Operation.None) {
-            println("An operation is already active: ${currentOperation}")
-            return
-        }
-
-        if (e.button == M_BUTTON_LEFT) {
-            // if space is pressed we only want to move the canvas (root node)
-            var picked : UIElement?
-            if (spaceBarPressed) {
-                picked = root
-                focusedElement = picked
-                currentOperation = Operation.Move
-            } else {
-                picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
-                focusedElement = picked
-                currentOperation = when (picked) {
-                    is Port -> Operation.DrawEdge
-                    is Node -> Operation.Move
-                    else -> Operation.None
-                }
-            }
-            if(currentOperation == Operation.Move) {
-                focusedElementOriginalTransform = picked!!.transform
-                val bounds = picked.getParentBoundsList()
-                focusedElementOriginalParentBounds = bounds
-            }
-            // if only Ctrl is pressed as modifier
-            if (e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown){
-                currentOperation = Operation.AreaSelect
-                val evSceneCoords = getSceneCoordinate(e)
-                rectSelectStartPos = evSceneCoords
-                selectionRectangle = Bounds(evSceneCoords.x, evSceneCoords.y, evSceneCoords.x, evSceneCoords.y)
-                println("Starting rectangle selection at $rectSelectStartPos")
-            } else {
+        var op: MyOperation
+        val sceneCoord = getSceneCoordinate(e)
+        var picked: UIElement?
+        when (e.button) {
+            M_BUTTON_LEFT   -> {
                 if (spaceBarPressed)
-                    picked = root
-                else
-                    picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
-                focusedElement = picked
-                currentOperation = when (picked) {
-                    is Port -> Operation.DrawEdge
-                    is Node -> Operation.Move
-                    else -> Operation.None
-                }
-                if (currentOperation == Operation.Move) {
-                    focusedElementOriginalTransform = picked!!.transform
-                    val bounds = picked.getParentBoundsList()
-                    focusedElementOriginalParentBounds = bounds
-                }
-            }
-        }
-
-        if (e.button == M_BUTTON_RIGHT) {
-            val picked = root.pick(view_pos, currentOperation, transform, UIElementKind.All)
-            val menu:JPopupMenu
-
-            if(picked == root){
-                menu = RootNodeContextMenu(root, this, view_pos)
-                currentOperation = Operation.Menu
-            }else {
-                when (picked) {
-                    is Node -> {
-                        menu = NodeContextMenu(picked, this, view_pos)
-                        currentOperation = Operation.Menu
-                    }
-                    is Port -> {
-                        menu = PortContextMenu(picked, this, view_pos)
-                        currentOperation = Operation.Menu
-                    }
-                    is Edge -> {
-                        menu = EdgeContextMenu(picked, this, view_pos)
-                        currentOperation = Operation.Menu
-                    }
-                    else -> {
-
-                        currentOperation = Operation.None
-                        error("root did not catch our pick!")
+                    op = MyOperation.MoveOperation(root, sceneCoord, root)
+                else {
+                    picked = root.pick(sceneCoord, Operation.None, transform, UIElementKind.NotEdge)
+                    op = when (picked) {
+//                        is Node -> MyOperation.MoveOperation()
+//                        is Port -> MyOperation.AddEdgeOperation()
+                        else    -> MyOperation.NoOperation()
                     }
                 }
             }
-
-            menu.show(e.component, e.x, e.y)
-        }
-
-        if (e.button == M_BUTTON_MIDDLE) {
-            val picked = root.pick(view_pos, currentOperation, transform, UIElementKind.All)
-            val elem = when(picked) {
-                is Port -> "Port"
-                is Node -> "Node"
-                is Edge -> "Edge"
-                else -> "<Unknown>"
+            M_BUTTON_MIDDLE -> {
+                op = MyOperation.NoOperation()
             }
-            if(picked != null) {
-                println("$elem ${picked.id}: bounds ${picked.bounds} \n\t external bounds ${picked.externalBounds()} ")
-            }else{
-                println("picked no element")
+            M_BUTTON_RIGHT   -> {
+                picked = root.pick(sceneCoord, Operation.None, transform, UIElementKind.All)
+                op = MyOperation.ShowMenuOperation(picked, sceneCoord, this, e.component)
             }
-
+            else            -> {
+                op = MyOperation.NoOperation()
+            }
         }
-        lastMovementPosition = view_pos
+        op.perform()
     }
+
+//    override fun mousePressed(e: MouseEvent) {
+//        val view_pos:Coordinate = getSceneCoordinate(e)
+//
+//        if (currentOperation != Operation.None) {
+//            println("An operation is already active: ${currentOperation}")
+//            return
+//        }
+//
+//        if (e.button == M_BUTTON_LEFT) {
+//            // if space is pressed we only want to move the canvas (root node)
+//            var picked : UIElement?
+//            if (spaceBarPressed) {
+//                picked = root
+//                focusedElement = picked
+//                currentOperation = Operation.Move
+//            } else {
+//                picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
+//                focusedElement = picked
+//                currentOperation = when (picked) {
+//                    is Port -> Operation.DrawEdge
+//                    is Node -> Operation.Move
+//                    else -> Operation.None
+//                }
+//            }
+//            if(currentOperation == Operation.Move) {
+//                focusedElementOriginalTransform = picked!!.transform
+//                val bounds = picked.getParentBoundsList()
+//                focusedElementOriginalParentBounds = bounds
+//            }
+//            // if only Ctrl is pressed as modifier
+//            if (e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown){
+//                currentOperation = Operation.AreaSelect
+//                val evSceneCoords = getSceneCoordinate(e)
+//                rectSelectStartPos = evSceneCoords
+//                selectionRectangle = Bounds(evSceneCoords.x, evSceneCoords.y, evSceneCoords.x, evSceneCoords.y)
+//                println("Starting rectangle selection at $rectSelectStartPos")
+//            } else {
+//                if (spaceBarPressed)
+//                    picked = root
+//                else
+//                    picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
+//                focusedElement = picked
+//                currentOperation = when (picked) {
+//                    is Port -> Operation.DrawEdge
+//                    is Node -> Operation.Move
+//                    else -> Operation.None
+//                }
+//                if (currentOperation == Operation.Move) {
+//                    focusedElementOriginalTransform = picked!!.transform
+//                    val bounds = picked.getParentBoundsList()
+//                    focusedElementOriginalParentBounds = bounds
+//                }
+//            }
+//        }
+//
+//        if (e.button == M_BUTTON_RIGHT) {
+//            val picked = root.pick(view_pos, currentOperation, transform, UIElementKind.All)
+//            val menu:JPopupMenu
+//
+//            if(picked == root){
+//                menu = RootNodeContextMenu(root, this, view_pos)
+//                currentOperation = Operation.Menu
+//            }else {
+//                when (picked) {
+//                    is Node -> {
+//                        menu = NodeContextMenu(picked, this, view_pos)
+//                        currentOperation = Operation.Menu
+//                    }
+//                    is Port -> {
+//                        menu = PortContextMenu(picked, this, view_pos)
+//                        currentOperation = Operation.Menu
+//                    }
+//                    is Edge -> {
+//                        menu = EdgeContextMenu(picked, this, view_pos)
+//                        currentOperation = Operation.Menu
+//                    }
+//                    else -> {
+//
+//                        currentOperation = Operation.None
+//                        error("root did not catch our pick!")
+//                    }
+//                }
+//            }
+//
+//            menu.show(e.component, e.x, e.y)
+//        }
+//
+////        if (e.button == M_BUTTON_MIDDLE) {
+////            val picked = root.pick(view_pos, currentOperation, transform, UIElementKind.All)
+////            val elem = when(picked) {
+////                is Port -> "Port"
+////                is Node -> "Node"
+////                is Edge -> "Edge"
+////                else -> "<Unknown>"
+////            }
+////            if(picked != null) {
+////                println("$elem ${picked.id}: bounds ${picked.bounds} \n\t external bounds ${picked.externalBounds()} ")
+////            }else{
+////                println("picked no element")
+////            }
+////
+////        }
+//        lastMovementPosition = view_pos
+//    }
 
     override fun mouseReleased(e: MouseEvent) {
         val view_pos = getSceneCoordinate(e)
