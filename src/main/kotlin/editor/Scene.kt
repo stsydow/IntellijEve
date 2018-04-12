@@ -36,7 +36,9 @@ enum class Operation {
     MoveCanvas,
     None,
     OpenRustFile,
-    Select
+    PrintDebug,
+    Select,
+    UnselectAll
 }
 
 /*
