@@ -216,7 +216,7 @@ class MenuListener(val scene: Viewport):PopupMenuListener {
     }
 
     override fun popupMenuWillBecomeVisible(e: PopupMenuEvent?) {
-        assert(scene.currentOperation == Operation.Menu)
+//        assert(scene.currentOperation == Operation.Menu)
     }
 }
 
