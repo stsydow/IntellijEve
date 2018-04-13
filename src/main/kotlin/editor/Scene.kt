@@ -33,7 +33,6 @@ enum class Operation {
     DrawEdge,
     Menu,
     Move,
-    MoveCanvas,
     None,
     OpenRustFile,
     PrintDebug,
