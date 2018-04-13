@@ -172,20 +172,28 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     }
 
     override fun mousePressed(e: MouseEvent) {
+        val view_pos: Coordinate = getSceneCoordinate(e)
         var op: MyOperation
         val sceneCoord = getSceneCoordinate(e)
         var picked: UIElement?
         when (e.button) {
             M_BUTTON_LEFT   -> {
-                if (spaceBarPressed)
-                    op = MyOperation.MoveOperation(root, sceneCoord, root)
-                else {
+                // TODO What about CTRL modifier?
+                if (spaceBarPressed) {
+                    picked = root
+                } else {
                     picked = root.pick(sceneCoord, Operation.None, transform, UIElementKind.NotEdge)
-                    op = when (picked) {
-//                        is Node -> MyOperation.MoveOperation()
-//                        is Port -> MyOperation.AddEdgeOperation()
-                        else    -> MyOperation.NoOperation()
+                }
+                op = when (picked) {
+                    is Node -> {
+                        focusedElement = picked
+                        focusedElementOriginalTransform = picked.transform
+                        focusedElementOriginalParentBounds = picked.getParentBoundsList()
+                        currentOperation = Operation.Move
+                        MyOperation.MoveOperation(focusedElement!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!)
                     }
+//                    is Port -> MyOperation.AddEdgeOperation()
+                    else    -> MyOperation.NoOperation()
                 }
             }
             M_BUTTON_MIDDLE -> {
@@ -200,6 +208,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
             }
         }
         op.perform()
+        lastMovementPosition = view_pos
     }
 
 //    override fun mousePressed(e: MouseEvent) {
@@ -256,54 +265,6 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
 //                }
 //            }
 //        }
-//
-//        if (e.button == M_BUTTON_RIGHT) {
-//            val picked = root.pick(view_pos, currentOperation, transform, UIElementKind.All)
-//            val menu:JPopupMenu
-//
-//            if(picked == root){
-//                menu = RootNodeContextMenu(root, this, view_pos)
-//                currentOperation = Operation.Menu
-//            }else {
-//                when (picked) {
-//                    is Node -> {
-//                        menu = NodeContextMenu(picked, this, view_pos)
-//                        currentOperation = Operation.Menu
-//                    }
-//                    is Port -> {
-//                        menu = PortContextMenu(picked, this, view_pos)
-//                        currentOperation = Operation.Menu
-//                    }
-//                    is Edge -> {
-//                        menu = EdgeContextMenu(picked, this, view_pos)
-//                        currentOperation = Operation.Menu
-//                    }
-//                    else -> {
-//
-//                        currentOperation = Operation.None
-//                        error("root did not catch our pick!")
-//                    }
-//                }
-//            }
-//
-//            menu.show(e.component, e.x, e.y)
-//        }
-//
-////        if (e.button == M_BUTTON_MIDDLE) {
-////            val picked = root.pick(view_pos, currentOperation, transform, UIElementKind.All)
-////            val elem = when(picked) {
-////                is Port -> "Port"
-////                is Node -> "Node"
-////                is Edge -> "Edge"
-////                else -> "<Unknown>"
-////            }
-////            if(picked != null) {
-////                println("$elem ${picked.id}: bounds ${picked.bounds} \n\t external bounds ${picked.externalBounds()} ")
-////            }else{
-////                println("picked no element")
-////            }
-////
-////        }
 //        lastMovementPosition = view_pos
 //    }
 

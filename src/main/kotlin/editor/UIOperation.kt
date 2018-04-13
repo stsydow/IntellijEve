@@ -7,9 +7,18 @@ import javax.swing.JPopupMenu
 sealed class MyOperation(val root: RootNode?, val coord: Coordinate?, val element: UIElement?) {
     abstract fun perform()
 
-    class MoveOperation(root: RootNode, coord: Coordinate, element: UIElement?): MyOperation(root, coord, element) {
+    class MoveOperation(element: UIElement, val oldParentBounds: LinkedList<Bounds>, val old: Transform, val newParentBounds: List<Bounds>, val new: Transform): MyOperation(null, null, element) {
         override fun perform() {
-
+            if (element != null) {
+                element.transform = new
+                element.repaint()
+                var p: Node? = element.parent
+                for (i in newParentBounds) {
+                    p!!.innerBounds = i
+                    p.positionChildren()
+                    p = p.parent
+                }
+            }
         }
     }
 
