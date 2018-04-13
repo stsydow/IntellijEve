@@ -175,24 +175,35 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         var op: MyOperation
         val sceneCoord = getSceneCoordinate(e)
         var picked: UIElement?
+        val onlyCtrlModifier = e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown
         when (e.button) {
             M_BUTTON_LEFT   -> {
-                // TODO What about CTRL modifier?
-                if (spaceBarPressed) {
-                    picked = root
+                if (onlyCtrlModifier) {
+                    currentOperation = Operation.AreaSelect
+                    val evSceneCoords = getSceneCoordinate(e)
+                    rectSelectStartPos = evSceneCoords
+                    selectionRectangle = Bounds(evSceneCoords.x, evSceneCoords.y, evSceneCoords.x, evSceneCoords.y)
+                    op = MyOperation.AreaSelectOperation()
                 } else {
-                    picked = root.pick(sceneCoord, Operation.None, transform, UIElementKind.NotEdge)
-                }
-                op = when (picked) {
-                    is Node -> {
-                        focusedElement = picked
-                        focusedElementOriginalTransform = picked.transform
-                        focusedElementOriginalParentBounds = picked.getParentBoundsList()
-                        currentOperation = Operation.Move
-                        MyOperation.MoveOperation(focusedElement!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!)
+                    if (spaceBarPressed) {
+                        picked = root
+                    } else {
+                        picked = root.pick(sceneCoord, Operation.None, transform, UIElementKind.NotEdge)
                     }
-//                    is Port -> MyOperation.AddEdgeOperation()
-                    else    -> MyOperation.NoOperation()
+                    focusedElement = picked
+                    when (picked) {
+                        is Node -> {
+                            focusedElementOriginalTransform = picked.transform
+                            focusedElementOriginalParentBounds = picked.getParentBoundsList()
+                            currentOperation = Operation.Move
+                            op = MyOperation.MoveOperation(focusedElement!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!)
+                        }
+                        is Port -> {
+                            currentOperation = Operation.DrawEdge
+                            op = MyOperation.DrawEdgeOperation()
+                        }
+                        else    -> op = MyOperation.NoOperation()
+                    }
                 }
             }
             M_BUTTON_MIDDLE -> {
@@ -209,63 +220,6 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         op.perform()
         lastMovementPosition = view_pos
     }
-
-//    override fun mousePressed(e: MouseEvent) {
-//        val view_pos:Coordinate = getSceneCoordinate(e)
-//
-//        if (currentOperation != Operation.None) {
-//            println("An operation is already active: ${currentOperation}")
-//            return
-//        }
-//
-//        if (e.button == M_BUTTON_LEFT) {
-//            // if space is pressed we only want to move the canvas (root node)
-//            var picked : UIElement?
-//            if (spaceBarPressed) {
-//                picked = root
-//                focusedElement = picked
-//                currentOperation = Operation.Move
-//            } else {
-//                picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
-//                focusedElement = picked
-//                currentOperation = when (picked) {
-//                    is Port -> Operation.DrawEdge
-//                    is Node -> Operation.Move
-//                    else -> Operation.None
-//                }
-//            }
-//            if(currentOperation == Operation.Move) {
-//                focusedElementOriginalTransform = picked!!.transform
-//                val bounds = picked.getParentBoundsList()
-//                focusedElementOriginalParentBounds = bounds
-//            }
-//            // if only Ctrl is pressed as modifier
-//            if (e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown){
-//                currentOperation = Operation.AreaSelect
-//                val evSceneCoords = getSceneCoordinate(e)
-//                rectSelectStartPos = evSceneCoords
-//                selectionRectangle = Bounds(evSceneCoords.x, evSceneCoords.y, evSceneCoords.x, evSceneCoords.y)
-//                println("Starting rectangle selection at $rectSelectStartPos")
-//            } else {
-//                if (spaceBarPressed)
-//                    picked = root
-//                else
-//                    picked = root.pick(view_pos, Operation.Select, transform, UIElementKind.NotEdge)
-//                focusedElement = picked
-//                currentOperation = when (picked) {
-//                    is Port -> Operation.DrawEdge
-//                    is Node -> Operation.Move
-//                    else -> Operation.None
-//                }
-//                if (currentOperation == Operation.Move) {
-//                    focusedElementOriginalTransform = picked!!.transform
-//                    val bounds = picked.getParentBoundsList()
-//                    focusedElementOriginalParentBounds = bounds
-//                }
-//            }
-//        }
-//        lastMovementPosition = view_pos
-//    }
 
     override fun mouseReleased(e: MouseEvent) {
         val view_pos = getSceneCoordinate(e)
