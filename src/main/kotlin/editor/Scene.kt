@@ -63,8 +63,6 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     var operationsStack = Stack<UIOperation>()
     var reversedOperationsStack = Stack<UIOperation>()
     var selectedNodes = mutableListOf<Node>()
-    var selectionRectangle : Bounds? = null
-    var rectSelectStartPos : Coordinate? = null
     var spaceBarPressed : Boolean = false
 
     init {
@@ -101,10 +99,16 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         globalGraphics.reset()
         root.render(globalGraphics)
 
-        val srcPort = focusedElement
-        if (srcPort != null && srcPort is Port) {
+        // draw the line when dragging for creating an Edge
+        if (ongoingOperation is MyOperation.DrawEdgeOperation) {
+            val op = ongoingOperation as MyOperation.DrawEdgeOperation
+            val srcPort = op.element as Port
             globalGraphics.line(srcPort.getGlobalTransform() * srcPort.connectionPointRight, lastMovementPosition!!)
         }
+//        val srcPort = focusedElement
+//        if (srcPort != null && srcPort is Port) {
+//            globalGraphics.line(srcPort.getGlobalTransform() * srcPort.connectionPointRight, lastMovementPosition!!)
+//        }
 
         // display the mouse position
         if (lastMousePosition != null){
@@ -240,11 +244,8 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
             }
             Operation.DrawEdge -> {
                 val picked = root.pick(sceneCoord, currentOperation, transform,  UIElementKind.Port)
-                if (picked is Port && ongoingOperation is MyOperation.DrawEdgeOperation) {
-                    val op = ongoingOperation as MyOperation.DrawEdgeOperation
-                    op.target = picked
-                    ongoingOperation = op
-                }
+                if (picked is Port && ongoingOperation is MyOperation.DrawEdgeOperation)
+                    (ongoingOperation as MyOperation.DrawEdgeOperation).target = picked
             }
             Operation.Move -> {
                 val parent: Node? = oldFocus!!.parent
@@ -281,8 +282,8 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     }
 
     override fun mouseDragged(e: MouseEvent) {
-        val sceneCoord = transform.applyInverse(Coordinate(e.x, e.y))
-        lastMousePosition = getSceneCoordinate(e)
+        val sceneCoord = getSceneCoordinate(e)
+        lastMousePosition = sceneCoord
 
         when (currentOperation) {
             Operation.AreaSelect -> {
