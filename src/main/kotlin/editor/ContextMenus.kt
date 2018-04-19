@@ -199,7 +199,7 @@ class MenuListener(val scene: Viewport):PopupMenuListener {
     }
 
     override fun popupMenuCanceled(e: PopupMenuEvent?) {
-        scene.currentOperation = Operation.None
+        scene.currentOperation = Operation.NoOperation()
     }
 
     override fun popupMenuWillBecomeVisible(e: PopupMenuEvent?) {

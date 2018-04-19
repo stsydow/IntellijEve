@@ -36,7 +36,7 @@ class Edge(transform: Transform, parent: Node, val source: Port, val target: Por
         curve.paint(g)
     }
 
-    override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform, filter: UIElementKind): UIElement? {
+    override fun pick(c: Coordinate, screenTransform: Transform, filter: UIElementKind): UIElement? {
         if(c.x < bounds.x_min || c.x >= bounds.x_max)
             return null
         val dist = curve.shortestDistancePointToCurve(c.x, c.y)

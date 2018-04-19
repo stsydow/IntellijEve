@@ -72,7 +72,7 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
         localGraphics.polygon(Color.BLACK, poly, true)
     }
 
-    override fun pick(c: Coordinate, operation: Operation, screenTransform: Transform, filter: UIElementKind): UIElement? {
+    override fun pick(c: Coordinate, screenTransform: Transform, filter: UIElementKind): UIElement? {
         val local_c = !transform * c
         if (local_c in bounds)
             return when (filter) {

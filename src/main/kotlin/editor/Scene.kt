@@ -20,18 +20,6 @@ val CTRL_Y = KeyStroke.getKeyStroke("ctrl y")
 val SPACE_PRESS = KeyStroke.getKeyStroke("pressed SPACE")
 val SPACE_RELEASE = KeyStroke.getKeyStroke("released SPACE")
 
-enum class Operation {
-    AreaSelect,
-    DrawEdge,
-    Menu,
-    Move,
-    None,
-    OpenRustFile,
-    PrintDebug,
-    Select,
-    UnselectAll
-}
-
 /*
 enum class EventType {Single, Start, FollowUp, End}
 data class Interaction(val operation: Operation, val type: EventType){
@@ -50,8 +38,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     var focusedElementOriginalParentBounds: LinkedList<Bounds>? = null
     var lastMovementPosition: Coordinate? = null
     var lastMousePosition: Coordinate? = null
-    var currentOperation = Operation.None
-    var ongoingOperation: MyOperation = MyOperation.NoOperation()
+    var currentOperation: Operation = Operation.NoOperation()
     var operationsStack = Stack<UIOperation>()
     var reversedOperationsStack = Stack<UIOperation>()
     var selectedNodes = mutableListOf<Node>()
@@ -92,8 +79,8 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         root.render(globalGraphics)
 
         // draw the line when dragging for creating an Edge
-        if (ongoingOperation is MyOperation.DrawEdgeOperation) {
-            val op = ongoingOperation as MyOperation.DrawEdgeOperation
+        if (currentOperation is Operation.DrawEdgeOperation) {
+            val op = currentOperation as Operation.DrawEdgeOperation
             val srcPort = op.element as Port
             globalGraphics.line(srcPort.getGlobalTransform() * srcPort.connectionPointRight, lastMovementPosition!!)
         }
@@ -105,8 +92,8 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         }
 
         // paint a selection rectangle
-        if (ongoingOperation is MyOperation.AreaSelectOperation) {
-            val op = ongoingOperation as MyOperation.AreaSelectOperation
+        if (currentOperation is Operation.AreaSelectOperation) {
+            val op = currentOperation as Operation.AreaSelectOperation
             globalGraphics.polygon(Color.MAGENTA, op.selectRect.toCoordinates(), false)
         }
     }
@@ -135,37 +122,37 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     }
 
     override fun mouseClicked(e: MouseEvent) {
-        val op: MyOperation
+        val op: Operation
         val sceneCoord = getSceneCoordinate(e)
         val picked: UIElement?
         when (e.button) {
             M_BUTTON_LEFT   -> {
-                picked = root.pick(sceneCoord, Operation.None, transform, UIElementKind.Node)
+                picked = root.pick(sceneCoord, transform, UIElementKind.Node)
                 op = when (picked) {
-                    is RootNode -> MyOperation.UnselectAllOperation(root)
-                    is Node     -> MyOperation.SelectOperation(root, picked)
-                    else        -> MyOperation.NoOperation()
+                    is RootNode -> Operation.UnselectAllOperation(root)
+                    is Node     -> Operation.SelectOperation(root, picked)
+                    else        -> Operation.NoOperation()
                 }
             }
             M_BUTTON_MIDDLE -> {
-                picked = root.pick(sceneCoord, Operation.None, transform, UIElementKind.All)
+                picked = root.pick(sceneCoord, transform, UIElementKind.All)
                 op = when (picked) {
-                    null    -> MyOperation.NoOperation()
-                    else    -> MyOperation.PrintDebugOperation(picked)
+                    null    -> Operation.NoOperation()
+                    else    -> Operation.PrintDebugOperation(picked)
                 }
             }
             M_BUTTON_RIGHT  -> {
-                op = MyOperation.NoOperation()
+                op = Operation.NoOperation()
             }
             else -> {
-                op = MyOperation.NoOperation()
+                op = Operation.NoOperation()
             }
         }
         op.perform()
     }
 
     override fun mousePressed(e: MouseEvent) {
-        val op: MyOperation
+        val op: Operation
         val sceneCoord = getSceneCoordinate(e)
         val picked: UIElement?
         val onlyCtrlModifier = !spaceBarPressed && e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown
@@ -173,46 +160,41 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         when (e.button) {
             M_BUTTON_LEFT   -> {
                 if (onlyCtrlModifier) {
-                    currentOperation = Operation.AreaSelect
-                    picked = root.pick(sceneCoord, Operation.None, transform, UIElementKind.Node)
+                    picked = root.pick(sceneCoord, transform, UIElementKind.Node)
                     if (picked != null)
-                        op = MyOperation.AreaSelectOperation(root, picked!! as Node, sceneCoord, Bounds(sceneCoord.x, sceneCoord.y, sceneCoord.x, sceneCoord.y))
+                        op = Operation.AreaSelectOperation(root, picked as Node, sceneCoord, Bounds(sceneCoord.x, sceneCoord.y, sceneCoord.x, sceneCoord.y))
                     else
-                        op = MyOperation.NoOperation()
+                        op = Operation.NoOperation()
                 } else {
                     if (spaceBarPressed) {
                         picked = root
                     } else {
-                        picked = root.pick(sceneCoord, Operation.None, transform, UIElementKind.NotEdge)
+                        picked = root.pick(sceneCoord, transform, UIElementKind.NotEdge)
                     }
                     focusedElement = picked
                     when (picked) {
                         is Node -> {
                             focusedElementOriginalTransform = picked.transform
                             focusedElementOriginalParentBounds = picked.getParentBoundsList()
-                            currentOperation = Operation.Move
-                            op = MyOperation.MoveOperation(focusedElement!! as Node, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!)
+                            op = Operation.MoveOperation(focusedElement!! as Node, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!)
                         }
-                        is Port -> {
-                            currentOperation = Operation.DrawEdge
-                            op = MyOperation.DrawEdgeOperation(root, picked)
-                        }
-                        else    -> op = MyOperation.NoOperation()
+                        is Port -> op = Operation.DrawEdgeOperation(root, picked)
+                        else    -> op = Operation.NoOperation()
                     }
                 }
             }
             M_BUTTON_MIDDLE -> {
-                op = MyOperation.NoOperation()
+                op = Operation.NoOperation()
             }
             M_BUTTON_RIGHT   -> {
-                picked = root.pick(sceneCoord, Operation.None, transform, UIElementKind.All)
-                op = MyOperation.ShowMenuOperation(picked, sceneCoord, this, e.component)
+                picked = root.pick(sceneCoord, transform, UIElementKind.All)
+                op = Operation.ShowMenuOperation(picked, sceneCoord, this, e.component)
             }
             else            -> {
-                op = MyOperation.NoOperation()
+                op = Operation.NoOperation()
             }
         }
-        ongoingOperation = op
+        currentOperation = op
         op.perform()
         lastMovementPosition = sceneCoord
     }
@@ -224,32 +206,31 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         lastMovementPosition = null
 
         when (currentOperation) {
-            Operation.AreaSelect -> {
-                if (ongoingOperation is MyOperation.AreaSelectOperation){
-                    val op = ongoingOperation as MyOperation.AreaSelectOperation
+            is Operation.AreaSelectOperation -> {
+                if (currentOperation is Operation.AreaSelectOperation){
+                    val op = currentOperation as Operation.AreaSelectOperation
                     op.update(sceneCoord)
                 }
             }
-            Operation.DrawEdge -> {
-                val picked = root.pick(sceneCoord, currentOperation, transform,  UIElementKind.Port)
-                if (picked is Port && ongoingOperation is MyOperation.DrawEdgeOperation)
-                    (ongoingOperation as MyOperation.DrawEdgeOperation).target = picked
+            is Operation.DrawEdgeOperation -> {
+                val picked = root.pick(sceneCoord, transform,  UIElementKind.Port)
+                if (picked is Port && currentOperation is Operation.DrawEdgeOperation)
+                    (currentOperation as Operation.DrawEdgeOperation).target = picked
             }
-            Operation.Move -> {
+            is Operation.MoveOperation -> {
                 val parent: Node? = oldFocus!!.parent
                 if (parent != null) {
                     val bounds = oldFocus.getParentBoundsList()
                     pushOperation(MoveOperation(oldFocus, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, bounds, oldFocus.transform))
                 }
             }
-            Operation.Menu -> {
+            is Operation.ShowMenuOperation -> {
                 //TODO menu is still active
             }
             else -> { /*don't care*/ }
         }
-        ongoingOperation.perform()
-        ongoingOperation = MyOperation.NoOperation()
-        currentOperation = Operation.None
+        currentOperation.perform()
+        currentOperation = Operation.NoOperation()
         focusedElementOriginalTransform = null
         repaint()
     }
@@ -274,15 +255,12 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         lastMousePosition = sceneCoord
 
         when (currentOperation) {
-            Operation.AreaSelect -> {
-                if (ongoingOperation is MyOperation.AreaSelectOperation)
-                    (ongoingOperation as MyOperation.AreaSelectOperation).update(lastMousePosition!!)
+            is Operation.AreaSelectOperation -> {
+                if (currentOperation is Operation.AreaSelectOperation)
+                    (currentOperation as Operation.AreaSelectOperation).update(lastMousePosition!!)
             }
-            Operation.DrawEdge -> {
-                assert(focusedElement is Port)
-            }
-            Operation.Move -> {
-                if (ongoingOperation is MyOperation.MoveOperation) {
+            is Operation.MoveOperation -> {
+                if (currentOperation is Operation.MoveOperation) {
                     val p = focusedElement!!.parent
                     val delta_pos = sceneCoord - lastMovementPosition!!
                     val newTransform: Transform
@@ -292,9 +270,9 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                     } else {
                         newTransform = focusedElement!!.transform + delta_pos
                     }
-                    val op = ongoingOperation as MyOperation.MoveOperation
+                    val op = currentOperation as Operation.MoveOperation
                     op.update(focusedElement!!.getParentBoundsList(), newTransform)
-                    ongoingOperation = op
+                    currentOperation = op
                 }
             }
             else -> { /*don't care*/ }

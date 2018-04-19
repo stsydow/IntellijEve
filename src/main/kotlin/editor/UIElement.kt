@@ -18,7 +18,7 @@ abstract class UIElement(var transform: Transform, val parent: Node?, protected 
     var id: String = "uielement"+scene.idx++
 
     abstract fun render(g: GraphicsProxy)
-    abstract fun pick(c: Coordinate, operation: Operation, screenTransform: Transform, filter: UIElementKind): UIElement?
+    abstract fun pick(c: Coordinate, screenTransform: Transform, filter: UIElementKind): UIElement?
 
     open fun repaint() {
         parent?.repaint()

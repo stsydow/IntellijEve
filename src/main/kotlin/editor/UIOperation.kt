@@ -4,17 +4,17 @@ import java.awt.Component
 import java.util.*
 import javax.swing.JPopupMenu
 
-sealed class MyOperation(val root: RootNode?, val coord: Coordinate?, val element: UIElement?) {
+sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element: UIElement?) {
     abstract fun perform()
 
-    class AreaSelectOperation(root: RootNode, element: Node, val startPos: Coordinate, var selectRect: Bounds): MyOperation(root, null, element) {
+    class AreaSelectOperation(root: RootNode, element: Node, val startPos: Coordinate, var selectRect: Bounds): Operation(root, null, element) {
         override fun perform() {
             val nodesContained = mutableListOf<Node>()
             if (root!= null && element != null && element is Node){
                 if (element.childrenPickable){
                     element.childNodes.forEach {
                         val globalBounds = it.getGlobalTransform() * it.bounds
-                        if (selectRect!!.contains(globalBounds))
+                        if (selectRect.contains(globalBounds))
                             nodesContained.add(it)
                     }
                 }
@@ -30,7 +30,7 @@ sealed class MyOperation(val root: RootNode?, val coord: Coordinate?, val elemen
         }
     }
 
-    class DrawEdgeOperation(root: RootNode, src: Port): MyOperation(root, null, src){
+    class DrawEdgeOperation(root: RootNode, src: Port): Operation(root, null, src){
         var target: Port? = null
 
         override fun perform() {
@@ -45,7 +45,7 @@ sealed class MyOperation(val root: RootNode?, val coord: Coordinate?, val elemen
         }
     }
 
-    class MoveOperation(element: Node, val oldParentBounds: LinkedList<Bounds>, val oldTransform: Transform, var newParentBounds: List<Bounds>, var newTransform: Transform): MyOperation(null, null, element) {
+    class MoveOperation(element: Node, val oldParentBounds: LinkedList<Bounds>, val oldTransform: Transform, var newParentBounds: List<Bounds>, var newTransform: Transform): Operation(null, null, element) {
         override fun perform() {
             if (element != null) {
                 element.transform = newTransform
@@ -63,13 +63,13 @@ sealed class MyOperation(val root: RootNode?, val coord: Coordinate?, val elemen
         }
     }
 
-    class NoOperation(): MyOperation(null, null, null) {
+    class NoOperation(): Operation(null, null, null) {
         override fun perform() {
             // do nothing obviously
         }
     }
 
-    class PrintDebugOperation(element: UIElement): MyOperation(null, null, element){
+    class PrintDebugOperation(element: UIElement): Operation(null, null, element){
         override fun perform() {
             if (element != null){
                 val elemStr = when(element) {
@@ -85,7 +85,7 @@ sealed class MyOperation(val root: RootNode?, val coord: Coordinate?, val elemen
         }
     }
 
-    class SelectOperation(root: RootNode, element: UIElement?): MyOperation(root, null, element) {
+    class SelectOperation(root: RootNode, element: UIElement?): Operation(root, null, element) {
         override fun perform() {
             if (root != null && element != null && element is Node){
                 if (element.isSelected){
@@ -101,7 +101,7 @@ sealed class MyOperation(val root: RootNode?, val coord: Coordinate?, val elemen
         }
     }
 
-    class ShowMenuOperation(element: UIElement?, coord: Coordinate, val view: Viewport, val comp: Component): MyOperation(null, coord, element) {
+    class ShowMenuOperation(element: UIElement?, coord: Coordinate, val view: Viewport, val comp: Component): Operation(null, coord, element) {
         override fun perform() {
             if (element != null && coord != null){
                 val menu:JPopupMenu?
@@ -120,7 +120,7 @@ sealed class MyOperation(val root: RootNode?, val coord: Coordinate?, val elemen
         }
     }
 
-    class UnselectAllOperation(root: RootNode): MyOperation(root, null, null){
+    class UnselectAllOperation(root: RootNode): Operation(root, null, null){
         override fun perform() {
             if (root != null) {
                 root.viewport.selectedNodes.forEach{ node -> node.isSelected = false }
