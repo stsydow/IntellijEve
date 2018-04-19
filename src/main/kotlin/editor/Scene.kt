@@ -113,8 +113,9 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         }
 
         // paint a selection rectangle
-        if (selectionRectangle != null){
-            globalGraphics.polygon(Color.MAGENTA, selectionRectangle!!.toCoordinates(), false)
+        if (ongoingOperation is MyOperation.AreaSelectOperation) {
+            val op = ongoingOperation as MyOperation.AreaSelectOperation
+            globalGraphics.polygon(Color.MAGENTA, op.selectRect.toCoordinates(), false)
         }
     }
 
@@ -182,10 +183,11 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
             M_BUTTON_LEFT   -> {
                 if (onlyCtrlModifier) {
                     currentOperation = Operation.AreaSelect
-                    val evSceneCoords = getSceneCoordinate(e)
-                    rectSelectStartPos = evSceneCoords
-                    selectionRectangle = Bounds(evSceneCoords.x, evSceneCoords.y, evSceneCoords.x, evSceneCoords.y)
-                    op = MyOperation.AreaSelectOperation()
+                    picked = root.pick(sceneCoord, Operation.None, transform, UIElementKind.Node)
+                    if (picked != null)
+                        op = MyOperation.AreaSelectOperation(root, picked!! as Node, sceneCoord, Bounds(sceneCoord.x, sceneCoord.y, sceneCoord.x, sceneCoord.y))
+                    else
+                        op = MyOperation.NoOperation()
                 } else {
                     if (spaceBarPressed) {
                         picked = root
@@ -232,23 +234,10 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
 
         when (currentOperation) {
             Operation.AreaSelect -> {
-                val picked = root.pick(view_pos, currentOperation, transform,  UIElementKind.Node)
-                if (picked is Node){
-                    val nodesContained = mutableListOf<Node>()
-                    if (picked.childrenPickable){
-                        picked.childNodes.forEach {
-                            val globalBounds = it.getGlobalTransform() * it.bounds
-                            if (selectionRectangle!!.contains(globalBounds))
-                                nodesContained.add(it)
-                        }
-                    }
-                    nodesContained.forEach {
-                        it.isSelected = true
-                        selectedNodes.add(it)
-                    }
+                if (ongoingOperation is MyOperation.AreaSelectOperation){
+                    val op = ongoingOperation as MyOperation.AreaSelectOperation
+                    op.update(sceneCoord)
                 }
-                selectionRectangle = null
-                rectSelectStartPos = null
             }
             Operation.DrawEdge -> {
                 val picked = root.pick(view_pos, currentOperation, transform,  UIElementKind.Port)
@@ -298,8 +287,8 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
 
         when (currentOperation) {
             Operation.AreaSelect -> {
-                selectionRectangle = Bounds.minimalBounds(rectSelectStartPos!!, lastMovementPosition!!)
-                repaint()
+                if (ongoingOperation is MyOperation.AreaSelectOperation)
+                    (ongoingOperation as MyOperation.AreaSelectOperation).update(lastMousePosition!!)
             }
             Operation.DrawEdge -> {
                 assert(focusedElement is Port)
