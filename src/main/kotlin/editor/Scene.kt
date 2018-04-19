@@ -208,6 +208,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         when (currentOperation) {
             is Operation.AreaSelectOperation -> {
                 if (currentOperation is Operation.AreaSelectOperation){
+                    Operation.UnselectAllOperation(root).perform()
                     (currentOperation as Operation.AreaSelectOperation).update(sceneCoord)
                 }
             }
