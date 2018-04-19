@@ -261,11 +261,8 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                     if (picked.childrenPickable){
                         picked.childNodes.forEach {
                             val globalBounds = it.getGlobalTransform() * it.bounds
-                            println("Checking whether $selectionRectangle contains $globalBounds")
                             if (selectionRectangle!!.contains(globalBounds))
                                 nodesContained.add(it)
-                            else
-                                println("... it does NOT")
                         }
                     }
                     nodesContained.forEach {
@@ -285,9 +282,9 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         repaint()
     }
 
-    override fun mouseEntered(e: MouseEvent) {}
+    override fun mouseEntered(e: MouseEvent) { /*don't care*/ }
 
-    override fun mouseExited(e: MouseEvent) {}
+    override fun mouseExited(e: MouseEvent) { /*don't care*/ }
 
     override fun mouseWheelMoved(e: MouseWheelEvent) {
         val c = !transform * Coordinate(e.x.toDouble(), e.y.toDouble())
@@ -318,10 +315,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 selectionRectangle = Bounds.minimalBounds(rectSelectStartPos!!, lastMovementPosition!!)
                 repaint()
             }
-            Operation.Menu -> { } //don't care
-            Operation.Select -> { } //don't care
-            Operation.None -> { } // don't care
-            Operation.OpenRustFile -> { } // don't care (yet)
+            else -> { /*don't care*/ }
         }
         lastMovementPosition = view_pos
     }
@@ -331,15 +325,13 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         repaint()
     }
 
-    override fun componentHidden(e: ComponentEvent?) { /*don't care*/
-    }
+    override fun componentHidden(e: ComponentEvent?) { /*don't care*/ }
 
     override fun componentMoved(e: ComponentEvent?) {
         println(e)
     }
 
-    override fun componentShown(e: ComponentEvent?) { /*don't care*/
-    }
+    override fun componentShown(e: ComponentEvent?) { /*don't care*/ }
 
     override fun componentResized(e: ComponentEvent?) {
         if (width > 0 && height > 0) {
