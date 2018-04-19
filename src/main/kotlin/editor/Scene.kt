@@ -173,7 +173,6 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     }
 
     override fun mousePressed(e: MouseEvent) {
-        val view_pos: Coordinate = getSceneCoordinate(e)
         val op: MyOperation
         val sceneCoord = getSceneCoordinate(e)
         val picked: UIElement?
@@ -223,11 +222,11 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         }
         ongoingOperation = op
         op.perform()
-        lastMovementPosition = view_pos
+        lastMovementPosition = sceneCoord
     }
 
     override fun mouseReleased(e: MouseEvent) {
-        val view_pos = getSceneCoordinate(e)
+        val sceneCoord = getSceneCoordinate(e)
         val oldFocus = focusedElement
         focusedElement = null
         lastMovementPosition = null
@@ -240,7 +239,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 }
             }
             Operation.DrawEdge -> {
-                val picked = root.pick(view_pos, currentOperation, transform,  UIElementKind.Port)
+                val picked = root.pick(sceneCoord, currentOperation, transform,  UIElementKind.Port)
                 if (picked is Port && ongoingOperation is MyOperation.DrawEdgeOperation) {
                     val op = ongoingOperation as MyOperation.DrawEdgeOperation
                     op.target = picked
@@ -282,7 +281,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     }
 
     override fun mouseDragged(e: MouseEvent) {
-        val view_pos = transform.applyInverse(Coordinate(e.x, e.y))
+        val sceneCoord = transform.applyInverse(Coordinate(e.x, e.y))
         lastMousePosition = getSceneCoordinate(e)
 
         when (currentOperation) {
@@ -292,12 +291,11 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
             }
             Operation.DrawEdge -> {
                 assert(focusedElement is Port)
-                repaint()
             }
             Operation.Move -> {
                 if (ongoingOperation is MyOperation.MoveOperation) {
                     val p = focusedElement!!.parent
-                    val delta_pos = view_pos - lastMovementPosition!!
+                    val delta_pos = sceneCoord - lastMovementPosition!!
                     val newTransform: Transform
                     if (p != null) {
                         val v_parent = p.getGlobalTransform().applyInverse(delta_pos)
@@ -312,7 +310,8 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
             }
             else -> { /*don't care*/ }
         }
-        lastMovementPosition = view_pos
+        lastMovementPosition = sceneCoord
+        repaint()
     }
 
     override fun mouseMoved(e: MouseEvent) {
