@@ -7,9 +7,26 @@ import javax.swing.JPopupMenu
 sealed class MyOperation(val root: RootNode?, val coord: Coordinate?, val element: UIElement?) {
     abstract fun perform()
 
-    class AreaSelectOperation(): MyOperation(null, null, null) {
+    class AreaSelectOperation(root: RootNode, element: Node, val startPos: Coordinate, var selectRect: Bounds): MyOperation(root, null, element) {
         override fun perform() {
+            val nodesContained = mutableListOf<Node>()
+            if (root!= null && element != null && element is Node){
+                if (element.childrenPickable){
+                    element.childNodes.forEach {
+                        val globalBounds = it.getGlobalTransform() * it.bounds
+                        if (selectRect!!.contains(globalBounds))
+                            nodesContained.add(it)
+                    }
+                }
+                nodesContained.forEach {
+                    it.isSelected = true
+                    root.viewport.selectedNodes.add(it)
+                }
+            }
+        }
 
+        fun update(pos: Coordinate){
+            this.selectRect = Bounds(startPos, pos)
         }
     }
 
@@ -32,7 +49,7 @@ sealed class MyOperation(val root: RootNode?, val coord: Coordinate?, val elemen
         override fun perform() {
             if (element != null) {
                 element.transform = newTransform
-                element.repaint()
+                element.repaint()   // TODO: needed here?
                 var p: Node? = element.parent
                 if (p != null)
                     p.onChildChanged(element as Node)
