@@ -59,6 +59,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     var lastMovementPosition: Coordinate? = null
     var lastMousePosition: Coordinate? = null
     var currentOperation = Operation.None
+    var ongoingOperation: MyOperation = MyOperation.NoOperation()
     var operationsStack = Stack<UIOperation>()
     var reversedOperationsStack = Stack<UIOperation>()
     var selectedNodes = mutableListOf<Node>()
@@ -141,9 +142,9 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     }
 
     override fun mouseClicked(e: MouseEvent) {
-        var op: MyOperation
+        val op: MyOperation
         val sceneCoord = getSceneCoordinate(e)
-        var picked: UIElement?
+        val picked: UIElement?
         when (e.button) {
             M_BUTTON_LEFT   -> {
                 picked = root.pick(sceneCoord, Operation.None, transform, UIElementKind.Node)
@@ -172,10 +173,11 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
 
     override fun mousePressed(e: MouseEvent) {
         val view_pos: Coordinate = getSceneCoordinate(e)
-        var op: MyOperation
+        val op: MyOperation
         val sceneCoord = getSceneCoordinate(e)
-        var picked: UIElement?
-        val onlyCtrlModifier = e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown
+        val picked: UIElement?
+        val onlyCtrlModifier = !spaceBarPressed && e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown
+
         when (e.button) {
             M_BUTTON_LEFT   -> {
                 if (onlyCtrlModifier) {
@@ -196,11 +198,11 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                             focusedElementOriginalTransform = picked.transform
                             focusedElementOriginalParentBounds = picked.getParentBoundsList()
                             currentOperation = Operation.Move
-                            op = MyOperation.MoveOperation(focusedElement!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!)
+                            op = MyOperation.MoveOperation(focusedElement!! as Node, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!)
                         }
                         is Port -> {
                             currentOperation = Operation.DrawEdge
-                            op = MyOperation.DrawEdgeOperation()
+                            op = MyOperation.DrawEdgeOperation(root, picked)
                         }
                         else    -> op = MyOperation.NoOperation()
                     }
@@ -217,43 +219,18 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 op = MyOperation.NoOperation()
             }
         }
+        ongoingOperation = op
         op.perform()
         lastMovementPosition = view_pos
     }
 
     override fun mouseReleased(e: MouseEvent) {
         val view_pos = getSceneCoordinate(e)
-
         val oldFocus = focusedElement
         focusedElement = null
         lastMovementPosition = null
 
         when (currentOperation) {
-            Operation.DrawEdge -> {
-                val picked = root.pick(view_pos, currentOperation, transform,  UIElementKind.Port)
-                if (picked is Port && oldFocus is Port) {
-                    val ancestor = getCommonAncestorForEdge(oldFocus, picked)
-                    if (ancestor != null) {
-                        val edge = Edge(Transform(0.0, 0.0, 1.0), ancestor, oldFocus, picked, this)
-                        println("adding edge to ancestor $ancestor")
-                        ancestor.addEdge(edge)
-                        pushOperation(AddEdgeOperation(ancestor, edge))
-                    }
-                }
-                currentOperation = Operation.None
-            }
-            Operation.Move -> {
-                currentOperation = Operation.None
-                val parent: Node? = oldFocus!!.parent
-                if (parent != null) {
-                    val bounds = oldFocus.getParentBoundsList()
-                    pushOperation(MoveOperation(oldFocus, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, bounds, oldFocus.transform))
-                }
-            }
-            Operation.Menu -> {
-                //TODO menu is still active
-                currentOperation = Operation.None
-            }
             Operation.AreaSelect -> {
                 val picked = root.pick(view_pos, currentOperation, transform,  UIElementKind.Node)
                 if (picked is Node){
@@ -272,12 +249,30 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 }
                 selectionRectangle = null
                 rectSelectStartPos = null
-                currentOperation = Operation.None
             }
-            Operation.None -> { } //don't care
-            Operation.Select -> { } //don't care
-            Operation.OpenRustFile -> { } // don't care (yet)
+            Operation.DrawEdge -> {
+                val picked = root.pick(view_pos, currentOperation, transform,  UIElementKind.Port)
+                if (picked is Port && ongoingOperation is MyOperation.DrawEdgeOperation) {
+                    val op = ongoingOperation as MyOperation.DrawEdgeOperation
+                    op.target = picked
+                    ongoingOperation = op
+                }
+            }
+            Operation.Move -> {
+                val parent: Node? = oldFocus!!.parent
+                if (parent != null) {
+                    val bounds = oldFocus.getParentBoundsList()
+                    pushOperation(MoveOperation(oldFocus, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, bounds, oldFocus.transform))
+                }
+            }
+            Operation.Menu -> {
+                //TODO menu is still active
+            }
+            else -> { /*don't care*/ }
         }
+        ongoingOperation.perform()
+        ongoingOperation = MyOperation.NoOperation()
+        currentOperation = Operation.None
         focusedElementOriginalTransform = null
         repaint()
     }
@@ -302,18 +297,29 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         lastMousePosition = getSceneCoordinate(e)
 
         when (currentOperation) {
-            Operation.Move -> {
-                val delta_pos = view_pos - lastMovementPosition!!
-                val target = focusedElement as Node
-                target.moveGlobal(delta_pos)
+            Operation.AreaSelect -> {
+                selectionRectangle = Bounds.minimalBounds(rectSelectStartPos!!, lastMovementPosition!!)
+                repaint()
             }
             Operation.DrawEdge -> {
                 assert(focusedElement is Port)
                 repaint()
             }
-            Operation.AreaSelect -> {
-                selectionRectangle = Bounds.minimalBounds(rectSelectStartPos!!, lastMovementPosition!!)
-                repaint()
+            Operation.Move -> {
+                if (ongoingOperation is MyOperation.MoveOperation) {
+                    val p = focusedElement!!.parent
+                    val delta_pos = view_pos - lastMovementPosition!!
+                    val newTransform: Transform
+                    if (p != null) {
+                        val v_parent = p.getGlobalTransform().applyInverse(delta_pos)
+                        newTransform = focusedElement!!.transform + v_parent
+                    } else {
+                        newTransform = focusedElement!!.transform + delta_pos
+                    }
+                    val op = ongoingOperation as MyOperation.MoveOperation
+                    op.update(focusedElement!!.getParentBoundsList(), newTransform)
+                    ongoingOperation = op
+                }
             }
             else -> { /*don't care*/ }
         }

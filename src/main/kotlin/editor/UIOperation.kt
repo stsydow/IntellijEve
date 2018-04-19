@@ -13,24 +13,36 @@ sealed class MyOperation(val root: RootNode?, val coord: Coordinate?, val elemen
         }
     }
 
-    class DrawEdgeOperation(): MyOperation(null, null, null){
-        override fun perform() {
+    class DrawEdgeOperation(root: RootNode, src: Port): MyOperation(root, null, src){
+        var target: Port? = null
 
+        override fun perform() {
+            if (target != null) {
+                val ancestor = getCommonAncestorForEdge(element as Port, target!!)
+                if (ancestor != null) {
+                    val edge = Edge(Transform(0.0, 0.0, 1.0), ancestor, element, target!!, root!!.viewport)
+                    ancestor.addEdge(edge)
+//                    pushOperation(AddEdgeOperation(ancestor, edge))
+                }
+            }
         }
     }
 
-    class MoveOperation(element: UIElement, val oldParentBounds: LinkedList<Bounds>, val old: Transform, val newParentBounds: List<Bounds>, val new: Transform): MyOperation(null, null, element) {
+    class MoveOperation(element: Node, val oldParentBounds: LinkedList<Bounds>, val oldTransform: Transform, var newParentBounds: List<Bounds>, var newTransform: Transform): MyOperation(null, null, element) {
         override fun perform() {
             if (element != null) {
-                element.transform = new
+                element.transform = newTransform
                 element.repaint()
                 var p: Node? = element.parent
-                for (i in newParentBounds) {
-                    p!!.innerBounds = i
-                    p.positionChildren()
-                    p = p.parent
-                }
+                if (p != null)
+                    p.onChildChanged(element as Node)
             }
+        }
+
+        fun update(newParentBounds: List<Bounds>, newTransform: Transform){
+            this.newParentBounds = newParentBounds
+            this.newTransform = newTransform
+            this.perform()
         }
     }
 
