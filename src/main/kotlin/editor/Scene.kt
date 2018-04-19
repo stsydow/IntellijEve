@@ -105,13 +105,9 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
             val srcPort = op.element as Port
             globalGraphics.line(srcPort.getGlobalTransform() * srcPort.connectionPointRight, lastMovementPosition!!)
         }
-//        val srcPort = focusedElement
-//        if (srcPort != null && srcPort is Port) {
-//            globalGraphics.line(srcPort.getGlobalTransform() * srcPort.connectionPointRight, lastMovementPosition!!)
-//        }
 
         // display the mouse position
-        if (lastMousePosition != null){
+        if (root.showTransforms && lastMousePosition != null){
             val textPos = lastMousePosition!!
             globalGraphics.text("" + textPos.x.toInt() + " : " + textPos.y.toInt(), textPos, Font(FontStyle.REGULAR, 4.0))
         }
