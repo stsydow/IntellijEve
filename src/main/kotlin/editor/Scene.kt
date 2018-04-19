@@ -1,21 +1,13 @@
 package editor
 
-import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.vfs.LocalFileSystem
 import intellij.GraphFileEditor
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Graphics
 import java.awt.Graphics2D
 import java.awt.event.*
-import java.io.File
-import java.io.IOException
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.util.*
-import javax.swing.JComponent
 import javax.swing.JPanel
-import javax.swing.JPopupMenu
 import javax.swing.KeyStroke
 
 val M_BUTTON_NONE = 0

@@ -1,7 +1,5 @@
 package editor
 
-import java.awt.Color
-
 class CubicBezierCurve(val parent: Edge) {
     companion object {
         val STEPS = 25  // controls how many interpolation steps are computed

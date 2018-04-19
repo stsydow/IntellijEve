@@ -1,7 +1,6 @@
 package editor
 
 import java.util.*
-import javax.swing.JPopupMenu
 
 const val FONT_SIZE = 22.0
 const val UNIT = FONT_SIZE

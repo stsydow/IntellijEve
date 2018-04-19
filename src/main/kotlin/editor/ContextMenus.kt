@@ -1,22 +1,9 @@
 package editor
 
-import graphmlio.*
-import com.intellij.openapi.fileChooser.FileChooser
-import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
-import com.intellij.openapi.ui.Messages
-import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VirtualFile
-import intellij.GraphFileType
-import java.io.File
-import java.io.IOException
-import java.nio.file.Files
-import java.nio.file.Paths
-import javax.swing.JFileChooser
 import javax.swing.JMenuItem
 import javax.swing.JOptionPane
 import javax.swing.JPopupMenu
 import javax.swing.event.PopupMenuEvent
-import javax.swing.filechooser.FileNameExtensionFilter
 import javax.swing.event.PopupMenuListener
 
 open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_point: Coordinate) : JPopupMenu() {

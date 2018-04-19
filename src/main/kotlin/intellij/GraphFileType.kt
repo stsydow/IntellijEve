@@ -1,10 +1,8 @@
 package intellij
 
-import com.intellij.openapi.vfs.VirtualFile
-
-import javax.swing.*
-
 import com.intellij.openapi.fileTypes.FileType
+import com.intellij.openapi.vfs.VirtualFile
+import javax.swing.Icon
 
 /**
  * Created by Benni on 13.11.2016.

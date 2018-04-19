@@ -8,11 +8,11 @@ import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
-import org.apache.commons.io.input.BOMInputStream
 import editor.Viewport
 import graphmlio.read
-import graphmlio.write
 import graphmlio.validate
+import graphmlio.write
+import org.apache.commons.io.input.BOMInputStream
 import java.beans.PropertyChangeListener
 import java.io.File
 import java.io.FileInputStream

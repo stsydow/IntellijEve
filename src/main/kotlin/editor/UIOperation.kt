@@ -1,7 +1,7 @@
 package editor
 
-import java.util.*
 import java.awt.Component
+import java.util.*
 import javax.swing.JPopupMenu
 
 sealed class MyOperation(val root: RootNode?, val coord: Coordinate?, val element: UIElement?) {
