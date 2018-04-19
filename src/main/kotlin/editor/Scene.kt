@@ -9,6 +9,7 @@ import java.awt.event.*
 import java.util.*
 import javax.swing.JPanel
 import javax.swing.KeyStroke
+import javax.swing.SwingUtilities
 
 val M_BUTTON_NONE = 0
 val M_BUTTON_LEFT = 1
@@ -125,13 +126,21 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         val op: Operation
         val sceneCoord = getSceneCoordinate(e)
         val picked: UIElement?
+        val onlyCtrlModifier = !spaceBarPressed && e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown
         when (e.button) {
             M_BUTTON_LEFT   -> {
                 picked = root.pick(sceneCoord, transform, UIElementKind.Node)
-                op = when (picked) {
-                    is RootNode -> Operation.UnselectAllOperation(root)
-                    is Node     -> Operation.SelectOperation(root, picked)
-                    else        -> Operation.NoOperation()
+                if (onlyCtrlModifier){
+                    op = when (picked) {
+                        is Node -> Operation.SelectOperation(root, picked)
+                        else    -> Operation.NoOperation()
+                    }
+                } else {
+                    op = when (picked) {
+                        is RootNode -> Operation.UnselectAllOperation(root)
+                        is Node -> Operation.SelectOperation(root, picked)
+                        else -> Operation.NoOperation()
+                    }
                 }
             }
             M_BUTTON_MIDDLE -> {
@@ -155,32 +164,29 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         val op: Operation
         val sceneCoord = getSceneCoordinate(e)
         val picked: UIElement?
-        val onlyCtrlModifier = !spaceBarPressed && e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown
 
         when (e.button) {
             M_BUTTON_LEFT   -> {
-                if (onlyCtrlModifier) {
-                    picked = root.pick(sceneCoord, transform, UIElementKind.Node)
-                    if (picked != null)
-                        op = Operation.AreaSelectOperation(root, picked as Node, sceneCoord, Bounds(sceneCoord.x, sceneCoord.y, sceneCoord.x, sceneCoord.y))
-                    else
-                        op = Operation.NoOperation()
+                if (spaceBarPressed) {
+                    picked = root
                 } else {
-                    if (spaceBarPressed) {
-                        picked = root
-                    } else {
-                        picked = root.pick(sceneCoord, transform, UIElementKind.NotEdge)
+                    picked = root.pick(sceneCoord, transform, UIElementKind.NotEdge)
+                }
+                focusedElement = picked
+                when (picked) {
+                    is Node -> {
+                        if (!picked.isSelected && picked != root)
+                            Operation.UnselectAllOperation(root).perform()
+                        focusedElementOriginalTransform = picked.transform
+                        focusedElementOriginalParentBounds = picked.getParentBoundsList()
+                        op = Operation.MoveOperation(focusedElement!! as Node, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!)
                     }
-                    focusedElement = picked
-                    when (picked) {
-                        is Node -> {
-                            focusedElementOriginalTransform = picked.transform
-                            focusedElementOriginalParentBounds = picked.getParentBoundsList()
-                            op = Operation.MoveOperation(focusedElement!! as Node, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!)
-                        }
-                        is Port -> op = Operation.DrawEdgeOperation(root, picked)
-                        else    -> op = Operation.NoOperation()
+                    is Port -> {
+                        if (!picked.parent!!.isSelected)
+                            Operation.UnselectAllOperation(root).perform()
+                        op = Operation.DrawEdgeOperation(root, picked)
                     }
+                    else    -> op = Operation.NoOperation()
                 }
             }
             M_BUTTON_MIDDLE -> {
@@ -253,29 +259,35 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     override fun mouseDragged(e: MouseEvent) {
         val sceneCoord = getSceneCoordinate(e)
         lastMousePosition = sceneCoord
+        val onlyCtrlModifier = !spaceBarPressed && e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown
 
         when (currentOperation) {
             is Operation.AreaSelectOperation -> {
-                if (currentOperation is Operation.AreaSelectOperation)
-                    (currentOperation as Operation.AreaSelectOperation).update(lastMousePosition!!)
+                (currentOperation as Operation.AreaSelectOperation).update(lastMousePosition!!)
             }
             is Operation.MoveOperation -> {
-                if (currentOperation is Operation.MoveOperation) {
-                    val p = focusedElement!!.parent
-                    val delta_pos = sceneCoord - lastMovementPosition!!
-                    val newTransform: Transform
-                    if (p != null) {
-                        val v_parent = p.getGlobalTransform().applyInverse(delta_pos)
-                        newTransform = focusedElement!!.transform + v_parent
-                    } else {
-                        newTransform = focusedElement!!.transform + delta_pos
+                val p = focusedElement!!.parent
+                val delta_pos = sceneCoord - lastMovementPosition!!
+                val newTransform: Transform
+                if (p != null) {
+                    val v_parent = p.getGlobalTransform().applyInverse(delta_pos)
+                    newTransform = focusedElement!!.transform + v_parent
+                } else {
+                    newTransform = focusedElement!!.transform + delta_pos
+                }
+                val op = currentOperation as Operation.MoveOperation
+                op.update(focusedElement!!.getParentBoundsList(), newTransform)
+                currentOperation = op
+            }
+            else -> {
+                if (SwingUtilities.isLeftMouseButton(e)){
+                    if (onlyCtrlModifier) {
+                        val picked = root.pick(sceneCoord, transform, UIElementKind.Node)
+                        if (picked != null)
+                            currentOperation = Operation.AreaSelectOperation(root, picked as Node, lastMovementPosition!!, Bounds(lastMovementPosition!!.x, lastMousePosition!!.y, sceneCoord.x, sceneCoord.y))
                     }
-                    val op = currentOperation as Operation.MoveOperation
-                    op.update(focusedElement!!.getParentBoundsList(), newTransform)
-                    currentOperation = op
                 }
             }
-            else -> { /*don't care*/ }
         }
         lastMovementPosition = sceneCoord
         repaint()
