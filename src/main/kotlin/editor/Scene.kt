@@ -289,7 +289,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                     if (onlyCtrlModifier) {
                         val picked = root.pick(sceneCoord, transform, UIElementKind.Node)
                         if (picked != null)
-                            currentOperation = Operation.AreaSelectOperation(root, picked as Node, lastMovementPosition!!, Bounds(lastMovementPosition!!.x, lastMousePosition!!.y, sceneCoord.x, sceneCoord.y))
+                            currentOperation = Operation.AreaSelectOperation(root, picked as Node, lastMovementPosition!!, sceneCoord)
                     }
                 }
             }

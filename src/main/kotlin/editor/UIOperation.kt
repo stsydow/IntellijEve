@@ -7,7 +7,14 @@ import javax.swing.JPopupMenu
 sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element: UIElement?) {
     abstract fun perform()
 
-    class AreaSelectOperation(root: RootNode, element: Node, val startPos: Coordinate, var selectRect: Bounds): Operation(root, null, element) {
+    class AreaSelectOperation(root: RootNode, element: Node, val startPos: Coordinate, mousePos: Coordinate): Operation(root, null, element) {
+        var selectRect: Bounds
+        init {
+            val topLeft = Coordinate(Math.min(startPos.x, mousePos.x), Math.min(startPos.y, mousePos.y))
+            val bottomRight = Coordinate(Math.max(startPos.x, mousePos.x), Math.max(startPos.y, mousePos.y))
+            this.selectRect = Bounds(topLeft, bottomRight)
+        }
+
         override fun perform() {
             val nodesContained = mutableListOf<Node>()
             if (root!= null && element != null && element is Node){
@@ -26,7 +33,9 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
         }
 
         fun update(pos: Coordinate){
-            this.selectRect = Bounds(startPos, pos)
+            val topLeft = Coordinate(Math.min(startPos.x, pos.x), Math.min(startPos.y, pos.y))
+            val bottomRight = Coordinate(Math.max(startPos.x, pos.x), Math.max(startPos.y, pos.y))
+            this.selectRect = Bounds(topLeft, bottomRight)
         }
     }
 
