@@ -89,6 +89,11 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     // NOTE: this function is overloaded in the RootNode class!
     open fun addEdge(child: Edge) {
         assert(child.parent == this)
+        childEdges.forEach {
+            if ((child.target == it.target)
+                && (child.source == it.source))
+                return
+        }
         assert(childEdges.add(child))
         if (parent != null)
             parent.onChildChanged(this)
@@ -542,6 +547,11 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
 
     override fun addEdge(child: Edge) {
         assert(child.parent == this)
+        childEdges.forEach {
+            if ((child.target == it.target)
+                    && (child.source == it.source))
+                return
+        }
         assert(childEdges.add(child))
         if (keepInSync)
             scene.save()
