@@ -164,6 +164,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         val op: Operation
         val sceneCoord = getSceneCoordinate(e)
         val picked: UIElement?
+        val noModifierOrSpace = !e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown
 
         when (e.button) {
             M_BUTTON_LEFT   -> {
@@ -172,21 +173,25 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                 } else {
                     picked = root.pick(sceneCoord, transform, UIElementKind.NotEdge)
                 }
-                focusedElement = picked
-                when (picked) {
-                    is Node -> {
-                        if (!picked.isSelected && picked != root)
-                            Operation.UnselectAllOperation(root).perform()
-                        focusedElementOriginalTransform = picked.transform
-                        focusedElementOriginalParentBounds = picked.getParentBoundsList()
-                        op = Operation.MoveOperation(focusedElement!! as Node, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!)
+                if (noModifierOrSpace) {
+                    focusedElement = picked
+                    when (picked) {
+                        is Node -> {
+                            if (!picked.isSelected && picked != root)
+                                Operation.UnselectAllOperation(root).perform()
+                            focusedElementOriginalTransform = picked.transform
+                            focusedElementOriginalParentBounds = picked.getParentBoundsList()
+                            op = Operation.MoveOperation(focusedElement!! as Node, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!)
+                        }
+                        is Port -> {
+                            if (!picked.parent!!.isSelected)
+                                Operation.UnselectAllOperation(root).perform()
+                            op = Operation.DrawEdgeOperation(root, picked)
+                        }
+                        else -> op = Operation.NoOperation()
                     }
-                    is Port -> {
-                        if (!picked.parent!!.isSelected)
-                            Operation.UnselectAllOperation(root).perform()
-                        op = Operation.DrawEdgeOperation(root, picked)
-                    }
-                    else    -> op = Operation.NoOperation()
+                } else {
+                    op = Operation.NoOperation()
                 }
             }
             M_BUTTON_MIDDLE -> {
