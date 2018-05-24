@@ -1,11 +1,11 @@
 plugins {
     //id 'java-gradle-plugin' - breaks XML Parser classpath
-    id "org.jetbrains.intellij" version "0.2.18"
-    id "org.jetbrains.kotlin.jvm" version "1.2.30"
+    id "org.jetbrains.intellij" version "0.3.2"
+    id "org.jetbrains.kotlin.jvm" version "1.2.41"
 }
 
 intellij {
-    version 'IC-173.4127.27'
+    version 'IC-181.5087.20'
     pluginName 'IntellijEve'
 }
 
@@ -31,7 +31,7 @@ dependencies {
 prepareSandbox {
     doLast {
         copy {
-            from System.getProperty("user.home")+'/.IdeaIC2017.3/config/plugins/'
+            from System.getProperty("user.home")+'/.IdeaIC2018.1/config/plugins/'
             into './build/idea-sandbox/plugins/'
         }
     }
