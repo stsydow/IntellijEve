@@ -17,6 +17,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         val INNER_PADDING = Padding(0.2 * UNIT)
         val DEFAULT_PADDING = Padding(TITLE_HEIGHT, Port.OUT_SIZE.width, 0.0, Port.IN_SIZE.width) + INNER_PADDING
         const val DEFAULT_NAME = "<anonymous>"
+        val DEFAULT_COLOR = hex2Rgb("#b8d8d8")
         val DEFAULT_BOUNDS = Bounds(0.0, 0.0, 20 * UNIT, 15 * UNIT)
         var SCALE_FACTOR = 0.5
         val DEFAULT_TRANSFORM = Transform(0.0, 0.0, SCALE_FACTOR)
@@ -49,7 +50,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
 
     val padding = DEFAULT_PADDING
     var innerBounds = DEFAULT_BOUNDS
-    var color = Color.GREEN
+    var color = DEFAULT_COLOR
 
     val childNodeCount: Int get() = childNodes.size
 

@@ -1,5 +1,6 @@
 package editor
 
+import javax.swing.JColorChooser
 import javax.swing.JMenuItem
 import javax.swing.JOptionPane
 import javax.swing.JPopupMenu
@@ -53,10 +54,11 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
         }
 
         setColorItem.addActionListener {
-            val new = JOptionPane.showInputDialog(scene, "new color:", "#ff0000")
+            val new = JColorChooser.showDialog(scene, "Please select new color", Node.DEFAULT_COLOR)
             try {
-                node.color = hex2Rgb(new)
+                node.color = new
                 node.repaint()
+                scene.save()
             } catch(e: Exception) {
                 println(e)
             }
