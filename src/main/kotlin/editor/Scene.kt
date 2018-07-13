@@ -45,6 +45,7 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     var reversedOperationsStack = Stack<UIOperation>()
     var selectedNodes = mutableListOf<Node>()
     var spaceBarPressed : Boolean = false
+    var knownProperties = mutableSetOf<Property>()
 
     init {
         addMouseListener(this)

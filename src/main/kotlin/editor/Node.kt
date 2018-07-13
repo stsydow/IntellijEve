@@ -438,14 +438,18 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         properties.forEach {
             if (it.type == type) {
                 it.expression = value;
+                scene.knownProperties.add(Property(type, value))
                 return;
             }
         }
         properties.add(Property(type, value))
+        scene.knownProperties.add(Property(type, value))
+        scene.save()
     }
 
     fun removeProperty(type: PropertyType) {
         properties.retainAll { it.type != type }
+        scene.save()
     }
 
     open fun showGeometry(){
