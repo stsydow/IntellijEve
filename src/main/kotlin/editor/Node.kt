@@ -8,6 +8,15 @@ class Property(val type: PropertyType, var expression: String) {
     override fun toString(): String {
         return "${type.toString()}: $expression"
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null)
+            return false
+        if (other is Property)
+            return ((other.type == type) && other.expression == expression)
+        else
+            return false
+    }
 }
 
 // assert Nodes may not overlap
