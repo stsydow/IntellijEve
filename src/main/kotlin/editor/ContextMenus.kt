@@ -65,18 +65,25 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
         }
 
         setOrderItem.addActionListener {
-            val old = node.getProperty(PropertyType.Order);
-            val order: String?;
-            if (old != null) {
-                order = JOptionPane.showInputDialog(scene, "order by:", old)
-            } else {
-                order = JOptionPane.showInputDialog(scene, "order by:", old)
-            }
-
-            if (order != null && order != "") {
-                node.setProperty(PropertyType.Order, order)
-            } else if (old != null) {
-                node.removeProperty(PropertyType.Order);
+            val existingOrders = mutableSetOf<Property>()
+            if (scene != null)
+                scene.knownProperties.forEach {
+                    if (it.type == PropertyType.Order)
+                        existingOrders.add(it)
+                }
+            val orderDialog = ListDialog("Please choose or enter order", existingOrders.toSet())
+            orderDialog.pack()
+            orderDialog.setLocationRelativeTo(scene)
+            val existingProperty = node.getProperty(PropertyType.Order)
+            if (existingProperty != null)
+                orderDialog.setInitialSelection(existingProperty)
+            orderDialog.isVisible = true
+            val order = orderDialog.selection
+            if (order != null){
+                if (order != "")
+                    node.setProperty(PropertyType.Order, order)
+                else
+                    node.removeProperty(PropertyType.Order);
             }
             node.repaint()
         }
