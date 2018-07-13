@@ -71,7 +71,9 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
                     if (it.type == PropertyType.Order)
                         existingOrders.add(it)
                 }
-            val orderDialog = ListDialog("Please choose or enter order", existingOrders.toSet())
+            val orderDialog = ListDialog("Please choose or enter order", existingOrders.distinctBy {
+                Pair(it.type, it.expression)
+            })
             orderDialog.pack()
             orderDialog.setLocationRelativeTo(scene)
             val existingProperty = node.getProperty(PropertyType.Order)

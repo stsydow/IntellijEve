@@ -17,7 +17,7 @@ import javax.swing.JButton
 
 
 
-class ListDialog(title: String, val options: Set<Property>) : JDialog() {
+class ListDialog(title: String, val options: List<Property>) : JDialog() {
     val textField = JBTextField()
 
     init {
