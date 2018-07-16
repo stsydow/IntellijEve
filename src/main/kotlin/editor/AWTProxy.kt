@@ -3,6 +3,7 @@ package editor
 import java.awt.Color
 import java.awt.Graphics2D
 import java.awt.RenderingHints
+import java.awt.Stroke
 
 enum class FontStyle {REGULAR, BOLD, ITALIC }
 data class Font(val style: FontStyle, val size: Double) {
@@ -129,6 +130,29 @@ class GraphicsProxy(graphics: Graphics2D, val transform: Transform) {
         else
             awt_graphics.drawPolygon(x, y, points.size)
         awt_graphics.color = old
+    }
+    
+    fun polygon(c: Color, points: List<Coordinate>, filled: Boolean, stroke: Stroke){
+        val oldColor = awt_graphics.color
+        awt_graphics.color = c
+        val oldStroke = awt_graphics.stroke
+        awt_graphics.stroke = stroke
+        val x = IntArray(points.size)
+        val y = IntArray(points.size)
+
+        val global_points = points.map { p -> transform * p }
+
+        global_points.forEachIndexed({ index, coordinate ->
+            x[index] = (coordinate.x + 0.5).toInt()
+            y[index] = (coordinate.y + 0.5).toInt()
+        })
+
+        if (filled)
+            awt_graphics.fillPolygon(x, y, points.size)
+        else
+            awt_graphics.drawPolygon(x, y, points.size)
+        awt_graphics.color = oldColor
+        awt_graphics.stroke = oldStroke
     }
 
     fun text(text: String, position: Coordinate, font: Font) {
