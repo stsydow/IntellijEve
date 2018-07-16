@@ -140,7 +140,12 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         val op: Operation
         val sceneCoord = getSceneCoordinate(e)
         val picked: UIElement?
-        val onlyCtrlModifier = !spaceBarPressed && e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown
+        val onlyCtrlModifier =  !spaceBarPressed &&
+                                e.isControlDown &&
+                                !e.isShiftDown &&
+                                !e.isAltDown &&
+                                !e.isAltGraphDown &&
+                                !e.isMetaDown
         when (e.button) {
             M_BUTTON_LEFT   -> {
                 picked = root.pick(sceneCoord, transform, UIElementKind.Node)
@@ -178,7 +183,11 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         val op: Operation
         val sceneCoord = getSceneCoordinate(e)
         val picked: UIElement?
-        val noModifierOrSpace = !e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown
+        val noModifierOrSpace =     !e.isControlDown &&
+                                    !e.isShiftDown &&
+                                    !e.isAltDown &&
+                                    !e.isAltGraphDown &&
+                                    !e.isMetaDown
 
         when (e.button) {
             M_BUTTON_LEFT   -> {
@@ -195,7 +204,11 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                                 Operation.UnselectAllOperation(root).perform()
                             focusedElementOriginalTransform = picked.transform
                             focusedElementOriginalParentBounds = picked.getParentBoundsList()
-                            op = Operation.MoveOperation(focusedElement!! as Node, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!, focusedElementOriginalParentBounds!!, focusedElementOriginalTransform!!)
+                            op = Operation.MoveOperation(focusedElement!! as Node,
+                                                            focusedElementOriginalParentBounds!!,
+                                                            focusedElementOriginalTransform!!,
+                                                            focusedElementOriginalParentBounds!!,
+                                                            focusedElementOriginalTransform!!)
                         }
                         is Port -> {
                             if (!picked.parent!!.isSelected)
@@ -278,7 +291,12 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
     override fun mouseDragged(e: MouseEvent) {
         val sceneCoord = getSceneCoordinate(e)
         lastMousePosition = sceneCoord
-        val onlyCtrlModifier = !spaceBarPressed && e.isControlDown && !e.isShiftDown && !e.isAltDown && !e.isAltGraphDown && !e.isMetaDown
+        val onlyCtrlModifier =  !spaceBarPressed &&
+                                e.isControlDown &&
+                                !e.isShiftDown &&
+                                !e.isAltDown &&
+                                !e.isAltGraphDown &&
+                                !e.isMetaDown
 
         when (currentOperation) {
             is Operation.AreaSelectOperation -> {
@@ -303,7 +321,10 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
                     if (onlyCtrlModifier) {
                         val picked = root.pick(sceneCoord, transform, UIElementKind.Node)
                         if (picked != null)
-                            currentOperation = Operation.AreaSelectOperation(root, picked as Node, lastMovementPosition!!, sceneCoord)
+                            currentOperation = Operation.AreaSelectOperation(root,
+                                                                                picked as Node,
+                                                                                lastMovementPosition!!,
+                                                                                sceneCoord)
                     }
                 }
             }
