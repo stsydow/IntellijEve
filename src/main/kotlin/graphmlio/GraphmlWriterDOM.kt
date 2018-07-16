@@ -7,7 +7,6 @@
 
 package graphmlio
 
-import com.sun.xml.internal.txw2.output.IndentingXMLStreamWriter
 import editor.*
 import java.io.File
 import javax.xml.XMLConstants
@@ -88,8 +87,7 @@ fun write(path: String, root: Node) {
     file.createNewFile()
     val xmlOutFactory = XMLOutputFactory.newInstance()
     val writeTarget = file.outputStream()
-    val writer = IndentingXMLStreamWriter(xmlOutFactory.createXMLStreamWriter(writeTarget, GraphmlConstants.UTF8_ENCODING))
-    writer.setIndentStep("    ")
+    val writer = xmlOutFactory.createXMLStreamWriter(writeTarget, GraphmlConstants.UTF8_ENCODING)
 
     writeXmlHeaderElement(writer)
     writeGraphmlElement(writer)
