@@ -1,10 +1,7 @@
 package editor
 
 import intellij.GraphFileEditor
-import java.awt.Color
-import java.awt.Dimension
-import java.awt.Graphics
-import java.awt.Graphics2D
+import java.awt.*
 import java.awt.event.*
 import java.util.*
 import javax.swing.JColorChooser
@@ -98,6 +95,21 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         if (currentOperation is Operation.AreaSelectOperation) {
             val op = currentOperation as Operation.AreaSelectOperation
             globalGraphics.polygon(Color.MAGENTA, op.selectRect.toCoordinates(), false)
+        }
+
+        // paint dashed rectangle enclosing all selected nodes (if more than one)
+        if (selectedNodes.size > 1){
+            val groupCoords = mutableListOf<Coordinate>()
+            selectedNodes.forEach {
+                groupCoords.addAll((it.getGlobalTransform()*it.bounds).toCoordinates())
+            }
+            val groupBounds = Bounds.minimalBounds(groupCoords)
+            val stroke = globalGraphics.awt_graphics.stroke as BasicStroke
+            val dashedStroke = BasicStroke(stroke.lineWidth, stroke.endCap, stroke.lineJoin, stroke.miterLimit, floatArrayOf(9.0f), 0.0f)
+            globalGraphics.polygon(Color.MAGENTA,
+                    groupBounds.toCoordinates(),
+                    false,
+                    dashedStroke)
         }
     }
 
