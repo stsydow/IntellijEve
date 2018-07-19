@@ -11,6 +11,7 @@ class ReducedGraph(val pipelines: List<Pipeline>, val merges: List<Merge>)
 open class ReducedGraphNode(val varname: String)
 class Pipeline(varname: String, val firstNode: Node, val lastNode: Node, val predecessor: ReducedGraphNode?, var successor: ReducedGraphNode?) : ReducedGraphNode(varname)
 class Merge(varname: String, val inputNodes: MutableList<ReducedGraphNode>, var outputNode: ReducedGraphNode?) : ReducedGraphNode(varname)
+class Copy(varname: String, val inputNode: Pipeline, val outputNodes: MutableList<ReducedGraphNode>) : ReducedGraphNode(varname)
 
 
 class RustAsyncCodeGen {
@@ -43,13 +44,14 @@ class RustAsyncCodeGen {
     private fun getReducedGraph(sourceNodes: List<Node>): ReducedGraph{
         val pipelines =  HashMap<String, Pipeline>()
         val merges = HashMap<String, Merge>()
+        val copies = HashMap<String, Copy>()
         sourceNodes.forEach {
-            traverseGraph(it, it, null, pipelines, merges)
+            traverseGraph(it, it, null, pipelines, merges, copies)
         }
         return ReducedGraph(ArrayList(pipelines.values), ArrayList(merges.values))
     }
 
-    private fun traverseGraph(sourceNode: Node, currentNode: Node, predecessor: ReducedGraphNode?, pipelines: HashMap<String, Pipeline>, merges: HashMap<String, Merge>) {
+    private fun traverseGraph(sourceNode: Node, currentNode: Node, predecessor: ReducedGraphNode?, pipelines: HashMap<String, Pipeline>, merges: HashMap<String, Merge>, copies: HashMap<String, Copy>) {
         if (getOutgoingEdges(currentNode).count() == 0) { // sink
             val pipelineId = "pipeline_${sourceNode.id.toLowerCase()}_${currentNode.id.toLowerCase()}"
             if (!pipelines.containsKey(pipelineId)) {
@@ -57,12 +59,16 @@ class RustAsyncCodeGen {
                 pipelines.put(pipeline.varname, pipeline)
                 if (predecessor is Merge) {
                     predecessor.outputNode = pipeline
+                } else if (predecessor is Copy) {
+                    if (pipeline !in predecessor.outputNodes) {
+                        predecessor.outputNodes.add(pipeline)
+                    }
                 }
             }
         } else if (getOutgoingEdges(currentNode).count() == 1) { // pipeline...
             val next = getOutgoingEdges(currentNode)[0].target.parent!!
             if (getIncomingEdges(next.in_port).count() == 1) { // ... continues with a normal successor
-                traverseGraph(sourceNode, next, predecessor, pipelines, merges)
+                traverseGraph(sourceNode, next, predecessor, pipelines, merges, copies)
             } else { // ... stops with a merge
                 val pipelineId = "pipeline_${sourceNode.id.toLowerCase()}_${currentNode.id.toLowerCase()}"
                 val mergeId = "merge_${next.id.toLowerCase()}"
@@ -73,7 +79,7 @@ class RustAsyncCodeGen {
                 }
                 val merge = when (merges.containsKey(mergeId)) {
                     true -> merges[mergeId]!!
-                    false -> Merge("merge_${next.id.toLowerCase()}", mutableListOf(), null)
+                    false -> Merge(mergeId, mutableListOf(), null)
                 }
 
                 if (pipeline !in merge.inputNodes) {
@@ -86,12 +92,34 @@ class RustAsyncCodeGen {
 
                 if (predecessor is Merge) {
                     predecessor.outputNode = pipeline
+                } else if (predecessor is Copy) {
+                    if (pipeline !in predecessor.outputNodes) {
+                        predecessor.outputNodes.add(pipeline)
+                    }
                 }
 
-                traverseGraph(next, next, merge, pipelines, merges)
+                traverseGraph(next, next, merge, pipelines, merges, copies)
             }
         } else {
-            throw NotImplementedError()
+            val pipelineId = "pipeline_${sourceNode.id.toLowerCase()}_${currentNode.id.toLowerCase()}"
+            val copyid = "copy_${currentNode.id.toLowerCase()}"
+
+            val pipeline = when (pipelines.containsKey(pipelineId)) {
+                true -> pipelines[pipelineId]!!
+                false -> Pipeline(pipelineId, sourceNode, currentNode, predecessor, null)
+            }
+            val copy = when (copies.containsKey(copyid)) {
+                true -> copies[copyid]!!
+                false -> Copy(copyid, pipeline, mutableListOf())
+            }
+
+            copies[copyid] = copy
+            pipelines[pipelineId] = pipeline
+
+            val successors = getSuccessors(currentNode)
+            successors.forEach {
+                traverseGraph(it, it, copy, pipelines, merges, copies)
+            }
         }
     }
 
@@ -113,6 +141,11 @@ use futures::Poll;
 use futures::Stream;
 use futures::Async;
 
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::clone::Clone;
+use std::sync::MutexGuard;
+
 use structs::*;""")
         nodes.forEach {
             if (it.childNodes.count() == 0) {
@@ -122,10 +155,107 @@ use nodes::node_${it.name.toLowerCase()}::${it.name};""")
 
         }
         builder.append("""
+type EveStream<T> = Stream<Item=T, Error=EveError>;
 
 #[derive(Debug)]
 pub enum EveError {
     UnknownError
+}
+
+pub struct StreamCopy<T> {
+    input: Box<EveStream<T>>,
+    buffers: Vec<Vec<T>>,
+    idx: usize
+}
+
+struct StreamCopyMutex<T> {
+    inner: Arc<Mutex<StreamCopy<T>>>
+}
+
+struct StreamCopyOutPort<T> {
+    id: usize,
+    source: StreamCopyMutex<T>
+}
+
+impl<T: Clone> StreamCopy<T> {
+    fn poll(&mut self, id: usize) -> Poll<Option<T>, EveError> {
+        let buffered = self.buffered_poll(id);
+        match buffered {
+            Some(buffered) => {
+                Ok(Async::Ready(Some(buffered)))
+            }
+            None => {
+                let result = self.input.poll();
+                match result {
+                    Ok(async) => {
+                        match async {
+                            Async::Ready(ready) => {
+                                match ready {
+                                    Some(event) => {
+                                        for mut buffer in &mut self.buffers {
+                                            buffer.push(event.clone())
+                                        }
+                                        self.poll(id)
+                                    },
+                                    None => Ok(Async::Ready(None))
+                                }
+                            },
+                            Async::NotReady => Ok(Async::NotReady)
+                        }
+                    }
+                    Err(e) => Err(e)
+                }
+            }
+        }
+    }
+
+    fn buffered_poll(&mut self, id: usize) -> Option<T>{
+        let mut buffer = &mut self.buffers[id];
+        if buffer.len() > 0 {
+            Some(buffer.remove(0))
+        } else {
+            None
+        }
+    }
+}
+
+impl<T: Clone> Stream for StreamCopyOutPort<T> {
+    type Item = T;
+    type Error = EveError;
+
+    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+        self.source.poll_locked(self.id)
+    }
+}
+
+impl<T> Clone for StreamCopyMutex<T> {
+    fn clone(&self) -> StreamCopyMutex<T> {
+        StreamCopyMutex {
+            inner: self.inner.clone()
+        }
+    }
+}
+
+impl<T: Clone> StreamCopyMutex<T> {
+    fn lock(&self) -> MutexGuard<StreamCopy<T>> {
+        self.inner.lock().unwrap()
+    }
+
+    fn create_output_locked(&self) -> StreamCopyOutPort<T> {
+        let mut inner = self.lock();
+        let val = StreamCopyOutPort {
+            source: (*self).clone(),
+            id: inner.idx
+        };
+        inner.buffers.push(vec!());
+        inner.idx += 1;
+        val
+    }
+
+    fn poll_locked(&self, id: usize) -> Poll<Option<T>, EveError> {
+        let mut inner = self.lock();
+        inner.poll(id)
+    }
 }
 
 pub fn main() {
@@ -173,6 +303,18 @@ pub fn build() -> Box<Future<Item=(), Error=EveError>> {""")
         Files.write(Paths.get(outputDirectory + "/src/main.rs"), builder.toString().toByteArray())
     }
 
+    private fun get_predecessor_argument(element: ReducedGraphNode?): String {
+        if (element == null)
+            return ""
+        else if (element is Pipeline)
+            return element.varname
+        else if (element is Merge)
+            return element.varname
+        else if (element is Copy)
+            return "Box::new(${element.varname}.create_output_locked())"
+        throw Error()
+    }
+
     private fun createElement(element: ReducedGraphNode, builder: StringBuilder, handledElements: MutableSet<String>) {
         if (element.varname in handledElements) {
             return
@@ -184,9 +326,8 @@ pub fn build() -> Box<Future<Item=(), Error=EveError>> {""")
             if (element.varname in handledElements) {
                 return
             }
-            val pred = if (element.predecessor != null)  element.predecessor.varname else ""
             builder.append("""
-    let ${element.varname} = ${element.varname}(${pred});""")
+    let ${element.varname} = ${element.varname}(${get_predecessor_argument(element.predecessor)});""")
             handledElements.add(element.varname)
             if (element.successor != null) {
                 createElement(element.successor!!, builder, handledElements)
@@ -209,7 +350,16 @@ pub fn build() -> Box<Future<Item=(), Error=EveError>> {""")
             if (element.outputNode != null) {
                 createElement(element.outputNode!!, builder, handledElements)
             }
-
+        } else if (element is Copy) {
+            builder.append("""
+    let ${element.varname} = StreamCopyMutex {
+        inner: Arc::new(Mutex::new(StreamCopy {
+            input: ${element.inputNode.varname},
+            buffers: vec!(),
+            idx: 0
+        }
+    ))};""")
+            handledElements.add(element.varname)
         }
     }
 
