@@ -273,6 +273,9 @@ pub fn main() {
             if (isSourceNode(it.firstNode)) {
                 sources.add(it)
                 builder.append(getSourcePipeline(it))
+                if (isSinkNode(it.lastNode)) {
+                    sinks.add(it)
+                }
             } else {
                 if (isSinkNode(it.lastNode)) {
                     sinks.add(it)
@@ -292,7 +295,7 @@ pub fn build() -> Box<Future<Item=(), Error=EveError>> {""")
     Box::from(${sinks[0].varname}""")
         for (i in 1..sinks.count()-1) {
             builder.append("""
-            .join(pipeline_${sinks[i].varname}).map(|_| ())""")
+            .join(${sinks[i].varname}).map(|_| ())""")
         }
         builder.append("""
         .for_each(|_| ok(())))
@@ -365,8 +368,9 @@ pub fn build() -> Box<Future<Item=(), Error=EveError>> {""")
 
     private fun getSourcePipeline(pipeline: Pipeline): String {
         val builder = StringBuilder()
+        val output = if (getOutgoingEdges(pipeline.lastNode).count() == 0) "()" else pipeline.lastNode.out_ports[0].message_type
         builder.append("""
-pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}() -> Box<Stream<Item=${pipeline.lastNode.out_ports[0].message_type}, Error=EveError>> {
+pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}() -> Box<Stream<Item=${output}, Error=EveError>> {
     Box::from(
         ${pipeline.firstNode.name}::new()""")
         if (pipeline.firstNode != pipeline.lastNode) {
