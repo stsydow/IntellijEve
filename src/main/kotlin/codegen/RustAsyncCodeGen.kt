@@ -11,7 +11,7 @@ class ReducedGraph(val pipelines: List<Pipeline>, val merges: List<Merge>)
 open class ReducedGraphNode(val varname: String)
 class Pipeline(varname: String, val firstNode: Node, val lastNode: Node, val predecessor: ReducedGraphNode?, var successor: ReducedGraphNode?) : ReducedGraphNode(varname)
 class Merge(varname: String, val inputNodes: MutableList<ReducedGraphNode>, var outputNode: ReducedGraphNode?) : ReducedGraphNode(varname)
-class Copy(varname: String, val inputNode: Pipeline, val outputNodes: MutableList<ReducedGraphNode>) : ReducedGraphNode(varname)
+class Copy(varname: String, val inputNode: ReducedGraphNode, val outputNodes: MutableList<ReducedGraphNode>) : ReducedGraphNode(varname)
 
 
 class RustAsyncCodeGen {
@@ -100,26 +100,58 @@ class RustAsyncCodeGen {
 
                 traverseGraph(next, next, merge, pipelines, merges, copies)
             }
-        } else {
-            val pipelineId = "pipeline_${sourceNode.id.toLowerCase()}_${currentNode.id.toLowerCase()}"
-            val copyid = "copy_${currentNode.id.toLowerCase()}"
+        } else { // Copy
+            if (predecessor is Pipeline) {
+                val pipelineId = "pipeline_${sourceNode.id.toLowerCase()}_${currentNode.id.toLowerCase()}"
+                val copyid = "copy_${currentNode.id.toLowerCase()}"
 
-            val pipeline = when (pipelines.containsKey(pipelineId)) {
-                true -> pipelines[pipelineId]!!
-                false -> Pipeline(pipelineId, sourceNode, currentNode, predecessor, null)
-            }
-            val copy = when (copies.containsKey(copyid)) {
-                true -> copies[copyid]!!
-                false -> Copy(copyid, pipeline, mutableListOf())
+                val pipeline = when (pipelines.containsKey(pipelineId)) {
+                    true -> pipelines[pipelineId]!!
+                    false -> Pipeline(pipelineId, sourceNode, currentNode, predecessor, null)
+                }
+
+                val copy = when (copies.containsKey(copyid)) {
+                    true -> copies[copyid]!!
+                    false -> Copy(copyid, pipeline, mutableListOf())
+                }
+
+                copies[copyid] = copy
+                pipelines[pipelineId] = pipeline
+
+                val successors = getSuccessors(currentNode)
+                successors.forEach {
+                    traverseGraph(it, it, copy, pipelines, merges, copies)
+                }
+            } else if (predecessor is Merge) {
+                val pipelineId = "pipeline_${currentNode.id.toLowerCase()}_${currentNode.id.toLowerCase()}"
+                val copyid = "copy_${currentNode.id.toLowerCase()}"
+                val mergeId = predecessor.varname
+
+                val merge = merges[mergeId]!!
+
+                val pipeline = when (pipelines.containsKey(pipelineId)) {
+                    true -> pipelines[pipelineId]!!
+                    false -> Pipeline(pipelineId, currentNode, currentNode, predecessor, null)
+                }
+
+                val copy = when (copies.containsKey(copyid)) {
+                    true -> copies[copyid]!!
+                    false -> Copy(copyid, pipeline, mutableListOf())
+                }
+
+                copies[copyid] = copy
+                merge.outputNode = pipeline
+                pipeline.successor = copy
+                pipelines[pipelineId] = pipeline
+
+                val successors = getSuccessors(currentNode)
+                successors.forEach {
+                    traverseGraph(it, it, copy, pipelines, merges, copies)
+                }
+            } else {
+                println("invalid predecessor")
             }
 
-            copies[copyid] = copy
-            pipelines[pipelineId] = pipeline
-
-            val successors = getSuccessors(currentNode)
-            successors.forEach {
-                traverseGraph(it, it, copy, pipelines, merges, copies)
-            }
         }
     }
 
@@ -150,7 +182,7 @@ use structs::*;""")
         nodes.forEach {
             if (it.childNodes.count() == 0) {
                 builder.append("""
-use nodes::node_${it.name.toLowerCase()}::${it.name};""")
+use nodes::node_${it.name.toLowerCase()};""")
             }
 
         }
@@ -361,6 +393,9 @@ pub fn build() -> impl Future<Item=(), Error=EveError> {""")
         }
     ))};""")
             handledElements.add(element.varname)
+            element.outputNodes.forEach {
+                createElement(it, builder, handledElements)
+            }
         }
     }
 
@@ -369,13 +404,13 @@ pub fn build() -> impl Future<Item=(), Error=EveError> {""")
         val output = if (getOutgoingEdges(pipeline.lastNode).count() == 0) "()" else pipeline.lastNode.out_ports[0].message_type
         builder.append("""
 pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}() -> impl Stream<Item=${output}, Error=EveError> {
-    ${pipeline.firstNode.name}::new()""")
+    node_${pipeline.firstNode.name.toLowerCase()}::${pipeline.firstNode.name}::new()""")
         if (pipeline.firstNode != pipeline.lastNode) {
             var n = getSuccessors(pipeline.firstNode)[0]
             while (true) {
                 builder.append("""
         .map(|event| {
-            ${n.name}::tick(event)
+            node_${n.name.toLowerCase()}::tick(event)
         })""")
                 if (n == pipeline.lastNode)
                     break
@@ -392,13 +427,13 @@ pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}() -> impl Strea
         val builder = StringBuilder()
         val type = if (pipeline.lastNode.out_ports.count() > 0) pipeline.lastNode.out_ports[0].message_type else "()"
         builder.append("""
-pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}(stream: Box<Stream<Item=${pipeline.firstNode.in_port.message_type}, Error=EveError>>) ->  impl Stream<Item=${type}, Error=EveError> {
+pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}(stream: Box<Stream<Item=${pipeline.firstNode.in_port.message_type}, Error=EveError>>) -> impl Stream<Item=${type}, Error=EveError> {
     stream""")
         var n = pipeline.firstNode
         while (true) {
             builder.append("""
         .map(|event| {
-            ${n.name}::tick(event)
+            node_${n.name.toLowerCase()}::tick(event)
         })""")
             if (n == pipeline.lastNode)
                 break
