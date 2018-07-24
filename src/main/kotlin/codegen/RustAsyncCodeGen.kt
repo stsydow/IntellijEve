@@ -344,7 +344,7 @@ pub fn build() -> impl Future<Item=(), Error=EveError> {""")
         else if (element is Merge)
             return element.varname
         else if (element is Copy)
-            return "Box::new(${element.varname}.create_output_locked())"
+            return "${element.varname}.create_output_locked()"
         throw Error()
     }
 
@@ -373,12 +373,12 @@ pub fn build() -> impl Future<Item=(), Error=EveError> {""")
                 return
             }
             builder.append("""
-    let ${element.varname} = Box::from(${element.inputNodes[0].varname}""")
+    let ${element.varname} = ${element.inputNodes[0].varname}""")
             for (i in 1..element.inputNodes.count()-1) {
                 builder.append("""
         .select(${element.inputNodes[i].varname})""")
             }
-            builder.append(");")
+            builder.append(";")
             handledElements.add(element.varname)
             if (element.outputNode != null) {
                 createElement(element.outputNode!!, builder, handledElements)
@@ -427,7 +427,7 @@ pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}() -> impl Strea
         val builder = StringBuilder()
         val type = if (pipeline.lastNode.out_ports.count() > 0) pipeline.lastNode.out_ports[0].message_type else "()"
         builder.append("""
-pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}(stream: Box<Stream<Item=${pipeline.firstNode.in_port.message_type}, Error=EveError>>) -> impl Stream<Item=${type}, Error=EveError> {
+pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}(stream: impl Stream<Item=${pipeline.firstNode.in_port.message_type}, Error=EveError>) -> impl Stream<Item=${type}, Error=EveError> {
     stream""")
         var n = pipeline.firstNode
         while (true) {
