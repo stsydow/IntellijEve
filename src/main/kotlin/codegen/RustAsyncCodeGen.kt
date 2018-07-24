@@ -155,29 +155,27 @@ use nodes::node_${it.name.toLowerCase()}::${it.name};""")
 
         }
         builder.append("""
-type EveStream<T> = Stream<Item=T, Error=EveError>;
-
 #[derive(Debug)]
 pub enum EveError {
     UnknownError
 }
 
-pub struct StreamCopy<T> {
-    input: Box<EveStream<T>>,
+pub struct StreamCopy<T, S: Stream<Item=T, Error=EveError>> {
+    input: S,
     buffers: Vec<Vec<T>>,
     idx: usize
 }
 
-struct StreamCopyMutex<T> {
-    inner: Arc<Mutex<StreamCopy<T>>>
+struct StreamCopyMutex<T, S: Stream<Item=T, Error=EveError>> {
+    inner: Arc<Mutex<StreamCopy<T, S>>>
 }
 
-struct StreamCopyOutPort<T> {
+struct StreamCopyOutPort<T, S: Stream<Item=T, Error=EveError>> {
     id: usize,
-    source: StreamCopyMutex<T>
+    source: StreamCopyMutex<T, S>
 }
 
-impl<T: Clone> StreamCopy<T> {
+impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopy<T, S> {
     fn poll(&mut self, id: usize) -> Poll<Option<T>, EveError> {
         let buffered = self.buffered_poll(id);
         match buffered {
@@ -219,7 +217,7 @@ impl<T: Clone> StreamCopy<T> {
     }
 }
 
-impl<T: Clone> Stream for StreamCopyOutPort<T> {
+impl<T: Clone, S: Stream<Item=T, Error=EveError>> Stream for StreamCopyOutPort<T, S> {
     type Item = T;
     type Error = EveError;
 
@@ -228,20 +226,20 @@ impl<T: Clone> Stream for StreamCopyOutPort<T> {
     }
 }
 
-impl<T> Clone for StreamCopyMutex<T> {
-    fn clone(&self) -> StreamCopyMutex<T> {
+impl<T, S: Stream<Item=T, Error=EveError>> Clone for StreamCopyMutex<T, S> {
+    fn clone(&self) -> StreamCopyMutex<T, S> {
         StreamCopyMutex {
             inner: self.inner.clone()
         }
     }
 }
 
-impl<T: Clone> StreamCopyMutex<T> {
-    fn lock(&self) -> MutexGuard<StreamCopy<T>> {
+impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopyMutex<T, S> {
+    fn lock(&self) -> MutexGuard<StreamCopy<T, S>> {
         self.inner.lock().unwrap()
     }
 
-    fn create_output_locked(&self) -> StreamCopyOutPort<T> {
+    fn create_output_locked(&self) -> StreamCopyOutPort<T, S> {
         let mut inner = self.lock();
         let val = StreamCopyOutPort {
             source: (*self).clone(),
@@ -285,20 +283,20 @@ pub fn main() {
         }
 
         builder.append("""
-pub fn build() -> Box<Future<Item=(), Error=EveError>> {""")
+pub fn build() -> impl Future<Item=(), Error=EveError> {""")
         sources.forEach {
             createElement(it, builder, handledElements)
         }
 
         builder.append("""
 
-    Box::from(${sinks[0].varname}""")
+    ${sinks[0].varname}""")
         for (i in 1..sinks.count()-1) {
             builder.append("""
             .join(${sinks[i].varname}).map(|_| ())""")
         }
         builder.append("""
-        .for_each(|_| ok(())))
+        .for_each(|_| ok(()))
 }
 
 """)
@@ -370,9 +368,8 @@ pub fn build() -> Box<Future<Item=(), Error=EveError>> {""")
         val builder = StringBuilder()
         val output = if (getOutgoingEdges(pipeline.lastNode).count() == 0) "()" else pipeline.lastNode.out_ports[0].message_type
         builder.append("""
-pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}() -> Box<Stream<Item=${output}, Error=EveError>> {
-    Box::from(
-        ${pipeline.firstNode.name}::new()""")
+pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}() -> impl Stream<Item=${output}, Error=EveError> {
+    ${pipeline.firstNode.name}::new()""")
         if (pipeline.firstNode != pipeline.lastNode) {
             var n = getSuccessors(pipeline.firstNode)[0]
             while (true) {
@@ -386,7 +383,6 @@ pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}() -> Box<Stream
             }
         }
         builder.append("""
-    )
 }
 """)
         return builder.toString()
@@ -396,8 +392,8 @@ pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}() -> Box<Stream
         val builder = StringBuilder()
         val type = if (pipeline.lastNode.out_ports.count() > 0) pipeline.lastNode.out_ports[0].message_type else "()"
         builder.append("""
-pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}(stream: Box<Stream<Item=${pipeline.firstNode.in_port.message_type}, Error=EveError>>) -> Box<Stream<Item=${type}, Error=EveError>> {
-    Box::from(stream""")
+pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}(stream: Box<Stream<Item=${pipeline.firstNode.in_port.message_type}, Error=EveError>>) ->  impl Stream<Item=${type}, Error=EveError> {
+    stream""")
         var n = pipeline.firstNode
         while (true) {
             builder.append("""
@@ -409,7 +405,6 @@ pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}(stream: Box<Str
             n = getSuccessors(n)[0]
         }
         builder.append("""
-    )
 }
 """)
         return builder.toString()
