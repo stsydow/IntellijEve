@@ -82,6 +82,9 @@ class EveamcpConstants() {
     }
 }
 
+const val SPACES_PER_TAB = 4
+var depth: Int = 0
+
 fun write(path: String, root: Node) {
     val file = File(path)
     file.createNewFile()
@@ -99,6 +102,7 @@ fun write(path: String, root: Node) {
 
 private fun writeXmlHeaderElement(writer: XMLStreamWriter) {
     writer.writeStartDocument(GraphmlConstants.UTF8_ENCODING, GraphmlConstants.XML_VERSION)
+    writeNewline(writer)
 }
 
 private fun writeGraphmlElement(writer: XMLStreamWriter){
@@ -121,57 +125,74 @@ private fun writeGraphmlElement(writer: XMLStreamWriter){
                     + " "
                     + GraphmlConstants.DEFAULT_GRAPHML_SCHEMA_LOCATION
     )
+    writeNewline(writer)
 }
 
 private fun writeKeyInfo(writer: XMLStreamWriter){
     writeKeyElement(writer,
             EveamcpConstants.NODE_BOUNDS_XMAX, GraphmlConstants.NODE,
             EveamcpConstants.NODE_BOUNDS_XMAX_NAME, GraphmlConstants.DOUBLE)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.NODE_BOUNDS_XMIN, GraphmlConstants.NODE,
             EveamcpConstants.NODE_BOUNDS_XMIN_NAME, GraphmlConstants.DOUBLE)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.NODE_BOUNDS_YMAX, GraphmlConstants.NODE,
             EveamcpConstants.NODE_BOUNDS_YMAX_NAME, GraphmlConstants.DOUBLE)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.NODE_BOUNDS_YMIN, GraphmlConstants.NODE,
             EveamcpConstants.NODE_BOUNDS_YMIN_NAME, GraphmlConstants.DOUBLE)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.NODE_COLOR, GraphmlConstants.NODE,
             EveamcpConstants.NODE_COLOR_NAME, GraphmlConstants.STRING)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.NODE_CONTEXT, GraphmlConstants.NODE,
             EveamcpConstants.NODE_CONTEXT_NAME, GraphmlConstants.STRING)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.NODE_FILTER, GraphmlConstants.NODE,
             EveamcpConstants.NODE_FILTER_NAME, GraphmlConstants.STRING)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.NODE_NAME, GraphmlConstants.NODE,
             EveamcpConstants.NODE_NAME_NAME, GraphmlConstants.STRING)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.NODE_ORDER, GraphmlConstants.NODE,
             EveamcpConstants.NODE_ORDER_NAME, GraphmlConstants.STRING)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.NODE_FILE, GraphmlConstants.NODE,
             EveamcpConstants.NODE_FILE_NAME, GraphmlConstants.STRING)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.NODE_TRANSFORM_SCALE, GraphmlConstants.NODE,
             EveamcpConstants.NODE_TRANSFORM_SCALE_NAME, GraphmlConstants.DOUBLE)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.NODE_TRANSFORM_X, GraphmlConstants.NODE,
             EveamcpConstants.NODE_TRANSFORM_X_NAME, GraphmlConstants.DOUBLE)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.NODE_TRANSFORM_Y, GraphmlConstants.NODE,
             EveamcpConstants.NODE_TRANSFORM_Y_NAME, GraphmlConstants.DOUBLE)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.PORT_DIRECTION, GraphmlConstants.PORT,
             EveamcpConstants.PORT_DIRECTION_NAME, GraphmlConstants.STRING)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.PORT_ID, GraphmlConstants.PORT,
             EveamcpConstants.PORT_ID_NAME, GraphmlConstants.STRING)
+    writeNewline(writer)
     writeKeyElement(writer,
             EveamcpConstants.PORT_MESSAGE_TYPE, GraphmlConstants.PORT,
             EveamcpConstants.PORT_MESSAGE_TYPE_NAME, GraphmlConstants.STRING)
+    writeNewline(writer)
 }
 
 private fun writeKeyElement(writer: XMLStreamWriter, id: String, forWhat: String, name: String, type: String) {
@@ -184,66 +205,113 @@ private fun writeKeyElement(writer: XMLStreamWriter, id: String, forWhat: String
 }
 
 private fun writeGraph(writer: XMLStreamWriter, root: Node) {
+    depth += 1
+    writeIndentation(writer)
     writer.writeStartElement(GraphmlConstants.GRAPH)    // start <graph>
         writer.writeAttribute(GraphmlConstants.ID, root.id + ":0")
         writer.writeAttribute(GraphmlConstants.EDGE_DEFAULT, GraphmlConstants.DIRECTED)
+        writeNewline(writer)
+        depth += 1
         // write all children nodes of root node
-        root.childNodes.forEach( {iter -> writeNodeElement(writer, iter) })
+        root.childNodes.forEach( {iter ->
+            writeIndentation(writer)
+            writeNodeElement(writer, iter)
+        })
         // write the top level edges because we will miss them otherwise
-        root.childEdges.forEach({ iter -> writeEdgeElement(writer, iter) })
+        root.childEdges.forEach({ iter ->
+            writeIndentation(writer)
+            writeEdgeElement(writer, iter)
+        })
+        depth -= 1
+    writeIndentation(writer)
     writer.writeEndElement()    // end <graph>
+    writeNewline(writer)
+    depth -= 1
 }
 
-private fun writeNodeElement(writer: XMLStreamWriter, node: Node){
+private fun writeNodeElement(writer: XMLStreamWriter, node: Node) {
     writer.writeStartElement(GraphmlConstants.NODE) // start <node>
     writer.writeAttribute(GraphmlConstants.ID, node.id)
+    writeNewline(writer)
+    depth += 1
     // write ports
+    writeIndentation(writer)
     writePortElement(writer, node.in_port)
-    node.out_ports.forEach({ iter -> writePortElement(writer, iter) })
+    node.out_ports.forEach({ iter ->
+        writeIndentation(writer)
+        writePortElement(writer, iter)
+    })
     // write data fields
+    writeIndentation(writer)
     writeDataElement(writer,
             EveamcpConstants.NODE_BOUNDS_XMAX, node.innerBounds.x_max.toString())
+    writeIndentation(writer)
     writeDataElement(writer,
             EveamcpConstants.NODE_BOUNDS_XMIN, node.innerBounds.x_min.toString())
+    writeIndentation(writer)
     writeDataElement(writer,
             EveamcpConstants.NODE_BOUNDS_YMAX, node.innerBounds.y_max.toString())
+    writeIndentation(writer)
     writeDataElement(writer,
             EveamcpConstants.NODE_BOUNDS_YMIN, node.innerBounds.y_min.toString())
+    writeIndentation(writer)
     writeDataElement(writer,
             EveamcpConstants.NODE_COLOR, colorToHexstring(node.color))
     val context = node.getProperty(PropertyType.ContextId)
-    if (context != null)
+    if (context != null) {
+        writeIndentation(writer)
         writeDataElement(writer, EveamcpConstants.NODE_CONTEXT, context)
+    }
     val filter = node.getProperty(PropertyType.Filter)
-    if (filter != null)
+    if (filter != null){
+        writeIndentation(writer)
         writeDataElement(writer, EveamcpConstants.NODE_FILTER, filter)
+    }
+    writeIndentation(writer)
     writeDataElement(writer,
             EveamcpConstants.NODE_NAME, node.name)
     val order = node.getProperty(PropertyType.Order)
-    if (order != null)
+    if (order != null) {
+        writeIndentation(writer)
         writeDataElement(writer, EveamcpConstants.NODE_ORDER, order)
+    }
 //    if(node.fileName != "")
 //        writeDataElement(writer, EveamcpConstants.NODE_FILE, node.fileName)
+    writeIndentation(writer)
     writeDataElement(writer,
             EveamcpConstants.NODE_TRANSFORM_SCALE, node.transform.scale.toString())
+    writeIndentation(writer)
     writeDataElement(writer,
             EveamcpConstants.NODE_TRANSFORM_X, node.transform.x_offset.toString())
+    writeIndentation(writer)
     writeDataElement(writer,
             EveamcpConstants.NODE_TRANSFORM_Y, node.transform.y_offset.toString())
     // write child nodes
     if (node.childNodes.size > 0)
         writeGraph(writer, node)
+    depth -= 1
+    writeIndentation(writer)
     writer.writeEndElement()    // end <node>
+    writeNewline(writer)
 }
 
 private fun writePortElement(writer: XMLStreamWriter, port: Port) {
     writer.writeStartElement(GraphmlConstants.PORT) // start <port>
         writer.writeAttribute(GraphmlConstants.NAME, port.name)
+        writeNewline(writer)
+        depth += 1
+        writeIndentation(writer)
         writeDataElement(writer, EveamcpConstants.PORT_DIRECTION, port.direction.toString())
+        writeIndentation(writer)
         writeDataElement(writer, EveamcpConstants.PORT_ID, port.id)
-        if (port.message_type.length > 0)
+        if (port.message_type.length > 0) {
+            writeIndentation(writer)
             writeDataElement(writer, EveamcpConstants.PORT_MESSAGE_TYPE, port.message_type)
+        }
+    depth -= 1
+    writeIndentation(writer)
     writer.writeEndElement()    // end <port>
+    writeNewline(writer)
 }
 
 private fun writeEdgeElement(writer: XMLStreamWriter, edge: Edge) {
@@ -253,6 +321,7 @@ private fun writeEdgeElement(writer: XMLStreamWriter, edge: Edge) {
         writer.writeAttribute(GraphmlConstants.SOURCE_PORT, edge.source.id)
         writer.writeAttribute(GraphmlConstants.TARGET_PORT, edge.target.id)
     writer.writeEndElement()    // end <edge>
+    writeNewline(writer)
 }
 
 private fun writeDataElement(writer: XMLStreamWriter, id: String, value: String) {
@@ -260,6 +329,7 @@ private fun writeDataElement(writer: XMLStreamWriter, id: String, value: String)
         writer.writeAttribute(GraphmlConstants.KEY, id)
         writer.writeCharacters(value)
     writer.writeEndElement()    // end <data>
+    writeNewline(writer)
 }
 
 private fun finishUp(writer: XMLStreamWriter){
@@ -267,4 +337,15 @@ private fun finishUp(writer: XMLStreamWriter){
     writer.writeEndDocument()
     writer.flush()
     writer.close()
+}
+
+private fun writeNewline(writer: XMLStreamWriter){
+    writer.writeCharacters(System.getProperty("line.separator"));
+}
+
+private fun writeIndentation(writer: XMLStreamWriter){
+    for (i in 0 .. depth-1){
+        for (j in 0 .. SPACES_PER_TAB-1)
+            writer.writeCharacters(" ")
+    }
 }
