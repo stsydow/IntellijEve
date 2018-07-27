@@ -1,6 +1,12 @@
 package editor
 
+import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.io.fs.FilePath
 import java.awt.Color
+import java.io.File
+import java.io.IOException
+import javax.swing.JOptionPane
 
 enum class PropertyType {Filter, Order, ContextId }
 
@@ -42,7 +48,6 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     var showGeometry = false
     var childrenPickable = true
 
-    var fileName = name + ".rs"
     var isSelected = false
 
     val in_port = Port(Direction.IN, "Any", this, scene)
@@ -62,6 +67,8 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     var color = DEFAULT_COLOR
 
     val childNodeCount: Int get() = childNodes.size
+
+    val filePath: FilePath? get() = scene.root.hierarchicalPathOfNode(this)
 
     constructor(parent: Node, scene: Viewport) : this(DEFAULT_TRANSFORM, parent, scene)
     constructor(t: Transform, parent: Node, scene: Viewport) : this(t, DEFAULT_NAME, parent, scene) {
@@ -466,6 +473,19 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         return toString(0)
     }
 
+    fun rustFileOfNode(): VirtualFile {
+        // check whether the ./nodes subdir exists
+        val nodesDirFile = File(scene.editor!!.project.basePath, "./src/nodes")
+        var nodesDir = LocalFileSystem.getInstance().findFileByIoFile(nodesDirFile)
+        if (nodesDir == null){
+            // create the subdir
+            nodesDirFile.mkdirs()
+        }
+        nodesDir = LocalFileSystem.getInstance().findFileByIoFile(nodesDirFile)
+        val rustFile = LocalFileSystem.getInstance().createChildFile(null, nodesDir!!, filePath.toString())
+        return rustFile
+    }
+
     /*
     fun constructFilepathForNode(){
         // check whether the ./nodes subdir exists
@@ -626,6 +646,27 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         if (keepInSync) {
             scene.save()
         }
+    }
+
+    fun hierarchicalPathOfNode(node: Node): FilePath?{
+        assert(node.name != "<anonymous>")
+        var pathStr = ""
+        var curNode = node
+        while (curNode.parent != null) {
+            if (curNode.name == "<anonymous>"){
+                JOptionPane.showMessageDialog(scene, "Node in higher level of node is not named, can not open its file", "Error", JOptionPane.ERROR_MESSAGE)
+                return null
+            }
+            pathStr = curNode.name + "/" + pathStr
+            curNode = curNode.parent!!
+        }
+        // return trailing '/'
+        if (pathStr[pathStr.length-1] == '/')
+            pathStr = pathStr.substring(0, pathStr.length-1)
+        if (pathStr != "")
+            return FilePath(pathStr)
+        else
+            return null
     }
 
     fun visualizeTransforms(){

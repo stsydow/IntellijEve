@@ -1,7 +1,12 @@
 package editor
 
+import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.OpenFileDescriptor
+import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFile
 import java.awt.Component
 import java.util.*
+import javax.swing.JOptionPane
 import javax.swing.JPopupMenu
 
 sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element: UIElement?) {
@@ -134,6 +139,21 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
             if (root != null) {
                 root.viewport.selectedNodes.forEach{ node -> node.isSelected = false }
                 root.viewport.selectedNodes.clear()
+            }
+        }
+    }
+
+    class OpenRustFileOperation(root: RootNode, node: Node): Operation(root, null, node){
+        override fun perform() {
+            if (element != null && root != null){
+                element as Node
+                if (element.name == "<anonymous>") {
+                    JOptionPane.showMessageDialog(root.viewport, "Please name the node before opening its file", "Error", JOptionPane.ERROR_MESSAGE)
+                } else {
+                    val nodeFile = element.rustFileOfNode()
+                    FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile, true)
+//                    OpenFileDescriptor(root.viewport.editor!!.project, nodeFile).navigate(true)
+                }
             }
         }
     }

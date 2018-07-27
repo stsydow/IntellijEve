@@ -17,7 +17,8 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
         val setContextId = JMenuItem("set context")
         val setFilter = JMenuItem("set filter")
         val setName = JMenuItem("set name")
-        val linkWithFile = JMenuItem("link with file")
+        val openRustFile = JMenuItem("open rust file")
+//        val linkWithFile = JMenuItem("link with file")
         val shrinkItem = JMenuItem("shrink to minimal size")
         val showGeometryItem = JMenuItem("show node geometry")
         val hideGeometryItem = JMenuItem("hide node geometry")
@@ -66,11 +67,10 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
 
         setOrderItem.addActionListener {
             val existingOrders = mutableSetOf<Property>()
-            if (scene != null)
-                scene.knownProperties.forEach {
-                    if (it.type == PropertyType.Order)
-                        existingOrders.add(it)
-                }
+            scene.knownProperties.forEach {
+                if (it.type == PropertyType.Order)
+                    existingOrders.add(it)
+            }
             val orderDialog = ListDialog("Please choose or enter order", existingOrders.distinctBy {
                 Pair(it.type, it.expression)
             })
@@ -133,6 +133,11 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
             }
         }
 
+        openRustFile.addActionListener {
+            val op = Operation.OpenRustFileOperation(scene.root, node)
+            op.perform()
+        }
+
         /*
         linkWithFile.addActionListener{
             val old = node.linkedFilePath
@@ -191,7 +196,8 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
             add(setContextId)
             add(setFilter)
             add(setName)
-            add(linkWithFile)
+            add(openRustFile)
+//            add(linkWithFile)
             add(shrinkItem)
             add(showGeometryItem)
             add(hideGeometryItem)
