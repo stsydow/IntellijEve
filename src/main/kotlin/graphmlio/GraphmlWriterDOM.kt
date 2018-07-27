@@ -222,8 +222,8 @@ private fun writeNodeElement(writer: XMLStreamWriter, node: Node){
     val order = node.getProperty(PropertyType.Order)
     if (order != null)
         writeDataElement(writer, EveamcpConstants.NODE_ORDER, order)
-    if(node.fileName != "")
-        writeDataElement(writer, EveamcpConstants.NODE_FILE, node.fileName)
+//    if(node.fileName != "")
+//        writeDataElement(writer, EveamcpConstants.NODE_FILE, node.fileName)
     writeDataElement(writer,
             EveamcpConstants.NODE_TRANSFORM_SCALE, node.transform.scale.toString())
     writeDataElement(writer,
