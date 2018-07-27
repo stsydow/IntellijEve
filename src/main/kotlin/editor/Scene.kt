@@ -26,7 +26,7 @@ data class Interaction(val operation: Operation, val type: EventType){
 }
 */
 
-class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener {
+class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener {
     var idx: Int = 0
     var root = RootNode(this)
 
@@ -149,7 +149,13 @@ class Viewport(private val editor: GraphFileEditor?) : JPanel(), MouseListener, 
         when (e.button) {
             M_BUTTON_LEFT   -> {
                 picked = root.pick(sceneCoord, transform, UIElementKind.Node)
-                if (onlyCtrlModifier){
+                if (e.clickCount == 2){
+                    op = when (picked) {
+                        is Node -> Operation.OpenRustFileOperation(root, picked)
+                        else    -> Operation.NoOperation()
+                    }
+                }
+                else if (onlyCtrlModifier){
                     op = when (picked) {
                         is Node -> Operation.SelectOperation(root, picked)
                         else    -> Operation.NoOperation()
