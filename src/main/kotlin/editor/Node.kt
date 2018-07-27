@@ -473,7 +473,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         return toString(0)
     }
 
-    fun rustFileOfNode(): VirtualFile {
+    fun rustFileOfNode(): VirtualFile? {
         // check whether the ./nodes subdir exists
         val nodesDirFile = File(scene.editor!!.project.basePath, "./src/nodes")
         var nodesDir = LocalFileSystem.getInstance().findFileByIoFile(nodesDirFile)
@@ -482,8 +482,11 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             nodesDirFile.mkdirs()
         }
         nodesDir = LocalFileSystem.getInstance().findFileByIoFile(nodesDirFile)
-        val rustFile = LocalFileSystem.getInstance().createChildFile(null, nodesDir!!, filePath.toString())
-        return rustFile
+        if (filePath != null) {
+            val rustFile = LocalFileSystem.getInstance().createChildFile(null, nodesDir!!, filePath.toString())
+            return rustFile
+        }
+        return null
     }
 
     /*
@@ -660,11 +663,14 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
             pathStr = curNode.name + "/" + pathStr
             curNode = curNode.parent!!
         }
-        // return trailing '/'
-        if (pathStr[pathStr.length-1] == '/')
-            pathStr = pathStr.substring(0, pathStr.length-1)
-        if (pathStr != "")
+        if (pathStr != "") {
+            // return trailing '/'
+            if (pathStr[pathStr.length - 1] == '/')
+                pathStr = pathStr.substring(0, pathStr.length - 1)
+            // append ".rs" for rust files
+            pathStr = pathStr + ".rs"
             return FilePath(pathStr)
+        }
         else
             return null
     }

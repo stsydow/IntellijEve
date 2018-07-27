@@ -151,7 +151,8 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
                     JOptionPane.showMessageDialog(root.viewport, "Please name the node before opening its file", "Error", JOptionPane.ERROR_MESSAGE)
                 } else {
                     val nodeFile = element.rustFileOfNode()
-                    FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile, true)
+                    if (nodeFile != null)
+                        FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile, true)
 //                    OpenFileDescriptor(root.viewport.editor!!.project, nodeFile).navigate(true)
                 }
             }
