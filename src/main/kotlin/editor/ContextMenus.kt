@@ -127,8 +127,9 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
             val old = node.name
             val new = JOptionPane.showInputDialog(scene, "set Name", old)
             if (new != null) {
-                node.name = new
-                node.repaint()
+                val op = SetNodeNameOperation(node, old, new)
+                op.apply()
+                scene.pushOperation(op)
             }
         }
 

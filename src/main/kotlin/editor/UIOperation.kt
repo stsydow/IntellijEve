@@ -1,5 +1,7 @@
 package editor
 
+import codegen.isRustKeyword
+import codegen.isValidRustIdentifier
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -149,6 +151,10 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
                 element as Node
                 if (element.name == "<anonymous>") {
                     JOptionPane.showMessageDialog(root.viewport, "Please name the node before opening its file", "Error", JOptionPane.ERROR_MESSAGE)
+                }
+                else if (!isValidRustIdentifier(element.name)
+                        || isRustKeyword(element.name)){
+                    JOptionPane.showMessageDialog(root.viewport, "Name of Node must be a valid Rust identifier and can not be a Rust keyword.", "Error", JOptionPane.ERROR_MESSAGE)
                 } else {
                     val nodeFile = element.rustFileOfNode()
                     if (nodeFile != null)
@@ -272,5 +278,23 @@ class RemoveEdgeOperation( val parent: Node, val element: Edge): UIOperation() {
 
     override fun apply() {
         parent.remove(element)
+    }
+}
+
+class SetNodeNameOperation(val node: Node, val oldName: String, val newName: String): UIOperation(){
+    override fun reverse() {
+        node.name = oldName
+        node.repaint()
+        node.scene.save()
+    }
+
+    override fun apply() {
+        if (isValidRustIdentifier(newName) && !isRustKeyword(newName)){
+            node.name = newName
+            node.repaint()
+            node.scene.save()
+        } else {
+            JOptionPane.showMessageDialog(node.scene, "Name must be a valid Rust identifier and can not be a Rust keyword.", "Error", JOptionPane.ERROR_MESSAGE)
+        }
     }
 }
