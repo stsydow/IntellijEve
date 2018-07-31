@@ -14,7 +14,7 @@ enum class UIElementKind {
     NotEdge
 }
 
-abstract class UIElement(var transform: Transform, val parent: Node?, protected var scene: Viewport) {
+abstract class UIElement(var transform: Transform, val parent: Node?, var scene: Viewport) {
     var id: String = "uielement"+scene.idx++
 
     abstract fun render(g: GraphicsProxy)
