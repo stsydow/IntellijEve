@@ -479,23 +479,22 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     fun rustFileOfNode(): VirtualFile? {
         val nodePath = filePath
         if (nodePath != null) {
-            // check whether the ./nodes subdir exists, create if not
-            val nodesDirPath = Paths.get(scene.editor!!.project.basePath + "/src/nodes")
+            // get path of the nodes directory
+            var nodesDirPath = Paths.get(scene.editor!!.project.basePath + "/src/nodes")
+            // check whether we need to create parent dirs of the rust file
+            val nodeParentPath = nodePath.parent
+            if (nodeParentPath != null){
+                nodesDirPath = Paths.get(nodesDirPath.toString() + "/" + nodeParentPath.toString())
+
+            }
+            // create the directory if necessary
             if (!Files.exists(nodesDirPath)) {
                 Files.createDirectories(nodesDirPath)
                 LocalFileSystem.getInstance().refresh(false)
             }
-            // check whether we need to create parent dirs of the rust file, create them if necessary
-            var nodeParentPath = nodePath.parent
-            if (nodeParentPath != null){
-                nodeParentPath = Paths.get(nodesDirPath.toString() + "/" + nodeParentPath.toString())
-                if (!Files.exists(nodeParentPath)) {
-                    Files.createDirectories(nodeParentPath)
-                    LocalFileSystem.getInstance().refresh(false)
-                }
-            }
             // check whether rust file for node exists, create if not
-            val nodeFilePath = Paths.get(nodesDirPath.toString() + "/" + filePath.toString())
+            val nodeFilename = nodePath.fileName
+            val nodeFilePath = Paths.get(nodesDirPath.toString() + "/" + nodeFilename.toString())
             if (!Files.exists(nodeFilePath)) {
                 Files.createFile(nodeFilePath)
                 LocalFileSystem.getInstance().refresh(false)
