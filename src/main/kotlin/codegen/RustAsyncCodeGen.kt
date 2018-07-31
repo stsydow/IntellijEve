@@ -6,6 +6,7 @@ import editor.Port
 import editor.RootNode
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.regex.Pattern
 
 class ReducedGraph(val pipelines: List<Pipeline>, val merges: List<Merge>)
 open class ReducedGraphNode(val varname: String)
@@ -506,4 +507,45 @@ pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}(stream: impl St
         }
         return list
     }
+}
+
+/*
+ * Function that checks whether the given string matches against the regular
+ * expression that is provided by the Rust developers as given here:
+ * https://doc.rust-lang.org/beta/reference/identifiers.html
+ */
+fun isValidRustIdentifier(str: String): Boolean {
+    val patternStr = "[a-zA-Z][a-zA-Z_0-9]*|_[a-zA-Z_0-9]+"
+    val pattern = Pattern.compile(patternStr)
+    val matcher = pattern.matcher(str)
+    return matcher.matches()
+}
+
+/*
+ * Returns true if given string appears in one of the lists of strict, reserved
+ * or weak keywords of Rust as given here:
+ * https://doc.rust-lang.org/beta/reference/keywords.html
+ */
+fun isRustKeyword(str: String): Boolean {
+    val strictKeywords = arrayOf(
+            "as",       "break",        "const",        "continue",     "crate",
+            "else",     "enum",         "extern",       "false",        "fn",
+            "for",      "if",           "impl",         "in",           "let",
+            "loop",     "match",        "mod",          "move",         "mut",
+            "pub",      "ref",          "return",       "self",         "Self",
+            "static",   "struct",       "super",        "trait",        "true",
+            "type",     "unsafe",       "use",          "where",        "while"
+    )
+    val reservedKeywords = arrayOf(
+            "abstract",     "become",       "box",      "do",       "final",
+            "macro",        "override",     "priv",     "typeof",   "unsized",
+            "virtual",      "yield"
+    )
+    val weakKeywords = arrayOf(
+            "union",        "'static",      "dyn"
+    )
+    return (    strictKeywords.contains(str) ||
+                reservedKeywords.contains(str) ||
+                weakKeywords.contains(str)
+            )
 }
