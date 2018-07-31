@@ -109,10 +109,6 @@ private fun createNodeFromDOM(parent: Node, node: Element, scene: Viewport){
         val nodeOrderProperty = extractDataStringValue(node, "node_order")
         if (nodeOrderProperty != null)
             newNode.setProperty(PropertyType.Order, nodeOrderProperty)
-        // get path of linked file
-//        val nodeFile = extractDataStringValue(node, EveamcpConstants.NODE_FILE)
-//        if (nodeFile != null)
-//            newNode.fileName = nodeFile
         // get node color
         val nodeColor = extractDataStringValue(node, "node_color")
         if (nodeColor != null)

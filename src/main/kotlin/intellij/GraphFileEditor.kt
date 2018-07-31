@@ -32,6 +32,7 @@ class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserD
             if (newRoot != null) {
                 panel.root = newRoot
                 panel.repaint()
+                panel.save()
             }
         }
     }
