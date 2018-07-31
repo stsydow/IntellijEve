@@ -18,7 +18,6 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
         val setFilter = JMenuItem("set filter")
         val setName = JMenuItem("set name")
         val openRustFile = JMenuItem("open rust file")
-//        val linkWithFile = JMenuItem("link with file")
         val shrinkItem = JMenuItem("shrink to minimal size")
         val showGeometryItem = JMenuItem("show node geometry")
         val hideGeometryItem = JMenuItem("hide node geometry")
@@ -138,34 +137,6 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
             op.perform()
         }
 
-        /*
-        linkWithFile.addActionListener{
-            val old = node.linkedFilePath
-            val chooser = JFileChooser()
-            val filter = FileNameExtensionFilter("Rust code files", "rs")
-            chooser.fileFilter = filter
-            var nodesDir = File("")
-            if (old != "") {
-                nodesDir = File(old.substringBeforeLast('/'))
-            } else {
-                nodesDir = File(node.scene.editor!!.project.basePath, "./src/nodes")
-                if (nodesDir == null) {
-                    throw IOException("Directory ./src/nodes can not be found in project directory")
-                }
-            }
-            chooser.currentDirectory = nodesDir
-            val retVal = chooser.showOpenDialog(node.scene)
-            if (retVal == JFileChooser.APPROVE_OPTION){
-                node.linkedFilePath = chooser.selectedFile.absolutePath
-                if (!Files.exists(Paths.get(node.linkedFilePath))){
-                    Files.createFile(Paths.get(node.linkedFilePath))
-                    LocalFileSystem.getInstance().refresh(true)
-                }
-                node.parent!!.onChildChanged(node)
-            }
-        }
-        */
-
         shrinkItem.addActionListener(){
             val inBounds = node.innerBounds
             val minBounds = node.minimalBounds()
@@ -197,7 +168,6 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
             add(setFilter)
             add(setName)
             add(openRustFile)
-//            add(linkWithFile)
             add(shrinkItem)
             add(showGeometryItem)
             add(hideGeometryItem)
