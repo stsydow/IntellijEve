@@ -289,12 +289,17 @@ class SetNodeNameOperation(val node: Node, val oldName: String, val newName: Str
     }
 
     override fun apply() {
-        if (isValidRustIdentifier(newName) && !isRustKeyword(newName)){
+        // check whether new name is valid rust identifier
+        if (!isValidRustIdentifier(newName) || isRustKeyword(newName))
+            JOptionPane.showMessageDialog(node.scene, "Name must be a valid Rust identifier and can not be a Rust keyword.", "Error", JOptionPane.ERROR_MESSAGE)
+        // check whether new name is already taken on this level of hierarchy
+        if (node.parent!!.getChildNodeByName(newName) != null)
+            JOptionPane.showMessageDialog(node.scene, "Name must be unique, at least on this hierarchy level.", "Error", JOptionPane.ERROR_MESSAGE)
+        else {
+            // everything is fine, we can change the name
             node.name = newName
             node.repaint()
             node.scene.save()
-        } else {
-            JOptionPane.showMessageDialog(node.scene, "Name must be a valid Rust identifier and can not be a Rust keyword.", "Error", JOptionPane.ERROR_MESSAGE)
         }
     }
 }

@@ -210,6 +210,10 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         return childNodes.find { it.id == id }
     }
 
+    fun getChildNodeByName(name: String): Node? {
+        return childNodes.find { it.name == name }
+    }
+
     fun getChildEdgeByPortIds(source: String, target: String): Edge? {
         return childEdges.find { it.source.id == source && it.target.id == target }
     }
