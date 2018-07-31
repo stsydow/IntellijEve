@@ -152,8 +152,7 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
                 } else {
                     val nodeFile = element.rustFileOfNode()
                     if (nodeFile != null)
-                        FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile, true)
-//                    OpenFileDescriptor(root.viewport.editor!!.project, nodeFile).navigate(true)
+                        FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile!!, true)
                 }
             }
         }

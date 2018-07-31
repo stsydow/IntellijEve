@@ -6,6 +6,9 @@ import com.intellij.util.io.fs.FilePath
 import java.awt.Color
 import java.io.File
 import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import javax.swing.JOptionPane
 
 enum class PropertyType {Filter, Order, ContextId }
@@ -68,7 +71,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
 
     val childNodeCount: Int get() = childNodes.size
 
-    val filePath: FilePath? get() = scene.root.hierarchicalPathOfNode(this)
+    val filePath: Path? get() = scene.root.hierarchicalPathOfNode(this)
 
     constructor(parent: Node, scene: Viewport) : this(DEFAULT_TRANSFORM, parent, scene)
     constructor(t: Transform, parent: Node, scene: Viewport) : this(t, DEFAULT_NAME, parent, scene) {
@@ -474,41 +477,34 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     }
 
     fun rustFileOfNode(): VirtualFile? {
-        // check whether the ./nodes subdir exists
-        val nodesDirFile = File(scene.editor!!.project.basePath, "./src/nodes")
-        var nodesDir = LocalFileSystem.getInstance().findFileByIoFile(nodesDirFile)
-        if (nodesDir == null){
-            // create the subdir
-            nodesDirFile.mkdirs()
-        }
-        nodesDir = LocalFileSystem.getInstance().findFileByIoFile(nodesDirFile)
-        if (filePath != null) {
-            val rustFile = LocalFileSystem.getInstance().createChildFile(null, nodesDir!!, filePath.toString())
-            return rustFile
-        }
-        return null
-    }
-
-    /*
-    fun constructFilepathForNode(){
-        // check whether the ./nodes subdir exists
-        val nodesDir = LocalFileSystem.getInstance().findFileByIoFile(File(scene.editor!!.project.basePath, "./src/nodes"))
-        if (nodesDir == null)
-            throw IOException("Directory ./src/nodes can not be found in project directory")
-
-        linkedFilePath = nodesDir.path + "/" + name + ".rs"
-    }
-
-    fun incrementFilepath(): String{
-        val prefix = linkedFilePath.substringBeforeLast('.')
-        val suffix = linkedFilePath.substringAfterLast('.')
-        if ((suffix == "rs") && (prefix.length > 0)){
-            return prefix + "_1." + suffix
+        val nodePath = filePath
+        if (nodePath != null) {
+            // check whether the ./nodes subdir exists, create if not
+            val nodesDirPath = Paths.get(scene.editor!!.project.basePath + "/src/nodes")
+            if (!Files.exists(nodesDirPath)) {
+                Files.createDirectories(nodesDirPath)
+                LocalFileSystem.getInstance().refresh(false)
+            }
+            // check whether we need to create parent dirs of the rust file, create them if necessary
+            var nodeParentPath = nodePath.parent
+            if (nodeParentPath != null){
+                nodeParentPath = Paths.get(nodesDirPath.toString() + "/" + nodeParentPath.toString())
+                if (!Files.exists(nodeParentPath)) {
+                    Files.createDirectories(nodeParentPath)
+                    LocalFileSystem.getInstance().refresh(false)
+                }
+            }
+            // check whether rust file for node exists, create if not
+            val nodeFilePath = Paths.get(nodesDirPath.toString() + "/" + filePath.toString())
+            if (!Files.exists(nodeFilePath)) {
+                Files.createFile(nodeFilePath)
+                LocalFileSystem.getInstance().refresh(false)
+            }
+            return LocalFileSystem.getInstance().findFileByPath(nodeFilePath.toString())
         } else {
-            throw Exception("Invalid Filepath for node with id $id: $linkedFilePath")
+            return null
         }
     }
-    */
 
     fun toString(n: Int): String {
         val prefix = get2NSpaces(n)
@@ -651,7 +647,7 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         }
     }
 
-    fun hierarchicalPathOfNode(node: Node): FilePath?{
+    fun hierarchicalPathOfNode(node: Node): Path?{
         assert(node.name != "<anonymous>")
         var pathStr = ""
         var curNode = node
@@ -664,12 +660,12 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
             curNode = curNode.parent!!
         }
         if (pathStr != "") {
-            // return trailing '/'
+            // remove trailing '/'
             if (pathStr[pathStr.length - 1] == '/')
                 pathStr = pathStr.substring(0, pathStr.length - 1)
             // append ".rs" for rust files
             pathStr = pathStr + ".rs"
-            return FilePath(pathStr)
+            return Paths.get(pathStr)
         }
         else
             return null
