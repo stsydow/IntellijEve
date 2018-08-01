@@ -71,7 +71,13 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
 
     val childNodeCount: Int get() = childNodes.size
 
-    val filePath: Path? get() = scene.root.hierarchicalPathOfNode(this)
+    val filePath: Path? get() {
+        val nodeHierarchyPath = scene.root.hierarchicalPathOfNode(this)
+        if (nodeHierarchyPath == null)
+            return null
+        val nodesDirPath = Paths.get(scene.editor!!.project.basePath + "/src/nodes")
+        return Paths.get(nodesDirPath.toString() + "/" + nodeHierarchyPath.toString())
+    }
 
     constructor(parent: Node, scene: Viewport) : this(DEFAULT_TRANSFORM, parent, scene)
     constructor(t: Transform, parent: Node, scene: Viewport) : this(t, DEFAULT_NAME, parent, scene) {
@@ -481,29 +487,20 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     }
 
     fun rustFileOfNode(): VirtualFile? {
-        val nodePath = filePath
+        val nodePath = this.filePath
         if (nodePath != null) {
-            // get path of the nodes directory
-            var nodesDirPath = Paths.get(scene.editor!!.project.basePath + "/src/nodes")
-            // check whether we need to create parent dirs of the rust file
-            val nodeParentPath = nodePath.parent
-            if (nodeParentPath != null){
-                nodesDirPath = Paths.get(nodesDirPath.toString() + "/" + nodeParentPath.toString())
-
+            val nodesParent = nodePath.parent
+            if (nodesParent != null){
+                // check if dir for node file exists, create if not
+                if (!Files.isDirectory(nodesParent))
+                    Files.createDirectories(nodesParent)
             }
-            // create the directory if necessary
-            if (!Files.exists(nodesDirPath)) {
-                Files.createDirectories(nodesDirPath)
-                LocalFileSystem.getInstance().refresh(false)
+            // create the rust file if not existing
+            if (!Files.exists(nodePath)) {
+                Files.createFile(nodePath)
             }
-            // check whether rust file for node exists, create if not
-            val nodeFilename = nodePath.fileName
-            val nodeFilePath = Paths.get(nodesDirPath.toString() + "/" + nodeFilename.toString())
-            if (!Files.exists(nodeFilePath)) {
-                Files.createFile(nodeFilePath)
-                LocalFileSystem.getInstance().refresh(false)
-            }
-            return LocalFileSystem.getInstance().findFileByPath(nodeFilePath.toString())
+            LocalFileSystem.getInstance().refresh(false)
+            return LocalFileSystem.getInstance().findFileByPath(nodePath.toString())
         } else {
             return null
         }
@@ -651,14 +648,9 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
     }
 
     fun hierarchicalPathOfNode(node: Node): Path?{
-        assert(node.name != "<anonymous>")
         var pathStr = ""
         var curNode = node
         while (curNode.parent != null) {
-            if (curNode.name == "<anonymous>"){
-                JOptionPane.showMessageDialog(scene, "Node in higher level of node is not named, can not open its file", "Error", JOptionPane.ERROR_MESSAGE)
-                return null
-            }
             pathStr = curNode.name + "/" + pathStr
             curNode = curNode.parent!!
         }

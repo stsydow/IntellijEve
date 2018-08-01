@@ -7,6 +7,10 @@ import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import java.awt.Component
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.util.*
 import javax.swing.JOptionPane
 import javax.swing.JPopupMenu
@@ -158,7 +162,10 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
                 } else {
                     val nodeFile = element.rustFileOfNode()
                     if (nodeFile != null)
-                        FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile!!, true)
+                        if (nodeFile.path.contains("<anonymous>")){JOptionPane.showMessageDialog(root.viewport, "Node in higher level of node is not named, can not open its file", "Error", JOptionPane.ERROR_MESSAGE)
+                        } else {
+                            FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile, true)
+                        }
                 }
             }
         }
@@ -297,9 +304,20 @@ class SetNodeNameOperation(val node: Node, val oldName: String, val newName: Str
             JOptionPane.showMessageDialog(node.scene, "Name must be unique, at least on this hierarchy level.", "Error", JOptionPane.ERROR_MESSAGE)
         else {
             // everything is fine, we can change the name
+            // backup old path
+            var oldPath = node.filePath
             node.name = newName
             node.repaint()
             node.scene.save()
+            // we also need to rename (move) the corresponding rust file
+            // (if it yet exists)
+            if (oldPath != null && Files.exists(oldPath)) {
+                val newFile = node.rustFileOfNode()
+                if (newFile != null){
+                    val newPath = Paths.get(newFile.path)
+                    Files.move(oldPath, newPath, StandardCopyOption.REPLACE_EXISTING)
+                }
+            }
         }
     }
 }
