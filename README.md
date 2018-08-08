@@ -68,7 +68,7 @@ file ending is ".eve"
 that is displayed
 5. now you can get started (link to documentation?)
 
-See the [Quick Start Page](Quick Start) for details.
+See the [Quick Start Page](wikis/Quick Start) for details.
 
 
 ### StandaloneEditor
