@@ -21,7 +21,7 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
         val shrinkItem = JMenuItem("shrink to minimal size")
         val showGeometryItem = JMenuItem("show node geometry")
         val hideGeometryItem = JMenuItem("hide node geometry")
-        val generateItem = JMenuItem("generate")
+        val generateItem = JMenuItem("generate code")
 
         createNodeItem.addActionListener {
             val local_to_global = node.getGlobalTransform()
