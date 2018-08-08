@@ -4,10 +4,7 @@ import intellij.GraphFileEditor
 import java.awt.*
 import java.awt.event.*
 import java.util.*
-import javax.swing.JColorChooser
-import javax.swing.JPanel
-import javax.swing.KeyStroke
-import javax.swing.SwingUtilities
+import javax.swing.*
 
 val M_BUTTON_NONE = 0
 val M_BUTTON_LEFT = 1
@@ -15,7 +12,7 @@ val M_BUTTON_MIDDLE = 2
 val M_BUTTON_RIGHT = 3
 
 val CTRL_Z = KeyStroke.getKeyStroke("control Z")
-val CTRL_Y = KeyStroke.getKeyStroke("ctrl y")
+val CTRL_Y = KeyStroke.getKeyStroke("control Y")
 val SPACE_PRESS = KeyStroke.getKeyStroke("pressed SPACE")
 val SPACE_RELEASE = KeyStroke.getKeyStroke("released SPACE")
 
@@ -53,7 +50,7 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
         preferredSize = currentSize
 
         // add our key bindings to the input map
-        val map = getInputMap()
+        val map = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
         map.put(CTRL_Z, "undoAction")
         map.put(CTRL_Y, "redoAction")
         map.put(SPACE_PRESS, "spacePressed")
