@@ -155,15 +155,11 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
                 element as Node
                 if (element.name == "<anonymous>") {
                     JOptionPane.showMessageDialog(root.viewport, "Please name the node before opening its file", "Error", JOptionPane.ERROR_MESSAGE)
-                }
-                else if (!isValidRustIdentifier(element.name)
-                        || isRustKeyword(element.name)){
-                    JOptionPane.showMessageDialog(root.viewport, "Name of Node must be a valid Rust identifier and can not be a Rust keyword.", "Error", JOptionPane.ERROR_MESSAGE)
+                } else if (element.parentsUnnamed()) {
+                    JOptionPane.showMessageDialog(root.viewport, "Node in higher level of node is not named, can not open its file", "Error", JOptionPane.ERROR_MESSAGE)
                 } else {
                     val nodeFile = element.rustFileOfNode()
-                    if (nodeFile != null)
-                        if (nodeFile.path.contains("<anonymous>")){JOptionPane.showMessageDialog(root.viewport, "Node in higher level of node is not named, can not open its file", "Error", JOptionPane.ERROR_MESSAGE)
-                        } else {
+                    if (nodeFile != null) {
                             FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile, true)
                         }
                 }

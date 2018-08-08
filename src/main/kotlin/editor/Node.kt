@@ -233,6 +233,16 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         }
     }
 
+    fun parentsUnnamed(): Boolean {
+        var p = parent
+        while (p != null){
+            if (p.name == "<anonymous>")
+                return true
+            p = p.parent
+        }
+        return false
+    }
+
     open fun onChildChanged(child: Node) {
         // expand this node if necessary to fit children
         val c_bounds = child.externalBounds()
