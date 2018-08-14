@@ -276,9 +276,13 @@ class RemoveNodeOperation(val parent: Node, val element: Node, val crossingEdges
         crossingEdges.forEach {
             it.parent!!.addEdge(it)
         }
+
+        element.retreiveFromTrash()
     }
 
     override  fun apply() {
+        element.moveToTrash()
+
         parent.remove(element)
         crossingEdges.forEach {
             it.parent!!.childEdges.remove(it)

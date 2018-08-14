@@ -6,6 +6,7 @@ import java.awt.Color
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 
 enum class PropertyType {Filter, Order, ContextId }
 
@@ -73,6 +74,14 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             return null
         val nodesDirPath = Paths.get(scene.editor!!.project.basePath + Viewport.NODES_RELATIVE_PATH)
         return Paths.get(nodesDirPath.toString() + "/" + nodeHierarchyPath.toString())
+    }
+
+    val trashFilePath: Path? get() {
+        val filePath = filePath
+        if (filePath == null)
+            return null
+        else
+            return Paths.get(scene.trashDir.toString() + filePath.toString().substringAfter(Viewport.NODES_RELATIVE_PATH))
     }
 
     constructor(parent: Node, scene: Viewport) : this(DEFAULT_TRANSFORM, parent, scene)
@@ -501,6 +510,46 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             return LocalFileSystem.getInstance().findFileByPath(nodePath.toString())
         } else {
             return null
+        }
+    }
+
+    fun moveToTrash() {
+        // do it for all the child nodes first
+        childNodes.forEach {
+            it.moveToTrash()
+        }
+        // if a rust file for the node exists, move it to the trash dir
+        var nodePath = filePath
+        if (nodePath != null && Files.exists(nodePath)) {
+            var trashPath = trashFilePath
+            if (trashPath != null) {
+                // create parent dirs of trash file path if we need to
+                var nodeTrashPathParent = trashPath.parent
+                if (!Files.isDirectory(nodeTrashPathParent))
+                    Files.createDirectories(nodeTrashPathParent)
+                Files.move(nodePath, trashPath, StandardCopyOption.REPLACE_EXISTING)
+                LocalFileSystem.getInstance().refresh(false)
+            }
+        }
+    }
+
+    fun retreiveFromTrash() {
+        // if a rust file exists in the trash we are going to retreive it
+        var trashPath = trashFilePath
+        if (trashPath != null && Files.exists(trashPath)){
+            var nodePath = filePath
+            if (nodePath != null){
+                // create parent dirs if not present
+                var nodePathParent = nodePath.parent
+                if (!Files.isDirectory(nodePathParent))
+                    Files.createDirectories(nodePathParent)
+                Files.move(trashPath, nodePath, StandardCopyOption.REPLACE_EXISTING)
+                LocalFileSystem.getInstance().refresh(false)
+            }
+        }
+        // now retreive all children
+        childNodes.forEach {
+            it.retreiveFromTrash()
         }
     }
 
