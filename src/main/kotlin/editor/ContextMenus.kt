@@ -35,9 +35,8 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
         }
 
         deleteNodeItem.addActionListener {
-            node.parent!!.remove(node)
             val crossingEdges = mutableListOf<Edge>()
-            node.parent.childEdges.retainAll {
+            node.parent!!.childEdges.retainAll {
                 val retain = !(it.target.parent == node || it.source.parent == node)
                 if (!retain) {
                     crossingEdges.add(it)
@@ -48,17 +47,14 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
         }
 
         addPortItem.addActionListener {
-            val port = Port(Direction.OUT, "i32", node, scene)
-            node.addPort(port)
+            val port = Port(Direction.OUT, Port.DEFAULT_MESSAGE_TYPE, node, scene)
             scene.pushOperation(AddPortOperation(node, port))
         }
 
         setColorItem.addActionListener {
             val new = JColorChooser.showDialog(scene, "Please select new color", Node.DEFAULT_COLOR)
             try {
-                node.color = new
-                node.repaint()
-                scene.save()
+                scene.pushOperation(ChangeColorOperation(node, node.color, new))
             } catch(e: Exception) {
                 println(e)
             }
@@ -127,9 +123,7 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
             val old = node.name
             val new = JOptionPane.showInputDialog(scene, "set Name", old)
             if (new != null) {
-                val op = SetNodeNameOperation(node, old, new)
-                op.apply()
-                scene.pushOperation(op)
+                scene.pushOperation(SetNodeNameOperation(node, old, new))
             }
         }
 
@@ -226,11 +220,12 @@ class PortContextMenu(val port: Port, val scene: Viewport, val interaction_point
         val setPayloadItem = JMenuItem("set message type")
 
         deletePortItem.addActionListener {
-            port.parent!!.remove(port)
+            scene.pushOperation(RemovePortOperation(port.parent!!, port))
         }
+
         setPayloadItem.addActionListener {
-            port.message_type = JOptionPane.showInputDialog(scene, "new message type:", port.message_type)
-            port.repaint()
+            val newPayload = JOptionPane.showInputDialog(scene, "new message type:", port.message_type)
+            scene.pushOperation(ChangePayloadOperation(port, port.message_type, newPayload))
         }
 
         add(deletePortItem)
@@ -243,8 +238,7 @@ class EdgeContextMenu(val edge: Edge, val scene: Viewport, val interaction_point
         val deleteEdgeItem = JMenuItem("delete edge")
 
         deleteEdgeItem.addActionListener {
-            edge.parent!!.remove(edge)
-            scene.pushOperation(RemoveEdgeOperation(edge.parent, edge))
+            scene.pushOperation(RemoveEdgeOperation(edge.parent!!, edge))
         }
 
         add(deleteEdgeItem)

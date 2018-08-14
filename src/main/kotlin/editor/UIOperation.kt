@@ -6,6 +6,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import java.awt.Color
 import java.awt.Component
 import java.nio.file.Files
 import java.nio.file.Path
@@ -58,8 +59,7 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
                 val ancestor = getCommonAncestorForEdge(element as Port, target!!)
                 if (ancestor != null) {
                     val edge = Edge(Transform(0.0, 0.0, 1.0), ancestor, element, target!!, root!!.viewport)
-                    ancestor.addEdge(edge)
-//                    pushOperation(AddEdgeOperation(ancestor, edge))
+                    element.scene.pushOperation(AddEdgeOperation(ancestor, edge))
                 }
             }
         }
@@ -195,6 +195,7 @@ class MoveOperation(val element: UIElement, val oldParentBounds: LinkedList<Boun
             p.positionChildren()
             p = p.parent
         }
+        element.repaint()
     }
 }
 
@@ -221,6 +222,28 @@ class AddPortOperation(val parent: Node, val element: Port): UIOperation() {
     }
 }
 
+class RemovePortOperation(val parent: Node, val element: Port): UIOperation() {
+    override fun reverse() {
+        parent.addPort(element)
+    }
+
+    override fun apply() {
+        parent.remove(element)
+    }
+}
+
+class ChangePayloadOperation(val port: Port, val oldPayload: String, val newPayload: String): UIOperation() {
+    override fun reverse() {
+        port.message_type = oldPayload
+        port.repaint()
+    }
+
+    override fun apply() {
+        port.message_type = newPayload
+        port.repaint()
+    }
+}
+
 class AddNodeOperation(val parent: Node, val element: Node, val oldParentBounds: LinkedList<Bounds>, val newParentBounds: LinkedList<Bounds>): UIOperation() {
     init {
         assert(oldParentBounds.size == newParentBounds.size)
@@ -234,7 +257,6 @@ class AddNodeOperation(val parent: Node, val element: Node, val oldParentBounds:
             p.positionChildren()
             p = p.parent
         }
-        element.repaint()
     }
 
     override  fun apply() {
@@ -264,6 +286,18 @@ class RemoveNodeOperation(val parent: Node, val element: Node, val crossingEdges
     }
 }
 
+class ChangeColorOperation(val node: Node, val oldColor: Color, val newColor: Color): UIOperation() {
+    override fun reverse() {
+        node.color = oldColor
+        node.repaint()
+    }
+
+    override fun apply() {
+        node.color = newColor
+        node.repaint()
+    }
+}
+
 class AddEdgeOperation(val parent: Node, val element: Edge): UIOperation() {
     override fun reverse() {
         parent.remove(element)
@@ -288,7 +322,6 @@ class SetNodeNameOperation(val node: Node, val oldName: String, val newName: Str
     override fun reverse() {
         node.name = oldName
         node.repaint()
-        node.scene.save()
     }
 
     override fun apply() {
@@ -304,7 +337,6 @@ class SetNodeNameOperation(val node: Node, val oldName: String, val newName: Str
             var oldPath = node.filePath
             node.name = newName
             node.repaint()
-            node.scene.save()
             // we also need to rename (move) the corresponding rust file
             // (if it yet exists)
             if (oldPath != null && Files.exists(oldPath)) {

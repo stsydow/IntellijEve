@@ -26,7 +26,7 @@ data class Interaction(val operation: Operation, val type: EventType){
 class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener {
     companion object {
         const val NODES_RELATIVE_PATH = "/src/nodes"
-        const val TRASH_RELATIVE_PATH = "/src/trash"
+        const val TRASH_RELATIVE_PATH = "/src/.trash"
     }
 
     var idx: Int = 0
@@ -121,12 +121,15 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
         if(operationsStack.count() > 0) {
             val op = operationsStack.pop()
             op.reverse()
+            save()
             reversedOperationsStack.push(op)
         }
     }
 
     fun pushOperation(opChain: UIOperation) {
         reversedOperationsStack.clear()
+        opChain.apply()
+        save()
         operationsStack.push(opChain)
     }
 
@@ -134,6 +137,7 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
         if(reversedOperationsStack.count() > 0) {
             val op = reversedOperationsStack.pop()
             op.apply()
+            save()
             operationsStack.push(op)
         }
     }

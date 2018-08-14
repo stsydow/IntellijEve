@@ -52,7 +52,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     val in_port = Port(Direction.IN, Port.ANY_MESSAGE_TYPE, this, scene)
     val out_ports = mutableListOf<Port>()
     val childEdges = mutableListOf<Edge>()
-    val childNodes = mutableListOf<Node>()
+    val childNodes = mutableSetOf<Node>()
 
     val properties = mutableListOf<Property>()
 
@@ -95,7 +95,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
 
     fun addNode(child: Node) {
         assert(child.parent == this)
-        assert(childNodes.add(child))
+        childNodes.add(child)
         onChildChanged(child)
         repaint()
     }
