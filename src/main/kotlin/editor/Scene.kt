@@ -6,10 +6,10 @@ import java.awt.event.*
 import java.util.*
 import javax.swing.*
 
-val M_BUTTON_NONE = 0
-val M_BUTTON_LEFT = 1
-val M_BUTTON_MIDDLE = 2
-val M_BUTTON_RIGHT = 3
+const val M_BUTTON_NONE = 0
+const val M_BUTTON_LEFT = 1
+const val M_BUTTON_MIDDLE = 2
+const val M_BUTTON_RIGHT = 3
 
 val CTRL_Z = KeyStroke.getKeyStroke("control Z")
 val CTRL_Y = KeyStroke.getKeyStroke("control Y")
@@ -24,6 +24,11 @@ data class Interaction(val operation: Operation, val type: EventType){
 */
 
 class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener {
+    companion object {
+        const val NODES_RELATIVE_PATH = "/src/nodes"
+        const val TRASH_RELATIVE_PATH = "/src/trash"
+    }
+
     var idx: Int = 0
     var root = RootNode(this)
 
@@ -368,14 +373,12 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
     }
 
     fun save() {
-        if (editor != null) {
+        if (editor != null)
             editor.save()
-        }
     }
 
     fun generateCode(){
-        if (editor != null) {
+        if (editor != null)
             editor.generate()
-        }
     }
 }

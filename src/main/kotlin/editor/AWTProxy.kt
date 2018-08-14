@@ -12,14 +12,10 @@ data class Font(val style: FontStyle, val size: Double) {
     //constructor(size: Int):this(FontStyle.REGULAR, size.toDouble())
 
     fun getAWTFont(graphics: Graphics2D, scale: Double): java.awt.Font {
-        var awtStyle = 0
-        when (style) {
-            FontStyle.REGULAR ->
-                awtStyle = java.awt.Font.PLAIN
-            FontStyle.BOLD ->
-                awtStyle = java.awt.Font.BOLD
-            FontStyle.ITALIC ->
-                awtStyle = java.awt.Font.ITALIC
+        val awtStyle = when (style) {
+            FontStyle.REGULAR -> java.awt.Font.PLAIN
+            FontStyle.BOLD -> java.awt.Font.BOLD
+            FontStyle.ITALIC -> java.awt.Font.ITALIC
         }
         return graphics.font.deriveFont(awtStyle, (size * scale).toFloat())
     }
@@ -120,10 +116,10 @@ class GraphicsProxy(graphics: Graphics2D, val transform: Transform) {
 
         val global_points = points.map { p -> transform * p }
 
-        global_points.forEachIndexed({ index, coordinate ->
+        global_points.forEachIndexed { index, coordinate ->
             x[index] = (coordinate.x + 0.5).toInt()
             y[index] = (coordinate.y + 0.5).toInt()
-        })
+        }
 
         if (filled)
             awt_graphics.fillPolygon(x, y, points.size)
@@ -142,10 +138,10 @@ class GraphicsProxy(graphics: Graphics2D, val transform: Transform) {
 
         val global_points = points.map { p -> transform * p }
 
-        global_points.forEachIndexed({ index, coordinate ->
+        global_points.forEachIndexed { index, coordinate ->
             x[index] = (coordinate.x + 0.5).toInt()
             y[index] = (coordinate.y + 0.5).toInt()
-        })
+        }
 
         if (filled)
             awt_graphics.fillPolygon(x, y, points.size)
@@ -179,5 +175,5 @@ fun hex2Rgb(colorStr: String): Color {
 }
 
 fun colorToHexstring(color: Color): String {
-    return "#" + Integer.toHexString(color.getRGB()).substring(2);
+    return "#" + Integer.toHexString(color.rgb).substring(2)
 }

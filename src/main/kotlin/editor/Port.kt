@@ -22,6 +22,8 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
         )
         val IN_SIZE = Bounds.minimalBounds(IN_SHAPE)
         val OUT_SIZE = Bounds.minimalBounds(OUT_SHAPE)
+        const val DEFAULT_MESSAGE_TYPE = "i32"
+        const val ANY_MESSAGE_TYPE = "Any"
     }
 
     var name: String = id
@@ -64,12 +66,10 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
             }
         }
 
-        val poly = shape
-
         if (g.transform.scale > 0.5) {
             localGraphics.text(message_type, text_pos, DEFAULT_FONT)
         }
-        localGraphics.polygon(Color.BLACK, poly, true)
+        localGraphics.polygon(Color.BLACK, shape, true)
     }
 
     override fun pick(c: Coordinate, screenTransform: Transform, filter: UIElementKind): UIElement? {
@@ -99,8 +99,6 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
 
     fun toString(n: Int): String {
         val prefix = get2NSpaces(n)
-
-        var str = prefix + "Port[id: $id; direction: $direction]\n"
-        return str
+        return prefix + "Port[id: $id; direction: $direction]\n"
     }
 }

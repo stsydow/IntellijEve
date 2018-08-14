@@ -2,20 +2,16 @@ package editor
 
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.util.io.fs.FilePath
 import java.awt.Color
-import java.io.File
-import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import javax.swing.JOptionPane
 
 enum class PropertyType {Filter, Order, ContextId }
 
 class Property(val type: PropertyType, var expression: String) {
     override fun toString(): String {
-        return "${type.toString()}: $expression"
+        return "$type: $expression"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -39,7 +35,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         val DEFAULT_BOUNDS = Bounds(0.0, 0.0, 20 * UNIT, 15 * UNIT)
         var SCALE_FACTOR = 0.5
         val DEFAULT_TRANSFORM = Transform(0.0, 0.0, SCALE_FACTOR)
-
+        const val DEFAULT_FILE_ENDING = ".rs"
         val CHILD_NODE_SYMBOL = Transform(0.0, 0.0, UNIT) * listOf(
                 Coordinate(0.0, 0.0),
                 Coordinate(5.0, 0.0),
@@ -53,7 +49,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
 
     var isSelected = false
 
-    val in_port = Port(Direction.IN, "Any", this, scene)
+    val in_port = Port(Direction.IN, Port.ANY_MESSAGE_TYPE, this, scene)
     val out_ports = mutableListOf<Port>()
     val childEdges = mutableListOf<Edge>()
     val childNodes = mutableListOf<Node>()
@@ -75,7 +71,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         val nodeHierarchyPath = scene.root.hierarchicalPathOfNode(this)
         if (nodeHierarchyPath == null)
             return null
-        val nodesDirPath = Paths.get(scene.editor!!.project.basePath + "/src/nodes")
+        val nodesDirPath = Paths.get(scene.editor!!.project.basePath + Viewport.NODES_RELATIVE_PATH)
         return Paths.get(nodesDirPath.toString() + "/" + nodeHierarchyPath.toString())
     }
 
@@ -88,14 +84,6 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     init {
         assert(this is RootNode || parent != null)
         positionChildren()
-    }
-
-    fun constructNodeNameFromId(id: String): String{
-        val num = extractIndexFromString(id)
-        if (num != null){
-            return "Node" + num
-        }
-        return "Node" + scene.idx
     }
 
     open fun positionChildren() {
@@ -236,7 +224,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     fun parentsUnnamed(): Boolean {
         var p = parent
         while (p != null){
-            if (p.name == "<anonymous>")
+            if (p.name == Node.DEFAULT_NAME)
                 return true
             p = p.parent
         }
@@ -459,7 +447,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     fun getProperty(type: PropertyType): String? {
         properties.forEach {
             if (it.type == type)
-                return it.expression;
+                return it.expression
         }
         return null;
     }
@@ -467,7 +455,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     fun setProperty(type: PropertyType, value: String) {
         properties.forEach {
             if (it.type == type) {
-                it.expression = value;
+                it.expression = value
                 scene.knownProperties.add(Property(type, value))
                 return;
             }
@@ -569,7 +557,7 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
             localGraphics.text(transform.toString(2), textPos, Font(FontStyle.REGULAR, 0.3*transform.scale* UNIT))
 
             // draw line with transform caption for every child node
-            childNodes.forEach(){ child ->
+            childNodes.forEach { child ->
                 child.drawTransformLines(localGraphics, rootOrigin, Transform(0.0, 0.0, 1.0))
             }
         }
@@ -669,7 +657,7 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
             if (pathStr[pathStr.length - 1] == '/')
                 pathStr = pathStr.substring(0, pathStr.length - 1)
             // append ".rs" for rust files
-            pathStr = pathStr + ".rs"
+            pathStr += Node.DEFAULT_FILE_ENDING
             return Paths.get(pathStr)
         }
         else

@@ -153,7 +153,7 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
         override fun perform() {
             if (element != null && root != null){
                 element as Node
-                if (element.name == "<anonymous>") {
+                if (element.name == Node.DEFAULT_NAME) {
                     JOptionPane.showMessageDialog(root.viewport, "Please name the node before opening its file", "Error", JOptionPane.ERROR_MESSAGE)
                 } else if (element.parentsUnnamed()) {
                     JOptionPane.showMessageDialog(root.viewport, "Node in higher level of node is not named, can not open its file", "Error", JOptionPane.ERROR_MESSAGE)

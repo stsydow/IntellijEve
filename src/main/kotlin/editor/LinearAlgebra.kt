@@ -155,7 +155,7 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
     }
 
     fun toCoordinates(): List<Coordinate>{
-        val res = MutableList<Coordinate>(0, {_ -> Coordinate(0, 0)})
+        val res = MutableList(0, {_ -> Coordinate(0, 0)})
 
         res.add(topLeft)
         res.add(topRight)

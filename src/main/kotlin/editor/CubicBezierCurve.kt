@@ -2,7 +2,7 @@ package editor
 
 class CubicBezierCurve(val parent: Edge) {
     companion object {
-        val STEPS = 25  // controls how many interpolation steps are computed
+        const val STEPS = 25  // controls how many interpolation steps are computed
     }
 
     lateinit var ctrlSrc: Coordinate
@@ -12,7 +12,7 @@ class CubicBezierCurve(val parent: Edge) {
         computeControlPoints()
     }
 
-    var points = Array<Coordinate>(STEPS+1){_ -> Coordinate(0, 0)}
+    var points = Array(STEPS+1){_ -> Coordinate(0, 0)}
 
     /*
         Before we paint the actual curve we need to update the curve points

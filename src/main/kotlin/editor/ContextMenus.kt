@@ -84,14 +84,14 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
                 if (order != "")
                     node.setProperty(PropertyType.Order, order)
                 else
-                    node.removeProperty(PropertyType.Order);
+                    node.removeProperty(PropertyType.Order)
             }
             node.repaint()
         }
 
         setContextId.addActionListener {
-            val old = node.getProperty(PropertyType.ContextId);
-            val order: String?;
+            val old = node.getProperty(PropertyType.ContextId)
+            val order: String?
             if (old != null) {
                 order = JOptionPane.showInputDialog(scene, "construct id from:", old)
             } else {
@@ -101,14 +101,14 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
             if (order != null && order != "") {
                 node.setProperty(PropertyType.ContextId, order)
             } else if (old != null) {
-                node.removeProperty(PropertyType.ContextId);
+                node.removeProperty(PropertyType.ContextId)
             }
             node.repaint()
         }
 
         setFilter.addActionListener {
-            val old = node.getProperty(PropertyType.Filter);
-            val order: String?;
+            val old = node.getProperty(PropertyType.Filter)
+            val order: String?
             if (old != null) {
                 order = JOptionPane.showInputDialog(scene, "set Filter", old)
             } else {
@@ -118,7 +118,7 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
             if (order != null && order != "") {
                 node.setProperty(PropertyType.Filter, order)
             } else if (old != null) {
-                node.removeProperty(PropertyType.Filter);
+                node.removeProperty(PropertyType.Filter)
             }
             node.repaint()
         }
@@ -138,7 +138,7 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
             op.perform()
         }
 
-        shrinkItem.addActionListener(){
+        shrinkItem.addActionListener {
             val inBounds = node.innerBounds
             val minBounds = node.minimalBounds()
             val newBounds = Bounds(inBounds.x_min, inBounds.y_min, minBounds.x_max, minBounds.y_max)
@@ -147,11 +147,11 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
             scene.pushOperation(op)
         }
 
-        showGeometryItem.addActionListener{
+        showGeometryItem.addActionListener {
             node.showGeometry()
         }
 
-        hideGeometryItem.addActionListener{
+        hideGeometryItem.addActionListener {
             node.hideGeometry()
         }
 
@@ -201,16 +201,16 @@ class RootNodeContextMenu(node: RootNode, scene: Viewport, interaction_point: Co
         val hideTransformsItem = JMenuItem("hide transforms")
         val showGeometryItem = JMenuItem("show node geometry")
         val hideGeometryItem = JMenuItem("hide node geometry")
-        showTransformsItem.addActionListener(){
+        showTransformsItem.addActionListener {
             node.visualizeTransforms()
         }
-        hideTransformsItem.addActionListener(){
+        hideTransformsItem.addActionListener {
             node.hideTransforms()
         }
-        showGeometryItem.addActionListener{
+        showGeometryItem.addActionListener {
             node.showGeometry()
         }
-        hideGeometryItem.addActionListener{
+        hideGeometryItem.addActionListener {
             node.hideGeometry()
         }
         add(showTransformsItem)

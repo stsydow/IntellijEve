@@ -7,17 +7,9 @@ import java.awt.Dimension
 import java.awt.event.*
 import javax.swing.*
 import javax.swing.JDialog
-import java.awt.event.ActionEvent
-import java.awt.event.ActionListener
-import com.sun.java.accessibility.util.AWTEventMonitor.addActionListener
 import javax.swing.JButton
 
-
-
-
-
-
-class ListDialog(title: String, val options: List<Property>) : JDialog() {
+class ListDialog(title: String, options: List<Property>) : JDialog() {
     val textField = JBTextField()
 
     init {
