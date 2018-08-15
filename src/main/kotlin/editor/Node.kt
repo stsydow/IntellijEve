@@ -462,16 +462,20 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     }
 
     fun setProperty(type: PropertyType, value: String) {
-        properties.forEach {
-            if (it.type == type) {
-                it.expression = value
-                scene.knownProperties.add(Property(type, value))
-                return;
+        if (value == "")
+            removeProperty(type)
+        else {
+            properties.forEach {
+                if (it.type == type) {
+                    it.expression = value
+                    scene.knownProperties.add(Property(type, value))
+                    return;
+                }
             }
+            properties.add(Property(type, value))
+            scene.knownProperties.add(Property(type, value))
+            scene.save()
         }
-        properties.add(Property(type, value))
-        scene.knownProperties.add(Property(type, value))
-        scene.save()
     }
 
     fun removeProperty(type: PropertyType) {
