@@ -17,8 +17,6 @@ const val M_BUTTON_RIGHT = 3
 
 val CTRL_Z = KeyStroke.getKeyStroke("control Z")
 val CTRL_Y = KeyStroke.getKeyStroke("control Y")
-val SPACE_PRESS = KeyStroke.getKeyStroke("pressed SPACE")
-val SPACE_RELEASE = KeyStroke.getKeyStroke("released SPACE")
 
 /*
 enum class EventType {Single, Start, FollowUp, End}
@@ -47,7 +45,6 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
     var operationsStack = Stack<UIOperation>()
     var reversedOperationsStack = Stack<UIOperation>()
     var selectedNodes = mutableListOf<Node>()
-    var spaceBarPressed : Boolean = false
     var knownProperties = mutableSetOf<Property>()
 
     val trashDir: Path get() {
@@ -70,12 +67,8 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
         val map = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
         map.put(CTRL_Z, "undoAction")
         map.put(CTRL_Y, "redoAction")
-        map.put(SPACE_PRESS, "spacePressed")
-        map.put(SPACE_RELEASE, "spaceReleased")
         actionMap.put("undoAction", UndoAction(this))
         actionMap.put("redoAction", RedoAction(this))
-        actionMap.put("spacePressed", PressSpaceAction(this))
-        actionMap.put("spaceReleased", ReleaseSpaceAction(this))
     }
 
     override fun paintComponent(graphics: Graphics?) {
@@ -158,8 +151,7 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
         val op: Operation
         val sceneCoord = getSceneCoordinate(e)
         val picked: UIElement?
-        val onlyCtrlModifier =  !spaceBarPressed &&
-                                e.isControlDown &&
+        val onlyCtrlModifier =  e.isControlDown &&
                                 !e.isShiftDown &&
                                 !e.isAltDown &&
                                 !e.isAltGraphDown &&
@@ -207,20 +199,16 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
         val op: Operation
         val sceneCoord = getSceneCoordinate(e)
         val picked: UIElement?
-        val noModifierOrSpace =     !e.isControlDown &&
-                                    !e.isShiftDown &&
-                                    !e.isAltDown &&
-                                    !e.isAltGraphDown &&
-                                    !e.isMetaDown
+        val noModifier =    !e.isControlDown &&
+                            !e.isShiftDown &&
+                            !e.isAltDown &&
+                            !e.isAltGraphDown &&
+                            !e.isMetaDown
 
         when (e.button) {
             M_BUTTON_LEFT   -> {
-                if (spaceBarPressed) {
-                    picked = root
-                } else {
-                    picked = root.pick(sceneCoord, transform, UIElementKind.NotEdge)
-                }
-                if (noModifierOrSpace) {
+                picked = root.pick(sceneCoord, transform, UIElementKind.NotEdge)
+                if (noModifier) {
                     focusedElement = picked
                     when (picked) {
                         is Node -> {
@@ -246,7 +234,13 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
                 }
             }
             M_BUTTON_MIDDLE -> {
-                op = Operation.NoOperation()
+                focusedElement = root
+                focusedElementOriginalTransform = root.transform
+                focusedElementOriginalParentBounds = root.getParentBoundsList()
+                op = Operation.MoveOperation(root, focusedElementOriginalParentBounds!!,
+                                                    focusedElementOriginalTransform!!,
+                                                    focusedElementOriginalParentBounds!!,
+                                                    focusedElementOriginalTransform!!)
             }
             M_BUTTON_RIGHT   -> {
                 picked = root.pick(sceneCoord, transform, UIElementKind.All)
@@ -315,8 +309,7 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
     override fun mouseDragged(e: MouseEvent) {
         val sceneCoord = getSceneCoordinate(e)
         lastMousePosition = sceneCoord
-        val onlyCtrlModifier =  !spaceBarPressed &&
-                                e.isControlDown &&
+        val onlyCtrlModifier =  e.isControlDown &&
                                 !e.isShiftDown &&
                                 !e.isAltDown &&
                                 !e.isAltGraphDown &&

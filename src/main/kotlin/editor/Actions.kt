@@ -16,17 +16,3 @@ class RedoAction(val scene: Viewport) : AbstractAction() {
         scene.popReverseOperation()
     }
 }
-
-class PressSpaceAction(val scene: Viewport) : AbstractAction() {
-    override fun actionPerformed(p0: ActionEvent?) {
-        println("Space!")
-        scene.spaceBarPressed = true
-    }
-}
-
-class ReleaseSpaceAction(val scene: Viewport) : AbstractAction() {
-    override fun actionPerformed(p0: ActionEvent?) {
-        println("No Space.")
-        scene.spaceBarPressed = false
-    }
-}
