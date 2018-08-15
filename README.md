@@ -68,7 +68,9 @@ file ending is ".eve"
 that is displayed
 5. now you can get started (link to documentation?)
 
-See the [Quick Start Page](https://gitlab.tubit.tu-berlin.de/EVEaMCP/IntellijEve/wikis/quick-start) for details.
+See the [Quick Start Page](https://gitlab.tubit.tu-berlin.de/EVEaMCP/IntellijEve/wikis/quick-start) 
+for details on how to get started with a project using the editor.
+Also there is a descriptions of the [controls and basic usage](https://gitlab.tubit.tu-berlin.de/EVEaMCP/IntellijEve/wikis/controls).
 
 
 ### StandaloneEditor
@@ -100,4 +102,5 @@ of the generated code).
 For the visual presentation Java AWT classes are used but are wrapped to 
 provide some functionality that was needed.
 
-*Where can the documentation be found, in the wiki of the project?*
+The documentation of this project including some explanations of the inner works 
+can be found in the [Wiki](https://gitlab.tubit.tu-berlin.de/EVEaMCP/IntellijEve/wikis/home).
