@@ -102,4 +102,5 @@ of the generated code).
 For the visual presentation Java AWT classes are used but are wrapped to 
 provide some functionality that was needed.
 
-*Where can the documentation be found, in the wiki of the project?*
+The documentation of this project including some explanations of the inner works 
+can be found in the [Wiki](https://gitlab.tubit.tu-berlin.de/EVEaMCP/IntellijEve/wikis/home).
