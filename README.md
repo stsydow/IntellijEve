@@ -68,7 +68,9 @@ file ending is ".eve"
 that is displayed
 5. now you can get started (link to documentation?)
 
-See the [Quick Start Page](https://gitlab.tubit.tu-berlin.de/EVEaMCP/IntellijEve/wikis/quick-start) for details.
+See the [Quick Start Page](https://gitlab.tubit.tu-berlin.de/EVEaMCP/IntellijEve/wikis/quick-start) 
+for details on how to get started with a project using the editor.
+Also there is a descriptions of the [controls and basic usage](https://gitlab.tubit.tu-berlin.de/EVEaMCP/IntellijEve/wikis/controls).
 
 
 ### StandaloneEditor
