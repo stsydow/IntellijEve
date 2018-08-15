@@ -302,6 +302,30 @@ class ChangeColorOperation(val node: Node, val oldColor: Color, val newColor: Co
     }
 }
 
+class ChangePropertyOperation(val node: Node, val type: PropertyType, val oldExpression: String, val newExpression: String): UIOperation() {
+    override fun reverse() {
+        node.setProperty(type, oldExpression)
+        node.repaint()
+    }
+
+    override fun apply() {
+        node.setProperty(type, newExpression)
+        node.repaint()
+    }
+}
+
+class RemovePropertyOperation(val node: Node, val type: PropertyType, val oldExpression: String): UIOperation() {
+    override fun reverse() {
+        node.setProperty(type, oldExpression)
+        node.repaint()
+    }
+
+    override fun apply() {
+        node.removeProperty(type)
+        node.repaint()
+    }
+}
+
 class AddEdgeOperation(val parent: Node, val element: Edge): UIOperation() {
     override fun reverse() {
         parent.remove(element)

@@ -61,62 +61,58 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
         }
 
         setOrderItem.addActionListener {
+            var oldOrder = node.getProperty(PropertyType.Order)
+            if (oldOrder == null)
+                oldOrder = ""
+            // get a list of all existing orders in the graph
             val existingOrders = mutableSetOf<Property>()
             scene.knownProperties.forEach {
                 if (it.type == PropertyType.Order)
                     existingOrders.add(it)
             }
-            val orderDialog = ListDialog("Please choose or enter order", existingOrders.distinctBy {
-                Pair(it.type, it.expression)
-            })
+            // display dialog to choose or enter order
+            val orderDialog = ListDialog("Please choose or enter order",
+                                    existingOrders.distinctBy {
+                                    Pair(it.type, it.expression)
+                                 })
             orderDialog.pack()
             orderDialog.setLocationRelativeTo(scene)
-            val existingProperty = node.getProperty(PropertyType.Order)
-            if (existingProperty != null)
-                orderDialog.setInitialSelection(existingProperty)
+            orderDialog.setInitialSelection(oldOrder)
             orderDialog.isVisible = true
             val order = orderDialog.selection
+            // set, change or remove order
             if (order != null){
                 if (order != "")
-                    node.setProperty(PropertyType.Order, order)
+                    scene.pushOperation(ChangePropertyOperation(node, PropertyType.Order, oldOrder, order))
                 else
-                    node.removeProperty(PropertyType.Order)
+                    scene.pushOperation(RemovePropertyOperation(node, PropertyType.Order, oldOrder))
             }
-            node.repaint()
         }
 
         setContextId.addActionListener {
-            val old = node.getProperty(PropertyType.ContextId)
-            val order: String?
-            if (old != null) {
-                order = JOptionPane.showInputDialog(scene, "construct id from:", old)
-            } else {
-                order = JOptionPane.showInputDialog(scene, "relevant fields:", old)
+            var oldContext = node.getProperty(PropertyType.ContextId)
+            if (oldContext == null)
+                oldContext = ""
+            val context = JOptionPane.showInputDialog(scene, "Set ContextID", oldContext)
+            if (context != null) {
+                if (context != "")
+                    scene.pushOperation(ChangePropertyOperation(node, PropertyType.ContextId, oldContext, context))
+                else
+                    scene.pushOperation(RemovePropertyOperation(node, PropertyType.ContextId, oldContext))
             }
-
-            if (order != null && order != "") {
-                node.setProperty(PropertyType.ContextId, order)
-            } else if (old != null) {
-                node.removeProperty(PropertyType.ContextId)
-            }
-            node.repaint()
         }
 
         setFilter.addActionListener {
-            val old = node.getProperty(PropertyType.Filter)
-            val order: String?
-            if (old != null) {
-                order = JOptionPane.showInputDialog(scene, "set Filter", old)
-            } else {
-                order = JOptionPane.showInputDialog(scene, "filter by:", old)
+            var oldFilter = node.getProperty(PropertyType.Filter)
+            if (oldFilter == null)
+                oldFilter = ""
+            val filter = JOptionPane.showInputDialog(scene, "Set filter", oldFilter)
+            if (filter != null) {
+                if (filter != "")
+                    scene.pushOperation(ChangePropertyOperation(node, PropertyType.Filter, oldFilter, filter))
+                else
+                    scene.pushOperation(RemovePropertyOperation(node, PropertyType.Filter, oldFilter))
             }
-
-            if (order != null && order != "") {
-                node.setProperty(PropertyType.Filter, order)
-            } else if (old != null) {
-                node.removeProperty(PropertyType.Filter)
-            }
-            node.repaint()
         }
 
         setName.addActionListener {
