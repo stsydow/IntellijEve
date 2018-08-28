@@ -183,7 +183,7 @@ use structs::*;""")
         nodes.forEach {
             if (it.childNodes.count() == 0) {
                 builder.append("""
-use nodes::node_${it.name.toLowerCase()};""")
+use nodes::${pascalToSnakeCase(it.name)};""")
             }
 
         }
@@ -405,13 +405,13 @@ pub fn build() -> impl Future<Item=(), Error=EveError> {""")
         val output = if (getOutgoingEdges(pipeline.lastNode).count() == 0) "()" else pipeline.lastNode.out_ports[0].message_type
         builder.append("""
 pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}() -> impl Stream<Item=${output}, Error=EveError> {
-    node_${pipeline.firstNode.name.toLowerCase()}::${pipeline.firstNode.name}::new()""")
+    ${pascalToSnakeCase(pipeline.firstNode.name)}::${pipeline.firstNode.name}::new()""")
         if (pipeline.firstNode != pipeline.lastNode) {
             var n = getSuccessors(pipeline.firstNode)[0]
             while (true) {
                 builder.append("""
         .map(|event| {
-            node_${n.name.toLowerCase()}::tick(event)
+            ${pascalToSnakeCase(n.name)}::tick(event)
         })""")
                 if (n == pipeline.lastNode)
                     break
@@ -434,7 +434,7 @@ pub fn pipeline_${pipeline.firstNode.id}_${pipeline.lastNode.id}(stream: impl St
         while (true) {
             builder.append("""
         .map(|event| {
-            node_${n.name.toLowerCase()}::tick(event)
+            ${pascalToSnakeCase(n.name)}::tick(event)
         })""")
             if (n == pipeline.lastNode)
                 break
