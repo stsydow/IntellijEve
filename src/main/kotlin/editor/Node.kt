@@ -1,5 +1,6 @@
 package editor
 
+import codegen.pascalToSnakeCase
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import java.awt.Color
@@ -16,12 +17,15 @@ class Property(val type: PropertyType, var expression: String) {
     }
 
     override fun equals(other: Any?): Boolean {
-        if (other == null)
-            return false
-        if (other is Property)
-            return ((other.type == type) && other.expression == expression)
-        else
-            return false
+        return when(other) {
+            null -> false
+            is Property -> ((other.type == type) && other.expression == expression)
+            else -> false
+        }
+    }
+
+    override fun hashCode(): Int {
+        return type.hashCode() * expression.hashCode()
     }
 }
 
@@ -68,20 +72,20 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
 
     val childNodeCount: Int get() = childNodes.size
 
-    val filePath: Path? get() {
-        val nodeHierarchyPath = scene.root.hierarchicalPathOfNode(this)
-        if (nodeHierarchyPath == null)
-            return null
-        val nodesDirPath = Paths.get(scene.editor!!.project.basePath + Viewport.NODES_RELATIVE_PATH)
-        return Paths.get(nodesDirPath.toString() + "/" + nodeHierarchyPath.toString())
+    fun nodePath(): String {
+        if (parent == null) { //root
+            return scene.editor!!.project.basePath + Viewport.NODES_RELATIVE_PATH
+        } else {
+            return parent.nodePath() + "/" + pascalToSnakeCase(name)
+        }
     }
 
-    val trashFilePath: Path? get() {
-        val filePath = filePath
-        if (filePath == null)
-            return null
-        else
-            return Paths.get(scene.trashDir.toString() + filePath.toString().substringAfter(Viewport.NODES_RELATIVE_PATH))
+    val filePath: Path get() {
+        return Paths.get(nodePath() + DEFAULT_FILE_ENDING)
+    }
+
+    val trashFilePath: Path get() {
+        return Paths.get(scene.trashDir.toString() + filePath.toString().substringAfter(Viewport.NODES_RELATIVE_PATH))
     }
 
     constructor(parent: Node, scene: Viewport) : this(DEFAULT_TRANSFORM, parent, scene)
@@ -458,7 +462,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             if (it.type == type)
                 return it.expression
         }
-        return null;
+        return null
     }
 
     fun setProperty(type: PropertyType, value: String) {
@@ -469,7 +473,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
                 if (it.type == type) {
                     it.expression = value
                     scene.knownProperties.add(Property(type, value))
-                    return;
+                    return
                 }
             }
             properties.add(Property(type, value))
@@ -497,24 +501,19 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         return toString(0)
     }
 
-    fun rustFileOfNode(): VirtualFile? {
+    fun rustFileOfNode(): VirtualFile {
         val nodePath = this.filePath
-        if (nodePath != null) {
-            val nodesParent = nodePath.parent
-            if (nodesParent != null){
-                // check if dir for node file exists, create if not
-                if (!Files.isDirectory(nodesParent))
-                    Files.createDirectories(nodesParent)
-            }
-            // create the rust file if not existing
-            if (!Files.exists(nodePath)) {
-                Files.createFile(nodePath)
-            }
-            LocalFileSystem.getInstance().refresh(false)
-            return LocalFileSystem.getInstance().findFileByPath(nodePath.toString())
-        } else {
-            return null
+
+        val nodesParent = nodePath.parent
+        // check if dir for node file exists, create if not
+        if (!Files.isDirectory(nodesParent))
+            Files.createDirectories(nodesParent)
+        // create the rust file if not existing
+        if (!Files.exists(nodePath)) {
+            Files.createFile(nodePath)
         }
+        LocalFileSystem.getInstance().refresh(false)
+        return LocalFileSystem.getInstance().findFileByPath(nodePath.toString())!!
     }
 
     fun moveToTrash() {
@@ -523,33 +522,27 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
             it.moveToTrash()
         }
         // if a rust file for the node exists, move it to the trash dir
-        var nodePath = filePath
-        if (nodePath != null && Files.exists(nodePath)) {
-            var trashPath = trashFilePath
-            if (trashPath != null) {
-                // create parent dirs of trash file path if we need to
-                var nodeTrashPathParent = trashPath.parent
-                if (!Files.isDirectory(nodeTrashPathParent))
-                    Files.createDirectories(nodeTrashPathParent)
-                Files.move(nodePath, trashPath, StandardCopyOption.REPLACE_EXISTING)
-                LocalFileSystem.getInstance().refresh(false)
-            }
+        val nodePath = filePath
+        if (Files.exists(nodePath)) {
+            // create parent dirs of trash file path if we need to
+            val nodeTrashPathParent = trashFilePath.parent
+            if (!Files.isDirectory(nodeTrashPathParent))
+                Files.createDirectories(nodeTrashPathParent)
+            Files.move(nodePath, trashFilePath, StandardCopyOption.REPLACE_EXISTING)
+            LocalFileSystem.getInstance().refresh(false)
         }
     }
 
     fun retreiveFromTrash() {
         // if a rust file exists in the trash we are going to retreive it
-        var trashPath = trashFilePath
-        if (trashPath != null && Files.exists(trashPath)){
-            var nodePath = filePath
-            if (nodePath != null){
-                // create parent dirs if not present
-                var nodePathParent = nodePath.parent
-                if (!Files.isDirectory(nodePathParent))
-                    Files.createDirectories(nodePathParent)
-                Files.move(trashPath, nodePath, StandardCopyOption.REPLACE_EXISTING)
-                LocalFileSystem.getInstance().refresh(false)
-            }
+        if (Files.exists(trashFilePath)){
+            val nodePath = filePath
+            // create parent dirs if not present
+            val nodePathParent = nodePath.parent
+            if (!Files.isDirectory(nodePathParent))
+                Files.createDirectories(nodePathParent)
+            Files.move(trashFilePath, nodePath, StandardCopyOption.REPLACE_EXISTING)
+            LocalFileSystem.getInstance().refresh(false)
         }
         // now retreive all children
         childNodes.forEach {
@@ -560,7 +553,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     fun toString(n: Int): String {
         val prefix = get2NSpaces(n)
 
-        var str = prefix + "Node[id: $id; name: $name]{\n"
+        var str = "${prefix}Node[id: $id; name: $name]{\n"
         str += in_port.toString(n+1)
         out_ports.forEach{
             str += it.toString(n+1)
@@ -696,25 +689,6 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         if (keepInSync) {
             scene.save()
         }
-    }
-
-    fun hierarchicalPathOfNode(node: Node): Path?{
-        var pathStr = ""
-        var curNode = node
-        while (curNode.parent != null) {
-            pathStr = curNode.name + "/" + pathStr
-            curNode = curNode.parent!!
-        }
-        if (pathStr != "") {
-            // remove trailing '/'
-            if (pathStr[pathStr.length - 1] == '/')
-                pathStr = pathStr.substring(0, pathStr.length - 1)
-            // append ".rs" for rust files
-            pathStr += Node.DEFAULT_FILE_ENDING
-            return Paths.get(pathStr)
-        }
-        else
-            return null
     }
 
     fun visualizeTransforms(){

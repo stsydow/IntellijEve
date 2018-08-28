@@ -2,6 +2,7 @@ package editor
 
 import codegen.isRustKeyword
 import codegen.isValidRustIdentifier
+import codegen.isValidRustPascalCase
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -159,9 +160,7 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
                     JOptionPane.showMessageDialog(root.viewport, "Node in higher level of node is not named, can not open its file", "Error", JOptionPane.ERROR_MESSAGE)
                 } else {
                     val nodeFile = element.rustFileOfNode()
-                    if (nodeFile != null) {
-                            FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile, true)
-                        }
+                    FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile, true)
                 }
             }
         }
@@ -354,25 +353,30 @@ class SetNodeNameOperation(val node: Node, val oldName: String, val newName: Str
 
     override fun apply() {
         // check whether new name is valid rust identifier
-        if (!isValidRustIdentifier(newName) || isRustKeyword(newName))
-            JOptionPane.showMessageDialog(node.scene, "Name must be a valid Rust identifier and can not be a Rust keyword.", "Error", JOptionPane.ERROR_MESSAGE)
+        if (!isValidRustPascalCase(newName) || isRustKeyword(newName)) {
+            JOptionPane.showMessageDialog(node.scene,
+                    "Name must be a valid Rust identifier in pascal case and can not be a Rust keyword.",
+                    "Error", JOptionPane.ERROR_MESSAGE)
+            return
+        }
         // check whether new name is already taken on this level of hierarchy
-        if (node.parent!!.getChildNodeByName(newName) != null)
-            JOptionPane.showMessageDialog(node.scene, "Name must be unique, at least on this hierarchy level.", "Error", JOptionPane.ERROR_MESSAGE)
-        else {
+        if (node.parent!!.getChildNodeByName(newName) != null) {
+            JOptionPane.showMessageDialog(node.scene,
+                    "Name must be unique, at least on this hierarchy level.",
+                    "Error", JOptionPane.ERROR_MESSAGE)
+            return
+        } else {
             // everything is fine, we can change the name
             // backup old path
-            var oldPath = node.filePath
+            val oldPath = node.filePath
             node.name = newName
             node.repaint()
             // we also need to rename (move) the corresponding rust file
             // (if it yet exists)
-            if (oldPath != null && Files.exists(oldPath)) {
+            if (Files.exists(oldPath)) {
                 val newFile = node.rustFileOfNode()
-                if (newFile != null){
-                    val newPath = Paths.get(newFile.path)
-                    Files.move(oldPath, newPath, StandardCopyOption.REPLACE_EXISTING)
-                }
+                val newPath = Paths.get(newFile.path)
+                Files.move(oldPath, newPath, StandardCopyOption.REPLACE_EXISTING)
             }
         }
     }

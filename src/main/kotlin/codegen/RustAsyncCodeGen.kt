@@ -521,6 +521,35 @@ fun isValidRustIdentifier(str: String): Boolean {
     return matcher.matches()
 }
 
+// for rust struct names
+fun isValidRustPascalCase(str: String): Boolean {
+    val patternStr = "[A-Z][a-zA-Z_0-9]*"
+    val pattern = Pattern.compile(patternStr)
+    val matcher = pattern.matcher(str)
+    return matcher.matches()
+}
+
+// for rust module names
+fun isValidRustSnakeCase(str: String): Boolean {
+    val patternStr = "[a-z]+[a-z_0-9]*"
+    val pattern = Pattern.compile(patternStr)
+    val matcher = pattern.matcher(str)
+    return matcher.matches()
+}
+
+fun pascalToSnakeCase(str:String): String {
+    assert(str.isNotEmpty())
+    var result = str[0].toLowerCase().toString()
+    for(c in str.slice(1..str.lastIndex)) {
+        if (c.isUpperCase()) {
+            result += "_"+c.toLowerCase()
+        }else{
+            result += c
+        }
+    }
+    return result
+}
+
 /*
  * Returns true if given string appears in one of the lists of strict, reserved
  * or weak keywords of Rust as given here:
