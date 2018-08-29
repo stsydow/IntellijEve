@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.1/graphml.xsd">
+<key id="node_bounds_xmax" for="node" attr.name="innerBounds_xmax" attr.type="double"></key>
+<key id="node_bounds_xmin" for="node" attr.name="innerBounds_xmin" attr.type="double"></key>
+<key id="node_bounds_ymax" for="node" attr.name="innerBounds_ymax" attr.type="double"></key>
+<key id="node_bounds_ymin" for="node" attr.name="innerBounds_ymin" attr.type="double"></key>
+<key id="node_color" for="node" attr.name="color" attr.type="string"></key>
+<key id="node_context" for="node" attr.name="context" attr.type="string"></key>
+<key id="node_filter" for="node" attr.name="filter" attr.type="string"></key>
+<key id="node_name" for="node" attr.name="name" attr.type="string"></key>
+<key id="node_order" for="node" attr.name="order" attr.type="string"></key>
+<key id="node_file" for="node" attr.name="file" attr.type="string"></key>
+<key id="node_transform_scale" for="node" attr.name="transform_scale" attr.type="double"></key>
+<key id="node_transform_x" for="node" attr.name="transform_x_offset" attr.type="double"></key>
+<key id="node_transform_y" for="node" attr.name="transform_y_offset" attr.type="double"></key>
+<key id="port_direction" for="port" attr.name="direction" attr.type="string"></key>
+<key id="port_id" for="port" attr.name="id" attr.type="string"></key>
+<key id="port_message_type" for="port" attr.name="message_type" attr.type="string"></key>
+    <graph id="uielement0:0" edgedefault="directed">
+        <node id="uielement4">
+            <port name="uielement5">
+                <data key="port_direction">IN</data>
+                <data key="port_id">uielement5</data>
+                <data key="port_message_type">Any</data>
+            </port>
+            <port name="uielement8">
+                <data key="port_direction">OUT</data>
+                <data key="port_id">uielement8</data>
+                <data key="port_message_type">Coordinate</data>
+            </port>
+            <data key="node_bounds_xmax">440.0</data>
+            <data key="node_bounds_xmin">0.0</data>
+            <data key="node_bounds_ymax">330.0</data>
+            <data key="node_bounds_ymin">0.0</data>
+            <data key="node_color">#b8d8d8</data>
+            <data key="node_name">Source</data>
+            <data key="node_transform_scale">0.5</data>
+            <data key="node_transform_x">-183.10885993730292</data>
+            <data key="node_transform_y">-56.521022915984744</data>
+        </node>
+        <node id="uielement6">
+            <port name="uielement7">
+                <data key="port_direction">IN</data>
+                <data key="port_id">uielement7</data>
+                <data key="port_message_type">Coordinate</data>
+            </port>
+            <data key="node_bounds_xmax">440.0</data>
+            <data key="node_bounds_xmin">0.0</data>
+            <data key="node_bounds_ymax">330.0</data>
+            <data key="node_bounds_ymin">0.0</data>
+            <data key="node_color">#b8d8d8</data>
+            <data key="node_name">Sink</data>
+            <data key="node_transform_scale">0.5</data>
+            <data key="node_transform_x">163.75763715723207</data>
+            <data key="node_transform_y">18.34273331056025</data>
+        </node>
+        <edge source="uielement4" target="uielement6" sourceport="uielement8" targetport="uielement7"></edge>
+    </graph>
+</graphml>

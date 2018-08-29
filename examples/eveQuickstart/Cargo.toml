@@ -1,0 +1,9 @@
+[package]
+name = "eveQuickstart"
+version = "0.1.0"
+authors = ["Stefan Laufmann <stefan.laufmann@mailbox.tu-berlin.de>"]
+
+[dependencies]
+tokio-core = "0.1.*"
+futures = "*"
+futures-cpupool = "*"
