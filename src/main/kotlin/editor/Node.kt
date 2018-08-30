@@ -3,6 +3,9 @@ package editor
 import codegen.pascalToSnakeCase
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.io.createDirectories
+import com.intellij.util.io.createFile
+import com.intellij.util.io.exists
 import java.awt.Color
 import java.nio.file.Files
 import java.nio.file.Path
@@ -72,9 +75,11 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
 
     val childNodeCount: Int get() = childNodes.size
 
+    val nodesBaseDir: String = scene.editor!!.project.basePath + Viewport.NODES_RELATIVE_PATH
+
     fun nodePath(): String {
         if (parent == null) { //root
-            return scene.editor!!.project.basePath + Viewport.NODES_RELATIVE_PATH
+            return nodesBaseDir
         } else {
             return parent.nodePath() + "/" + pascalToSnakeCase(name)
         }
@@ -501,19 +506,12 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         return toString(0)
     }
 
-    fun rustFileOfNode(): VirtualFile {
-        val nodePath = this.filePath
-
-        val nodesParent = nodePath.parent
-        // check if dir for node file exists, create if not
-        if (!Files.isDirectory(nodesParent))
-            Files.createDirectories(nodesParent)
-        // create the rust file if not existing
-        if (!Files.exists(nodePath)) {
-            Files.createFile(nodePath)
+    fun getOrCreateFile(): VirtualFile {
+        val nodePath = filePath
+        if (!nodePath.exists()){
+            nodePath.createFile()
         }
-        LocalFileSystem.getInstance().refresh(false)
-        return LocalFileSystem.getInstance().findFileByPath(nodePath.toString())!!
+        return LocalFileSystem.getInstance().refreshAndFindFileByIoFile(nodePath.toFile())!!
     }
 
     fun moveToTrash() {
@@ -523,7 +521,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         }
         // if a rust file for the node exists, move it to the trash dir
         val nodePath = filePath
-        if (Files.exists(nodePath)) {
+        if (nodePath.exists()) {
             // create parent dirs of trash file path if we need to
             val nodeTrashPathParent = trashFilePath.parent
             if (!Files.isDirectory(nodeTrashPathParent))
@@ -535,12 +533,9 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
 
     fun retreiveFromTrash() {
         // if a rust file exists in the trash we are going to retreive it
-        if (Files.exists(trashFilePath)){
+        if (trashFilePath.exists()){
             val nodePath = filePath
-            // create parent dirs if not present
-            val nodePathParent = nodePath.parent
-            if (!Files.isDirectory(nodePathParent))
-                Files.createDirectories(nodePathParent)
+            nodePath.parent.createDirectories()
             Files.move(trashFilePath, nodePath, StandardCopyOption.REPLACE_EXISTING)
             LocalFileSystem.getInstance().refresh(false)
         }

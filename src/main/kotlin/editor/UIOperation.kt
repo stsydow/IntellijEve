@@ -1,16 +1,11 @@
 package editor
 
 import codegen.isRustKeyword
-import codegen.isValidRustIdentifier
 import codegen.isValidRustPascalCase
 import com.intellij.openapi.fileEditor.FileEditorManager
-import com.intellij.openapi.fileEditor.OpenFileDescriptor
-import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VirtualFile
 import java.awt.Color
 import java.awt.Component
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.util.*
@@ -159,7 +154,7 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
                 } else if (element.parentsUnnamed()) {
                     JOptionPane.showMessageDialog(root.viewport, "Node in higher level of node is not named, can not open its file", "Error", JOptionPane.ERROR_MESSAGE)
                 } else {
-                    val nodeFile = element.rustFileOfNode()
+                    val nodeFile = element.getOrCreateFile()
                     FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile, true)
                 }
             }
@@ -374,7 +369,7 @@ class SetNodeNameOperation(val node: Node, val oldName: String, val newName: Str
             // we also need to rename (move) the corresponding rust file
             // (if it yet exists)
             if (Files.exists(oldPath)) {
-                val newFile = node.rustFileOfNode()
+                val newFile = node.getOrCreateFile()
                 val newPath = Paths.get(newFile.path)
                 Files.move(oldPath, newPath, StandardCopyOption.REPLACE_EXISTING)
             }
