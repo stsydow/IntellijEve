@@ -56,10 +56,10 @@ class ListDialog(title: String, options: List<Property>) : JDialog() {
             if (this.isVisible
                     && e.source === optionPane
                     && prop == JOptionPane.VALUE_PROPERTY) {
-                if (value == buttons[0]) {
-                    selection = textField.text
+                selection = if (value == buttons[0]) {
+                    textField.text
                 } else {
-                    selection = null
+                    null
                 }
                 this.isVisible = false
             }

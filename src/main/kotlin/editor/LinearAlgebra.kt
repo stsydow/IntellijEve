@@ -124,10 +124,10 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
         val newXMax = Math.min(x_max, b.x_max)
         val newYMin = Math.max(y_min, b.y_min)
         val newYMax = Math.min(y_max, b.y_max)
-        if ((newXMin < newXMax) && (newYMin < newYMax))
-            return Bounds(newXMin, newYMin, newXMax, newYMax)
+        return if ((newXMin < newXMax) && (newYMin < newYMax))
+            Bounds(newXMin, newYMin, newXMax, newYMax)
         else {
-            return null
+            null
         }
     }
 
@@ -154,16 +154,7 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
         return str
     }
 
-    fun toCoordinates(): List<Coordinate>{
-        val res = MutableList(0, {_ -> Coordinate(0, 0)})
-
-        res.add(topLeft)
-        res.add(topRight)
-        res.add(bottomRight)
-        res.add(bottomLeft)
-
-        return res.toList()
-    }
+    fun toCoordinates(): List<Coordinate> = listOf(topLeft, topRight, bottomRight, bottomLeft)
 }
 
 data class Padding(val top: Double = 0.0, val right: Double = 0.0,

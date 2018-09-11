@@ -2,7 +2,7 @@ package codegen
 
 import editor.*
 import java.nio.file.Files
-import java.nio.file.Paths;
+import java.nio.file.Paths
 
 class RustCodeGenerator {
     fun generateSkeleton(outputDirectory: String) {
@@ -94,7 +94,7 @@ class RustCodeGenerator {
     }
 
     fun getEveamcpModRs(): String {
-        var s =
+        val s =
                 """use std::vec::Vec;
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
@@ -202,11 +202,11 @@ impl<T> IncomingPort<T> {
     }
 }
 """
-        return s;
+        return s
     }
 
     fun getInitRs(rootGraph: RootNode, graphs: Collection<Node>): String {
-        val builder = StringBuilder();
+        val builder = StringBuilder()
         builder.append(
                 """use std::collections::HashMap;
 use std::sync::Arc;
@@ -233,41 +233,41 @@ pub fn startup() -> Vec<JoinHandle<()>> {
     handles
 }
 
-fn build_model() -> Arc<RwLock<Graph>> {""");
+fn build_model() -> Arc<RwLock<Graph>> {""")
         graphs.forEach {
             if (it.childNodes.count() == 0) {
                 if (isSourceNode(it)) {
                     builder.append(
                             """
     let ${it.id} = Arc::new(Mutex::new(SourceNodeSet{idx: 0, instances: HashMap::new()}));"""
-                    );
+                    )
                 } else {
                     builder.append(
                             """
     let ${it.id} = Arc::new(Mutex::new(NormalNodeSet{idx: 0, instances: HashMap::new()}));"""
-                    );
+                    )
                 }
             }
         }
         builder.append(
                 """
-    Arc::new(RwLock::new((Graph {""");
+    Arc::new(RwLock::new((Graph {""")
         graphs.forEach {
             if (it.childNodes.count() == 0) {
                 builder.append("""
-        ${it.id}: ${it.id},""");
+        ${it.id}: ${it.id},""")
             }
         }
         builder.append(
                 """
     })))
 }
-""");
+""")
         builder.append("""
 fn build_initial_instances(graph: &Arc<RwLock<Graph>>) -> (Vec<Arc<Mutex<SourceNode>>>, Vec<Arc<Mutex<NormalNode>>>) {
     let mut source_nodes: Vec<Arc<Mutex<SourceNode>>> = vec!();
     let mut normal_nodes: Vec<Arc<Mutex<NormalNode>>> = vec!();
-""");
+""")
         graphs.forEach {
             if (it.childNodes.count() == 0) {
                 if (isSourceNode(it)) {
@@ -300,8 +300,8 @@ fn build_threads(source_nodes: &Vec<Arc<Mutex<SourceNode>>>, normal_nodes: &Vec<
     threads.push(t1);
     threads
 }
-""");
-        return builder.toString();
+""")
+        return builder.toString()
     }
 
     fun getNodesModRs(rootGraph: RootNode, graphs: Collection<Node>): String {
@@ -329,11 +329,11 @@ use std::sync::mpsc::channel;
 
 use eveamcp::OutgoingPort;
 use eveamcp::IncomingPort;
-use eveamcp::SuccessorInstanceList;""");
+use eveamcp::SuccessorInstanceList;""")
         graphs.forEach {
             if (it.childNodes.count() == 0) {
                 builder.append("""
-use nodes::node_${it.name.toLowerCase()}::${it.name}InstanceStorage;""");
+use nodes::node_${it.name.toLowerCase()}::${it.name}InstanceStorage;""")
             }
         }
         builder.append("""
@@ -356,15 +356,15 @@ pub trait NormalNode: NormalNodeInternal {
     fn init(&mut self);
 }
 
-pub struct Graph {""");
+pub struct Graph {""")
         graphs.forEach {
             if(it.childNodes.count() == 0) {
                 if (isSourceNode(it)) {
                     builder.append("""
-    pub ${it.id}: Arc<Mutex<SourceNodeSet>>,""");
+    pub ${it.id}: Arc<Mutex<SourceNodeSet>>,""")
                 } else {
                     builder.append("""
-    pub ${it.id}: Arc<Mutex<NormalNodeSet>>,""");
+    pub ${it.id}: Arc<Mutex<NormalNodeSet>>,""")
                 }
             }
         }
@@ -384,7 +384,7 @@ pub enum NodeType {
     Source,
     Normal
 }
-""");
+""")
         graphs.forEach {
             val graph = it
             if(graph.childNodes.count() == 0) {
@@ -420,11 +420,11 @@ impl ${graph.name}OutPort$i {
 
 #[derive(Debug)]
 pub struct ${it.name}Instance {
-    pub instance_id: u64,""");
+    pub instance_id: u64,""")
                     i=0
                     it.out_ports.forEach {
                         builder.append("""
-    pub port_${it.id}: ${graph.name}OutPort$i,""");
+    pub port_${it.id}: ${graph.name}OutPort$i,""")
                         i+=1
                     }
                     builder.append(
@@ -443,7 +443,7 @@ impl Node for ${it.name}Instance {
         self
     }
     fn get_type(&self) -> NodeType { NodeType::Source }
-}""");
+}""")
                 } else {
                     var i = 0
                     graph.out_ports.forEach {
@@ -464,16 +464,16 @@ pub struct ${graph.name}OutPort$i {""")
                             """
 #[derive(Debug)]
 pub struct ${it.name}Instance {
-    pub instance_id: u64,""");
+    pub instance_id: u64,""")
                     i = 0
                     it.out_ports.forEach {
                         builder.append("""
-    pub port_${it.id}: ${graph.name}OutPort$i,""");
+    pub port_${it.id}: ${graph.name}OutPort$i,""")
                         i+=1
                     }
                     if (!isSourceNode(it)) {
                         builder.append("""
-    pub incoming_port: IncomingPort<${it.in_port.message_type}>,""");
+    pub incoming_port: IncomingPort<${it.in_port.message_type}>,""")
                     }
                     builder.append(
                             """
@@ -504,7 +504,7 @@ impl NormalNodeInternal for ${it.name}Instance {
         }
     }
 }
-""");
+""")
                 }
 
             }
@@ -512,7 +512,7 @@ impl NormalNodeInternal for ${it.name}Instance {
 
         graphs.forEach {
             if (it.childNodes.count() == 0) {
-                val node = it;
+                val node = it
                 val msgType = node.in_port.message_type
                 val predecessorConnections = getConnectionsToPredecessors(it.in_port)
                 val predecessorNodesDisctinct = predecessorConnections.map { it.sourcePort.parent!! }.distinct()
@@ -600,8 +600,8 @@ pub fn construct_new_${it.id}_instance(graph: &Arc<RwLock<Graph>>) -> Arc<Mutex<
         instance_storage: None
     }));
     ${node.id}_set.instances.insert(${node.id}_set.idx, ${node.id}_instance.clone());
-""");
-                if (predecessorNodesDisctinct.size > 0) {
+""")
+                if (predecessorNodesDisctinct.isNotEmpty()) {
                     builder.append("""
     // add sender to predecessors""")
                     predecessorNodesDisctinct.forEach {
@@ -676,7 +676,7 @@ pub fn construct_new_${it.id}_instance(graph: &Arc<RwLock<Graph>>) -> Arc<Mutex<
             if (filter != null) {
                 builder.append("""
 fn ${it.id}_filter(e: &${it.in_port.message_type}) -> bool {
-    e.${filter}
+    e.$filter
 }
 """)
             }
@@ -692,11 +692,11 @@ fn ${it.id}_context_index(e: &${it.in_port.message_type}) -> usize {
 """)
             }
         }
-        return builder.toString();
+        return builder.toString()
     }
 
     fun getEvethreadRs(rootGraph: RootNode, graphs: Collection<Node>): String {
-        val builder = StringBuilder();
+        val builder = StringBuilder()
         builder.append(
                 """use std::sync::Arc;
 use std::sync::Mutex;
@@ -711,7 +711,7 @@ use nodes::SourceNode;
         graphs.forEach {
             if (it.childNodes.count() == 0 && !isSourceNode(it)) {
                 builder.append("""
-use nodes::${it.name}Instance;""");
+use nodes::${it.name}Instance;""")
             }
         }
         builder.append("""
@@ -844,7 +844,7 @@ impl EveThread {
 /// The NodeSet lock must not be held when calling this function.
 fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
     println!("remove instance {} of node {}", i_id, m_id);
-    match m_id {""");
+    match m_id {""")
         graphs.forEach {
             val graph = it
             if(graph.childNodes.count() == 0) {
@@ -887,7 +887,7 @@ fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
                 }
                 builder.append("""
             }
-        },""");
+        },""")
             }
         }
         builder.append(
@@ -895,8 +895,8 @@ fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
         x => panic!("unknown instance {}", x)
     };
 }
-""");
-        return builder.toString();
+""")
+        return builder.toString()
     }
 
 
@@ -909,13 +909,13 @@ fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
         val list: MutableList<Edge> = mutableListOf()
         val parent: Node = p.parent!!
         parent.childEdges.forEach {
-            if (it.source == p) {
+            if (it.sourcePort == p) {
                 list.add(it)
             }
         }
         val gparent:Node = p.parent.parent!!
         gparent.childEdges.forEach {
-            if (it.source == p) {
+            if (it.sourcePort == p) {
                 list.add(it)
             }
         }
@@ -926,13 +926,13 @@ fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
         val list: MutableList<Edge> = mutableListOf()
         val parent: Node = p.parent!!
         parent.childEdges.forEach {
-            if (it.target == p) {
+            if (it.targetPort == p) {
                 list.add(it)
             }
         }
         val gparent:Node = p.parent.parent!!
         gparent.childEdges.forEach {
-            if (it.target == p) {
+            if (it.targetPort == p) {
                 list.add(it)
             }
         }
@@ -952,9 +952,9 @@ fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
         val inc = getIncomingEdges(p)
         if (traverseWest) {
             if (p.direction == Direction.OUT) {
-                if (inc.size > 0) {
+                if (inc.isNotEmpty()) {
                     inc.forEach {
-                        val c = getConnections(it.source, destination, traverseWest)
+                        val c = getConnections(it.sourcePort, destination, traverseWest)
                         l.addAll(c)
                     }
                 } else {
@@ -962,14 +962,14 @@ fn remove_instance(i_id: u64, m_id: &str, g: &Arc<RwLock<Graph>>) {
                 }
             } else {
                 inc.forEach {
-                    l.addAll(getConnections(it.source, destination, traverseWest))
+                    l.addAll(getConnections(it.sourcePort, destination, traverseWest))
                 }
             }
         } else {
             val out = getOutgoingEdges(p)
-            if (out.size > 0) {
+            if (out.isNotEmpty()) {
                 out.forEach {
-                    val c = getConnections(it.target, destination, traverseWest)
+                    val c = getConnections(it.targetPort, destination, traverseWest)
                     val filters = mutableListOf<String>()
                     val contexts = mutableListOf<String>()
 

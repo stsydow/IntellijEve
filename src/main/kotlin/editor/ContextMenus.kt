@@ -28,18 +28,18 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
             val local_c = !local_to_global * interaction_point
             val oldBounds = node.getParentBoundsList()
             oldBounds.addFirst(node.innerBounds)
-            val newnode = Node(Transform(local_c, Node.SCALE_FACTOR), node, scene)
+            val newNode = Node(Transform(local_c, Node.SCALE_FACTOR), node, scene)
             val newBounds = node.getParentBoundsList()
             newBounds.addFirst(node.innerBounds)
-            scene.pushOperation(AddNodeOperation(node, newnode, oldBounds, newBounds))
+            scene.pushOperation(AddNodeOperation(node, newNode, oldBounds, newBounds))
         }
 
         deleteNodeItem.addActionListener {
             val crossingEdges = mutableListOf<Edge>()
-            node.parent!!.childEdges.retainAll {
-                val retain = !(it.target.parent == node || it.source.parent == node)
+            node.parent!!.childEdges.retainAll { edge ->
+                val retain = !(edge.targetNode == node || edge.sourceNode == node)
                 if (!retain) {
-                    crossingEdges.add(it)
+                    crossingEdges.add(edge)
                 }
                 retain
             }
@@ -66,14 +66,14 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
                 oldOrder = ""
             // get a list of all existing orders in the graph
             val existingOrders = mutableSetOf<Property>()
-            scene.knownProperties.forEach {
-                if (it.type == PropertyType.Order)
-                    existingOrders.add(it)
+            scene.knownProperties.forEach { prop ->
+                if (prop.type == PropertyType.Order)
+                    existingOrders.add(prop)
             }
             // display dialog to choose or enter order
             val orderDialog = ListDialog("Please choose or enter order",
-                                    existingOrders.distinctBy {
-                                    Pair(it.type, it.expression)
+                                    existingOrders.distinctBy { prop ->
+                                    Pair(prop.type, prop.expression)
                                  })
             orderDialog.pack()
             orderDialog.setLocationRelativeTo(scene)
@@ -210,7 +210,7 @@ class RootNodeContextMenu(node: RootNode, scene: Viewport, interaction_point: Co
     }
 }
 
-class PortContextMenu(val port: Port, val scene: Viewport, val interaction_point: Coordinate) : JPopupMenu() {
+class PortContextMenu(private val port: Port, private val scene: Viewport, private val interaction_point: Coordinate) : JPopupMenu() {
     init {
         val deletePortItem = JMenuItem("delete port")
         val setPayloadItem = JMenuItem("set message type")
@@ -229,7 +229,7 @@ class PortContextMenu(val port: Port, val scene: Viewport, val interaction_point
     }
 }
 
-class EdgeContextMenu(val edge: Edge, val scene: Viewport, val interaction_point: Coordinate) : JPopupMenu() {
+class EdgeContextMenu(private val edge: Edge, private val scene: Viewport, private val interaction_point: Coordinate) : JPopupMenu() {
     init {
         val deleteEdgeItem = JMenuItem("delete edge")
 

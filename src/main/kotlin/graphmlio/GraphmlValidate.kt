@@ -5,11 +5,11 @@ import org.xml.sax.SAXException
 import java.io.File
 import java.io.IOException
 import java.net.URL
-import javax.xml.XMLConstants
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.SchemaFactory
 
 val XSD_URL = URL("http://graphml.graphdrawing.org/xmlns/1.1/graphml.xsd")
+const val W3C_XML_SCHEMA_NS_URI = "http://www.w3.org/2001/XMLSchema"
 
 fun validate(graphml:File) : Boolean{
     // create temporary file to download the graphml.xsd
@@ -18,7 +18,7 @@ fun validate(graphml:File) : Boolean{
     FileUtils.copyURLToFile(XSD_URL, xsdFile)
     // validate the given file
     try {
-        val factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
+        val factory = SchemaFactory.newInstance(W3C_XML_SCHEMA_NS_URI)
         val schema = factory.newSchema(xsdFile)
         val validator = schema.newValidator()
         validator.validate(StreamSource(graphml))

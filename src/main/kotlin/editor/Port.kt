@@ -29,17 +29,53 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
     var name: String = id
 
     val connectionPointLeft: Coordinate get() {
-        if (direction == Direction.IN)
-            return Transform(0.0, 0.0, UNIT) * Coordinate(0.0, 0.5)
+        return if (direction == Direction.IN)
+            Transform(0.0, 0.0, UNIT) * Coordinate(0.0, 0.5)
         else // Direction.OUT
-            return Transform(0.0, 0.0, UNIT) * Coordinate(-0.2, 0.5)
+            Transform(0.0, 0.0, UNIT) * Coordinate(-0.2, 0.5)
     }
 
     val connectionPointRight: Coordinate get() {
-        if (direction == Direction.IN)
-            return Transform(0.0, 0.0, UNIT) * Coordinate(0.8, 0.5)
+        return if (direction == Direction.IN)
+            Transform(0.0, 0.0, UNIT) * Coordinate(0.8, 0.5)
         else // Direction.OUT
-            return Transform(0.0, 0.0, UNIT) * Coordinate(0.0, 0.5)
+            Transform(0.0, 0.0, UNIT) * Coordinate(0.0, 0.5)
+    }
+
+    val incommingEdges: Collection<Edge> get(){
+        val parent: Node = parent!!
+
+        val filterTarget = { e:Edge -> e.targetPort == this }
+
+        val fromChilds = parent.childEdges.filter(filterTarget)
+
+        val grandParent = parent.parent
+
+        val fromSiblings = when (grandParent)
+        {
+            is Node -> {
+                grandParent.childEdges.filter(filterTarget)
+            }
+            else -> mutableListOf()
+        }
+        return fromChilds + fromSiblings
+    }
+
+    val outgoingEdges: Collection<Edge> get() {
+        val list: MutableList<Edge> = mutableListOf()
+        val parent: Node = parent!!
+        parent.childEdges.forEach {
+            if (it.sourcePort == this) {
+                list.add(it)
+            }
+        }
+        val gparent:Node = parent.parent!!
+        gparent.childEdges.forEach {
+            if (it.sourcePort == this) {
+                list.add(it)
+            }
+        }
+        return list
     }
 
     override fun render(g: GraphicsProxy) {
@@ -87,13 +123,9 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
     }
 
     override val bounds: Bounds get() {
-        when (direction) {
-            Direction.IN -> {
-                return IN_SIZE
-            }
-            Direction.OUT -> {
-                return OUT_SIZE
-            }
+        return when (direction) {
+            Direction.IN -> IN_SIZE
+            Direction.OUT -> OUT_SIZE
         }
     }
 

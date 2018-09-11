@@ -1,10 +1,29 @@
 package graphmlio
 
 import editor.*
+import gherkin.lexer.El
 import org.w3c.dom.DOMException
 import org.w3c.dom.Element
+import org.w3c.dom.NodeList as DomNodeList
+import org.w3c.dom.Node as DomNode
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
+
+class NodeList(private val nodes: DomNodeList):Iterable<DomNode> {
+    override fun iterator(): Iterator<org.w3c.dom.Node> = NodeIterator(nodes)
+
+    private class NodeIterator(private val nodes: DomNodeList) : Iterator<DomNode> {
+        var index: Int = 0
+        override fun hasNext(): Boolean = index < nodes.length
+
+        override fun next(): org.w3c.dom.Node {
+            assert(hasNext())
+            val node = nodes.item(index)
+            index++
+            return node
+        }
+    }
+}
 
 fun read(graphml : File, scene: Viewport) : RootNode?{
     val dbFactory = DocumentBuilderFactory.newInstance()
@@ -13,14 +32,15 @@ fun read(graphml : File, scene: Viewport) : RootNode?{
         val doc = docBuilder.parse(graphml)
         doc.documentElement.normalize()
         val root = RootNode(scene, false)
-        val childNodes = doc.documentElement.childNodes
-        for (i in 0..childNodes.length-1){
-            val graph = childNodes.item(i)
-            if ((graph is Element) && (graph.tagName == "graph")){
-                createNodesOfGraphFromDOM(root, graph, scene)
-                createsEdgesOfGraphFromDOM(root, graph, scene)
-            }
-        }
+        val childNodes = NodeList(doc.documentElement.childNodes)
+        childNodes
+                .filterIsInstance<Element>()
+                .filter { e -> (e.tagName == "graph")}
+                .forEach { g ->
+                    createNodesOfGraphFromDOM(root, g, scene)
+                    createsEdgesOfGraphFromDOM(root, g, scene)
+                }
+
         root.keepInSync = true
         return root
     } catch (e : Exception) {
@@ -30,14 +50,11 @@ fun read(graphml : File, scene: Viewport) : RootNode?{
 }
 
 private fun extractDataStringValue(node: org.w3c.dom.Node, key: String) : String? {
-    val childNodes = node.childNodes
-    for (i in 0..childNodes.length-1) {
-        val iter = childNodes.item(i)
-        if ((iter is Element) && (iter.tagName == "data"))
-            if (iter.getAttribute("key") == key)
-                return iter.firstChild.nodeValue
-    }
-    return null
+    val resultNode = NodeList(node.childNodes)
+            .filterIsInstance<Element>()
+            .find { e -> (e.tagName == "data") && e.getAttribute("key") == key }
+
+    return resultNode?.firstChild?.nodeValue
 }
 
 private fun createPortFromDOM(parent: Node, port: Element, scene: Viewport){
@@ -164,18 +181,20 @@ private fun createNodesOfGraphFromDOM(parent: Node, graph: Element, scene: Viewp
 private fun createEdgeFromDOM(parent: Node, edge: Element, scene: Viewport){
     val srcNodeId = edge.getAttribute("source")
     val tgtNodeId = edge.getAttribute("target")
-    val srcNode: Node?
-    if (parent.id == srcNodeId)
-        srcNode = parent
+
+    val srcNode: Node? = if (parent.id == srcNodeId)
+        parent
     else
-        srcNode = parent.getChildNodeById(srcNodeId)
+        parent.getChildNodeById(srcNodeId)
+
     if (srcNode == null)
         throw DOMException(DOMException.NOT_FOUND_ERR, "Could not locate source node with id $srcNodeId")
-    val tgtNode: Node?
-    if (parent.id == tgtNodeId)
-        tgtNode = parent
+
+    val tgtNode: Node? = if (parent.id == tgtNodeId)
+        parent
     else
-        tgtNode = parent.getChildNodeById(tgtNodeId)
+        parent.getChildNodeById(tgtNodeId)
+
     if (tgtNode == null)
         throw DOMException(DOMException.NOT_FOUND_ERR, "Could not locate target node with id $tgtNodeId")
     val srcPortId = edge.getAttribute("sourceport")

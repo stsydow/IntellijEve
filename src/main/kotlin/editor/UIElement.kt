@@ -29,10 +29,11 @@ abstract class UIElement(var transform: Transform, val parent: Node?, var scene:
 
     fun getGlobalTransform(): Transform {
         val p = parent
-        if (p == null)
-            return transform
-        else
-            return p.getGlobalTransform() * transform
+        return if (p == null) {
+            transform
+        } else {
+            p.getGlobalTransform() * transform
+        }
     }
 
     fun getParentBoundsList(): LinkedList<Bounds> {

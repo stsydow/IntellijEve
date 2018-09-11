@@ -1,36 +1,41 @@
 package editor
 
-class Edge(transform: Transform, parent: Node, val source: Port, val target: Port, scene: Viewport) : UIElement(transform, parent, scene) {
+class Edge(transform: Transform, parent: Node, internal val sourcePort: Port, internal val targetPort: Port, scene: Viewport) : UIElement(transform, parent, scene) {
     companion object {
         const val PICK_DISTANCE = 5
     }
 
-    val curve: CubicBezierCurve
+    private val curve: CubicBezierCurve
 
     init {
-        assert(isValidEdge(source, target))
+        assert(isValidEdge(sourcePort, targetPort))
         curve = CubicBezierCurve(this)}
 
     override val bounds: Bounds
-        get() = Bounds.minimalBounds(source_coord, target_coord)
+        get() = Bounds.minimalBounds(sourceCoord, targetCoord)
 
-    val source_coord: Coordinate get() {
-        if (source.parent == parent)    // edge from in port to inner node
-            return source.transform * source.connectionPointRight
+    val targetNode: Node get() = targetPort.parent!!
+    val sourceNode: Node get() = sourcePort.parent!!
+
+    val sourceCoord: Coordinate get() {
+        if (sourceNode == parent)    // edge from in port to inner node
+            return sourcePort.transform * sourcePort.connectionPointRight
         else {  // edge between two nodes on same level
-            assert(source.parent!!.parent == parent)
-            return source.parent.transform * source.transform * source.connectionPointRight
+            assert(sourceNode.parent == parent)
+            return sourceNode.transform * sourcePort.transform * sourcePort.connectionPointRight
         }
     }
 
-    val target_coord: Coordinate get() {
-        if (target.parent == parent)    // edge from inner node to out port
-            return target.transform * target.connectionPointLeft
+    val targetCoord: Coordinate get() {
+        return if (targetNode == parent)    // edge from inner node to out port
+            targetPort.transform * targetPort.connectionPointLeft
         else {  // edge between two nodes on same level
-            assert(target.parent!!.parent == parent)
-            return target.parent.transform * target.transform * target.connectionPointLeft
+            assert(targetNode.parent == parent)
+            targetNode.transform * targetPort.transform * targetPort.connectionPointLeft
         }
     }
+
+
 
     override fun render(g: GraphicsProxy) {
         curve.paint(g)

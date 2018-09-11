@@ -15,8 +15,8 @@ const val M_BUTTON_LEFT = 1
 const val M_BUTTON_MIDDLE = 2
 const val M_BUTTON_RIGHT = 3
 
-val CTRL_Z = KeyStroke.getKeyStroke("control Z")
-val CTRL_Y = KeyStroke.getKeyStroke("control Y")
+val CTRL_Z = KeyStroke.getKeyStroke("control Z")!!
+val CTRL_Y = KeyStroke.getKeyStroke("control Y")!!
 
 /*
 enum class EventType {Single, Start, FollowUp, End}
@@ -159,19 +159,16 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
         when (e.button) {
             M_BUTTON_LEFT   -> {
                 picked = root.pick(sceneCoord, transform, UIElementKind.Node)
-                if (e.clickCount == 2){
-                    op = when (picked) {
+                op = when {
+                    e.clickCount == 2 -> when (picked) {
                         is Node -> Operation.OpenRustFileOperation(root, picked)
                         else    -> Operation.NoOperation()
                     }
-                }
-                else if (onlyCtrlModifier){
-                    op = when (picked) {
+                    onlyCtrlModifier -> when (picked) {
                         is Node -> Operation.SelectOperation(root, picked)
                         else    -> Operation.NoOperation()
                     }
-                } else {
-                    op = when (picked) {
+                    else -> when (picked) {
                         is RootNode -> Operation.UnselectAllOperation(root)
                         is Node -> Operation.SelectOperation(root, picked)
                         else -> Operation.NoOperation()

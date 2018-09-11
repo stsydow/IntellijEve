@@ -61,6 +61,20 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     val out_ports = mutableListOf<Port>()
     val childEdges = mutableListOf<Edge>()
     val childNodes = mutableSetOf<Node>()
+    val childNodeCount: Int get() = childNodes.size
+
+    fun flattenChildGraphs():Collection<Node> {
+        return listOf(this)  +  childNodes.flatMap { node -> node.flattenChildGraphs() }
+    }
+
+    val outgoingEdges :  Iterable<Edge> get() = out_ports.flatMap { p -> p.outgoingEdges }
+    val successors : Iterable<Node> get() = outgoingEdges.map { e -> e.targetPort.parent !! }
+    val isSink: Boolean get() = out_ports.isEmpty()
+    val isSource: Boolean get() = (in_port == null || in_port.incommingEdges.isEmpty()) && childNodes.isEmpty()
+    val isFanOut: Boolean get() = outgoingEdges.count() > 1
+    val isFanIn: Boolean get() = in_port.incommingEdges.count() > 1
+    val isPipelineStage = outgoingEdges.count() == 1 && in_port.incommingEdges.count() == 1
+
 
     val properties = mutableListOf<Property>()
 
@@ -73,15 +87,15 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     var innerBounds = DEFAULT_BOUNDS
     var color = DEFAULT_COLOR
 
-    val childNodeCount: Int get() = childNodes.size
+
 
     val nodesBaseDir: String = scene.editor!!.project.basePath + Viewport.NODES_RELATIVE_PATH
 
     fun nodePath(): String {
-        if (parent == null) { //root
-            return nodesBaseDir
+        return if (parent == null) { //root
+            nodesBaseDir
         } else {
-            return parent.nodePath() + "/" + pascalToSnakeCase(name)
+            parent.nodePath() + "/" + pascalToSnakeCase(name)
         }
     }
 
@@ -122,21 +136,19 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     open fun addEdge(child: Edge) {
         assert(child.parent == this)
         childEdges.forEach {
-            if ((child.target == it.target)
-                && (child.source == it.source))
+            if ((child.targetPort == it.targetPort)
+                && (child.sourcePort == it.sourcePort))
                 return
         }
         assert(childEdges.add(child))
-        if (parent != null)
-            parent.onChildChanged(this)
+        parent?.onChildChanged(this)
         repaint()
     }
 
     fun addPort(child: Port) {
         out_ports.add(child)
         positionChildren()
-        if (parent != null)
-            parent.onChildChanged(this)
+        parent?.onChildChanged(this)
         repaint()
     }
 
@@ -190,31 +202,32 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     // NOTE: this function is overloaded in the RootNode class
     open fun remove(child: UIElement) {
         assert(child.parent == this)
-        if (child is Node) {
-            assert(childNodes.remove(child))
-            onChildChanged(child)
-        } else if (child is Port) {
-            assert(child.direction == Direction.OUT)
-            if (parent != null)
-                parent.removeEdgesConnectedToPort(child)
-            removeEdgesConnectedToPort(child)
-            assert(out_ports.remove(child))
-            positionChildren()
-            if (parent != null)
-                parent.onChildChanged(this)
-        } else if (child is Edge) {
-            assert(childEdges.remove(child))
-            if (parent != null)
-                parent.onChildChanged(this)
+        when (child) {
+            is Node -> {
+                assert(childNodes.remove(child))
+                onChildChanged(child)
+            }
+            is Port -> {
+                assert(child.direction == Direction.OUT)
+                parent?.removeEdgesConnectedToPort(child)
+                removeEdgesConnectedToPort(child)
+                assert(out_ports.remove(child))
+                positionChildren()
+                parent?.onChildChanged(this)
+            }
+            is Edge -> {
+                assert(childEdges.remove(child))
+                parent?.onChildChanged(this)
+            }
         }
         repaint()
     }
 
     fun getPortById(id: String): Port? {
-        if (in_port.id == id) {
-            return in_port
+        return if (in_port.id == id) {
+            in_port
         } else {
-            return out_ports.find { it.id == id }
+            out_ports.find { it.id == id }
         }
     }
 
@@ -227,14 +240,14 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     }
 
     fun getChildEdgeByPortIds(source: String, target: String): Edge? {
-        return childEdges.find { it.source.id == source && it.target.id == target }
+        return childEdges.find { it.sourcePort.id == source && it.targetPort.id == target }
     }
 
     fun removeEdgesConnectedToPort(port: Port) {
         val iter = childEdges.listIterator()
         while (iter.hasNext()){
             val edge = iter.next()
-            if (edge.source == port || edge.target == port)
+            if (edge.sourcePort == port || edge.targetPort == port)
                 iter.remove()
         }
     }
@@ -296,14 +309,14 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
     }
 
     fun minimalBounds(): Bounds {
-        if (childNodes.size > 0) {
-            return childNodes.map { c ->
+        return if (childNodes.isNotEmpty()) {
+            childNodes.map { c ->
                 c.externalBounds()
             }.reduce { groupBounds, bounds ->
                 groupBounds + bounds
             }
         } else {
-            return DEFAULT_BOUNDS
+            DEFAULT_BOUNDS
         }
     }
 
@@ -620,8 +633,8 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
     override fun addEdge(child: Edge) {
         assert(child.parent == this)
         childEdges.forEach {
-            if ((child.target == it.target)
-                    && (child.source == it.source))
+            if ((child.targetPort == it.targetPort)
+                    && (child.sourcePort == it.sourcePort))
                 return
         }
         assert(childEdges.add(child))
@@ -630,8 +643,10 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         repaint()
     }
 
+    /*
     override fun positionChildren() {
     }
+    */
 
     override fun repaint() {
         viewport.repaint()

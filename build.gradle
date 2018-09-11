@@ -1,16 +1,18 @@
 plugins {
     //id 'java-gradle-plugin' - breaks XML Parser classpath
-    id "org.jetbrains.intellij" version "0.3.2"
-    id "org.jetbrains.kotlin.jvm" version "1.2.41"
+    //id "org.jetbrains.intellij" version "0.3.2"
+    id "org.jetbrains.intellij" version "0.3.7"
+    id "org.jetbrains.kotlin.jvm" version "1.2.61"
 }
 
 intellij {
-    version 'IC-182.3911.36'
+    //version 'IU-182.4129.33'
+    version 'IC-2018.2.3'
     pluginName 'IntellijEve'
 }
 
 group 'org.tub.eveamcp'
-version '0.0.1'
+version '0.1.1'
 
 sourceSets {
     main {

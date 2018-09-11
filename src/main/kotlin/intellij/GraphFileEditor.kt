@@ -1,7 +1,6 @@
 package intellij
 
 import codegen.RustAsyncCodeGen
-import codegen.RustCodeGenerator
 import com.intellij.codeHighlighting.BackgroundEditorHighlighter
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorLocation
@@ -19,8 +18,16 @@ import java.io.File
 import java.io.FileInputStream
 import javax.swing.JComponent
 
-class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserDataHolderBase(), FileEditor {
-    val panel: Viewport = Viewport(this)
+private fun fileIsEmpty(file: File): Boolean {
+    val inStream = FileInputStream(file)
+    val bomInStream = BOMInputStream(inStream, false)
+    // file is empty if first read attempt after opening the stream returns -1
+    return (bomInStream.read() < 0)
+}
+
+class GraphFileEditor(val project: Project, private val virtualFile: VirtualFile): UserDataHolderBase(), FileEditor {
+
+    private val panel: Viewport = Viewport(this)
 
     init {
         val file = File(virtualFile.path)
@@ -41,60 +48,38 @@ class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserD
         return false
     }
 
-    override fun addPropertyChangeListener(p0: PropertyChangeListener) {
+    override fun addPropertyChangeListener(p0: PropertyChangeListener) { }
 
-    }
+    override fun getName(): String = javaClass.name //"intellij.GraphFileEditor"
 
-    override fun getName(): String {
-        return "intellij.GraphFileEditor"
-    }
+    override fun setState(p0: FileEditorState) { }
 
-    override fun setState(p0: FileEditorState) {
+    override fun getComponent(): JComponent = panel
 
-    }
+    override fun getPreferredFocusedComponent(): JComponent? = panel
 
-    override fun getComponent(): JComponent {
-        return panel;
-    }
+    override fun selectNotify() { }
 
-    override fun getPreferredFocusedComponent(): JComponent? {
-        return panel;
-    }
+    override fun getCurrentLocation(): FileEditorLocation? = null
 
-    override fun selectNotify() {
 
-    }
+    override fun deselectNotify() { }
 
-    override fun getCurrentLocation(): FileEditorLocation? {
-        return null;
-    }
-
-    override fun deselectNotify() {
-
-    }
-
-    override fun getBackgroundHighlighter(): BackgroundEditorHighlighter? {
-        return null;
-    }
+    override fun getBackgroundHighlighter(): BackgroundEditorHighlighter? = null
 
     override fun isValid(): Boolean {
         return true
     }
 
-    override fun removePropertyChangeListener(p0: PropertyChangeListener) {
+    override fun removePropertyChangeListener(p0: PropertyChangeListener) { }
 
-    }
-
-    override fun dispose() {
-
-    }
+    override fun dispose() { }
 
     fun generate() {
         try {
-            val gen = RustAsyncCodeGen()
             val path = project.baseDir.path
-            gen.generateSkeleton(path)
-            gen.generateCode(panel.root, path)
+            RustAsyncCodeGen.generateSkeleton(path)
+            RustAsyncCodeGen.generateCode(panel.root, path)
         } catch(e: Exception) {
             e.printStackTrace()
         }
@@ -104,15 +89,4 @@ class GraphFileEditor(val project: Project, val virtualFile: VirtualFile): UserD
         write(virtualFile.path, panel.root)
     }
 
-    /*
-        Method that checks whether a file is empty while considering UTF-8 Byte Order Marks
-        as suggested in
-        https://stackoverflow.com/questions/1835430/byte-order-mark-screws-up-file-reading-in-java/1835529#1835529
-     */
-    fun fileIsEmpty(file: File): Boolean {
-        val inStream = FileInputStream(file)
-        val bomInStream = BOMInputStream(inStream, false)
-        // file is empty if first read attempt after opening the stream returns -1
-        return (bomInStream.read() < 0)
-    }
 }

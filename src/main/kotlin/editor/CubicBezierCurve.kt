@@ -37,14 +37,14 @@ class CubicBezierCurve(val parent: Edge) {
 //                Coordinate(0.05, 0.0),
 //                Coordinate(0.0, -0.05))
 //        // endpoints
-//        g.polygon(Color.BLUE, Transform(parent.source_coord.x, parent.source_coord.y, 1.0) * diamondShape, true)
-//        g.polygon(Color.BLUE, Transform(parent.target_coord.x, parent.target_coord.y, 1.0) * diamondShape, true)
+//        g.polygon(Color.BLUE, Transform(parent.sourceCoord.x, parent.sourceCoord.y, 1.0) * diamondShape, true)
+//        g.polygon(Color.BLUE, Transform(parent.targetCoord.x, parent.targetCoord.y, 1.0) * diamondShape, true)
 //        // control points
 //        g.polygon(Color.RED, Transform(ctrlSrc.x, ctrlSrc.y, 1.0) * diamondShape, true)
 //        g.polygon(Color.RED, Transform(ctrlTgt.x, ctrlTgt.y, 1.0) * diamondShape, true)
 //        // control lines
-//        g.line(parent.source_coord, ctrlSrc)
-//        g.line(parent.target_coord, ctrlTgt)
+//        g.line(parent.sourceCoord, ctrlSrc)
+//        g.line(parent.targetCoord, ctrlTgt)
     }
 
     /*
@@ -53,11 +53,11 @@ class CubicBezierCurve(val parent: Edge) {
         the source and target port but in the middle concerning the x-coordinate.
      */
     private fun computeControlPoints(){
-        val deltaX = parent.target_coord.x - parent.source_coord.x
-        val xCtrlSrc = parent.source_coord.x + deltaX/2
-        val xCtrlTgt = parent.target_coord.x - deltaX/2
-        ctrlSrc = Coordinate(xCtrlSrc, parent.source_coord.y)
-        ctrlTgt = Coordinate(xCtrlTgt, parent.target_coord.y)
+        val deltaX = parent.targetCoord.x - parent.sourceCoord.x
+        val xCtrlSrc = parent.sourceCoord.x + deltaX/2
+        val xCtrlTgt = parent.targetCoord.x - deltaX/2
+        ctrlSrc = Coordinate(xCtrlSrc, parent.sourceCoord.y)
+        ctrlTgt = Coordinate(xCtrlTgt, parent.targetCoord.y)
     }
 
     private fun updateCurvePoints(){
@@ -72,8 +72,8 @@ class CubicBezierCurve(val parent: Edge) {
             val s = 1.0-t
             val s2 = s*s
             val s3 = s2*s
-            val x = parent.source_coord.x*s3 + ctrlSrc.x*3*s2*t + ctrlTgt.x*3*s*t2 + parent.target_coord.x*t3
-            val y = parent.source_coord.y*s3 + ctrlSrc.y*3*s2*t + ctrlTgt.y*3*s*t2 + parent.target_coord.y*t3
+            val x = parent.sourceCoord.x*s3 + ctrlSrc.x*3*s2*t + ctrlTgt.x*3*s*t2 + parent.targetCoord.x*t3
+            val y = parent.sourceCoord.y*s3 + ctrlSrc.y*3*s2*t + ctrlTgt.y*3*s*t2 + parent.targetCoord.y*t3
             points[i] = Coordinate(x, y)
             t += inc
         }

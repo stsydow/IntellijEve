@@ -66,9 +66,8 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
             if (element != null) {
                 element.transform = newTransform
                 element.repaint()   // TODO: needed here?
-                var p: Node? = element.parent
-                if (p != null)
-                    p.onChildChanged(element as Node)
+                val p: Node? = element.parent
+                p?.onChildChanged(element as Node)
             }
         }
 
@@ -79,7 +78,7 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
         }
     }
 
-    class NoOperation(): Operation(null, null, null) {
+    class NoOperation: Operation(null, null, null) {
         override fun perform() {
             // do nothing obviously
         }
@@ -120,8 +119,7 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
     class ShowMenuOperation(element: UIElement?, coord: Coordinate, val view: Viewport, val comp: Component): Operation(null, coord, element) {
         override fun perform() {
             if (element != null && coord != null){
-                val menu:JPopupMenu?
-                menu = when (element) {
+                val menu:JPopupMenu? = when (element) {
                     is RootNode -> RootNodeContextMenu(element, view, coord)
                     is Edge     -> EdgeContextMenu(element, view, coord)
                     is Node     -> NodeContextMenu(element, view, coord)
@@ -149,13 +147,22 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
         override fun perform() {
             if (element != null && root != null){
                 element as Node
-                if (element.name == Node.DEFAULT_NAME) {
-                    JOptionPane.showMessageDialog(root.viewport, "Please name the node before opening its file", "Error", JOptionPane.ERROR_MESSAGE)
-                } else if (element.parentsUnnamed()) {
-                    JOptionPane.showMessageDialog(root.viewport, "Node in higher level of node is not named, can not open its file", "Error", JOptionPane.ERROR_MESSAGE)
-                } else {
-                    val nodeFile = element.getOrCreateFile()
-                    FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile, true)
+                when {
+                    element.name == Node.DEFAULT_NAME ->
+                        JOptionPane.showMessageDialog(
+                                root.viewport,
+                                "Please name the node before opening its file",
+                                "Error", JOptionPane.ERROR_MESSAGE)
+
+                    element.parentsUnnamed() ->
+                        JOptionPane.showMessageDialog(
+                                root.viewport,
+                                "Node in higher level of node is not named, can not open its file",
+                                "Error", JOptionPane.ERROR_MESSAGE)
+                    else -> {
+                        val nodeFile = element.getOrCreateFile()
+                        FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile, true)
+                    }
                 }
             }
         }
@@ -163,13 +170,13 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
 }
 
 abstract class UIOperation {
-    abstract fun reverse();
-    abstract fun apply();
+    abstract fun reverse()
+    abstract fun apply()
 }
 
 class MoveOperation(val element: UIElement, val oldParentBounds: LinkedList<Bounds>, val old: Transform, val newParentBounds: List<Bounds>, val new: Transform): UIOperation() {
     override fun reverse() {
-        element.transform = old;
+        element.transform = old
         var p: Node? = element.parent
         for (i in oldParentBounds) {
             println("setting bounds to $i for $p")
@@ -340,7 +347,7 @@ class RemoveEdgeOperation( val parent: Node, val element: Edge): UIOperation() {
     }
 }
 
-class SetNodeNameOperation(val node: Node, val oldName: String, val newName: String): UIOperation(){
+class SetNodeNameOperation(val node: Node, val oldName: String, val newName: String): UIOperation() {
     override fun reverse() {
         node.name = oldName
         node.repaint()

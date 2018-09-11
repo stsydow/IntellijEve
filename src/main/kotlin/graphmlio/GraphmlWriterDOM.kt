@@ -13,7 +13,9 @@ import javax.xml.XMLConstants
 import javax.xml.stream.XMLOutputFactory
 import javax.xml.stream.XMLStreamWriter
 
-class GraphmlConstants() {
+const val W3C_XML_SCHEMA_INSTANCE_NS_URI = "http://www.w3.org/2001/XMLSchema-instance"
+
+class GraphmlConstants {
     companion object {
         const val ATTR_NAME = "attr.name"
         const val ATTR_TYPE = "attr.type"
@@ -45,7 +47,7 @@ class GraphmlConstants() {
     }
 }
 
-class EveamcpConstants() {
+class EveamcpConstants {
     companion object {
         const val NODE_BOUNDS_XMAX = "node_bounds_xmax"
         const val NODE_BOUNDS_XMAX_NAME = "innerBounds_xmax"
@@ -115,7 +117,7 @@ private fun writeGraphmlElement(writer: XMLStreamWriter){
             XMLConstants.XMLNS_ATTRIBUTE
                     + ":"
                     + GraphmlConstants.XML_SCHEMA_NAMESPACE_TAG,
-            XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI
+                    W3C_XML_SCHEMA_INSTANCE_NS_URI
     )
     writer.writeAttribute(
             GraphmlConstants.XML_SCHEMA_NAMESPACE_TAG
@@ -213,15 +215,15 @@ private fun writeGraph(writer: XMLStreamWriter, root: Node) {
         writeNewline(writer)
         depth += 1
         // write all children nodes of root node
-        root.childNodes.forEach( {iter ->
+        root.childNodes.forEach { iter ->
             writeIndentation(writer)
             writeNodeElement(writer, iter)
-        })
-        // write the top level edges because we will miss them otherwise
-        root.childEdges.forEach({ iter ->
+        }
+    // write the top level edges because we will miss them otherwise
+        root.childEdges.forEach { iter ->
             writeIndentation(writer)
             writeEdgeElement(writer, iter)
-        })
+        }
         depth -= 1
     writeIndentation(writer)
     writer.writeEndElement()    // end <graph>
@@ -237,10 +239,10 @@ private fun writeNodeElement(writer: XMLStreamWriter, node: Node) {
     // write ports
     writeIndentation(writer)
     writePortElement(writer, node.in_port)
-    node.out_ports.forEach({ iter ->
+    node.out_ports.forEach { iter ->
         writeIndentation(writer)
         writePortElement(writer, iter)
-    })
+    }
     // write data fields
     writeIndentation(writer)
     writeDataElement(writer,
@@ -304,7 +306,7 @@ private fun writePortElement(writer: XMLStreamWriter, port: Port) {
         writeDataElement(writer, EveamcpConstants.PORT_DIRECTION, port.direction.toString())
         writeIndentation(writer)
         writeDataElement(writer, EveamcpConstants.PORT_ID, port.id)
-        if (port.message_type.length > 0) {
+        if (port.message_type.isNotEmpty()) {
             writeIndentation(writer)
             writeDataElement(writer, EveamcpConstants.PORT_MESSAGE_TYPE, port.message_type)
         }
@@ -316,10 +318,10 @@ private fun writePortElement(writer: XMLStreamWriter, port: Port) {
 
 private fun writeEdgeElement(writer: XMLStreamWriter, edge: Edge) {
     writer.writeStartElement(GraphmlConstants.EDGE) // start <edge>
-        writer.writeAttribute(GraphmlConstants.SOURCE, edge.source.parent!!.id)
-        writer.writeAttribute(GraphmlConstants.TARGET, edge.target.parent!!.id)
-        writer.writeAttribute(GraphmlConstants.SOURCE_PORT, edge.source.id)
-        writer.writeAttribute(GraphmlConstants.TARGET_PORT, edge.target.id)
+        writer.writeAttribute(GraphmlConstants.SOURCE, edge.sourcePort.parent!!.id)
+        writer.writeAttribute(GraphmlConstants.TARGET, edge.targetPort.parent!!.id)
+        writer.writeAttribute(GraphmlConstants.SOURCE_PORT, edge.sourcePort.id)
+        writer.writeAttribute(GraphmlConstants.TARGET_PORT, edge.targetPort.id)
     writer.writeEndElement()    // end <edge>
     writeNewline(writer)
 }
@@ -340,12 +342,12 @@ private fun finishUp(writer: XMLStreamWriter){
 }
 
 private fun writeNewline(writer: XMLStreamWriter){
-    writer.writeCharacters(System.getProperty("line.separator"));
+    writer.writeCharacters(System.getProperty("line.separator"))
 }
 
 private fun writeIndentation(writer: XMLStreamWriter){
-    for (i in 0 .. depth-1){
-        for (j in 0 .. SPACES_PER_TAB-1)
+    for (i in 0 until depth-1){
+        for (j in 0 until SPACES_PER_TAB-1)
             writer.writeCharacters(" ")
     }
 }
