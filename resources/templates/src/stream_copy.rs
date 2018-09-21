@@ -1,9 +1,6 @@
 extern crate futures;
 extern crate tokio_core;
 
-use tokio_core::reactor::Core;
-use futures::Future;
-use futures::future::ok;
 use futures::Poll;
 use futures::Stream;
 use futures::Async;
@@ -13,10 +10,7 @@ use std::sync::Mutex;
 use std::clone::Clone;
 use std::sync::MutexGuard;
 
-#[derive(Debug)]
-pub enum EveError {
-    UnknownError
-}
+use ::EveError;
 
 pub struct StreamCopy<T, S: Stream<Item=T, Error=EveError>> {
     input: S,
@@ -24,11 +18,9 @@ pub struct StreamCopy<T, S: Stream<Item=T, Error=EveError>> {
     idx: usize
 }
 
-struct StreamCopyMutex<T, S: Stream<Item=T, Error=EveError>> {
-    inner: Arc<Mutex<StreamCopy<T, S>>>
-}
+pub struct StreamCopyMutex<T, S: Stream<Item=T, Error=EveError>>(Arc<Mutex<StreamCopy<T, S>>>);
 
-struct StreamCopyOutPort<T, S: Stream<Item=T, Error=EveError>> {
+pub struct StreamCopyOutPort<T, S: Stream<Item=T, Error=EveError>> {
     id: usize,
     source: StreamCopyMutex<T, S>
 }
@@ -66,7 +58,7 @@ impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopy<T, S> {
     }
 
     fn buffered_poll(&mut self, id: usize) -> Option<T>{
-        let mut buffer = &mut self.buffers[id];
+        let buffer = &mut self.buffers[id];
         if buffer.len() > 0 {
             Some(buffer.remove(0))
         } else {
@@ -84,20 +76,27 @@ impl<T: Clone, S: Stream<Item=T, Error=EveError>> Stream for StreamCopyOutPort<T
     }
 }
 
+
 impl<T, S: Stream<Item=T, Error=EveError>> Clone for StreamCopyMutex<T, S> {
     fn clone(&self) -> StreamCopyMutex<T, S> {
-        StreamCopyMutex {
-            inner: self.inner.clone()
-        }
+        StreamCopyMutex(self.0.clone())
     }
 }
 
 impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopyMutex<T, S> {
-    fn lock(&self) -> MutexGuard<StreamCopy<T, S>> {
-        self.inner.lock().unwrap()
+
+    pub fn new(input:S) -> StreamCopyMutex<T, S> {
+        StreamCopyMutex(
+            Arc::new(Mutex::new(StreamCopy {
+                input, buffers: vec!(), idx: 0
+            })))
     }
 
-    fn create_output_locked(&self) -> StreamCopyOutPort<T, S> {
+    pub fn lock(&self) -> MutexGuard<StreamCopy<T, S>> {
+        self.0.lock().unwrap()
+    }
+
+    pub fn create_output_locked(&self) -> StreamCopyOutPort<T, S> {
         let mut inner = self.lock();
         let val = StreamCopyOutPort {
             source: (*self).clone(),
@@ -108,7 +107,7 @@ impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopyMutex<T, S> {
         val
     }
 
-    fn poll_locked(&self, id: usize) -> Poll<Option<T>, EveError> {
+    pub fn poll_locked(&self, id: usize) -> Poll<Option<T>, EveError> {
         let mut inner = self.lock();
         inner.poll(id)
     }

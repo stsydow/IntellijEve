@@ -1,16 +1,7 @@
 package editor
 
-import codegen.pascalToSnakeCase
-import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.util.io.createDirectories
-import com.intellij.util.io.createFile
-import com.intellij.util.io.exists
 import java.awt.Color
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
+
 
 enum class PropertyType {Filter, Order, ContextId }
 
@@ -32,8 +23,9 @@ class Property(val type: PropertyType, var expression: String) {
     }
 }
 
+
 // assert Nodes may not overlap
-open class Node(transform: Transform, var name: String, parent: Node?, scene: Viewport) : UIElement(transform, parent, scene) {
+open class Node(transform: Transform, name: String, parent: Node?, scene: Viewport) : UIElement(transform, parent, scene) {
     companion object {
         const val TITLE_HEIGHT = 2 * UNIT
         val INNER_PADDING = Padding(0.2 * UNIT)
@@ -43,7 +35,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         val DEFAULT_BOUNDS = Bounds(0.0, 0.0, 20 * UNIT, 15 * UNIT)
         var SCALE_FACTOR = 0.5
         val DEFAULT_TRANSFORM = Transform(0.0, 0.0, SCALE_FACTOR)
-        const val DEFAULT_FILE_ENDING = ".rs"
+
         val CHILD_NODE_SYMBOL = Transform(0.0, 0.0, UNIT) * listOf(
                 Coordinate(0.0, 0.0),
                 Coordinate(5.0, 0.0),
@@ -52,60 +44,49 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         )
     }
 
+    var name: String = name
+        get() = field
+        set(value) {
+            impl.rename(value)
+            field = value
+            repaint()
+        }
+
+
+    val impl = ImplementationNode(this)
+    val codeGen = CodeGenNode(this)
+    // Data Fields
+
     var showGeometry = false
     var childrenPickable = true
-
     var isSelected = false
 
     val in_port = Port(Direction.IN, Port.ANY_MESSAGE_TYPE, this, scene)
     val out_ports = mutableListOf<Port>()
     val childEdges = mutableListOf<Edge>()
     val childNodes = mutableSetOf<Node>()
-    val childNodeCount: Int get() = childNodes.size
-
-    fun flattenChildGraphs():Collection<Node> {
-        return listOf(this)  +  childNodes.flatMap { node -> node.flattenChildGraphs() }
-    }
-
-    val outgoingEdges :  Iterable<Edge> get() = out_ports.flatMap { p -> p.outgoingEdges }
-    val successors : Iterable<Node> get() = outgoingEdges.map { e -> e.targetPort.parent !! }
-    val isSink: Boolean get() = out_ports.isEmpty()
-    val isSource: Boolean get() = (in_port == null || in_port.incommingEdges.isEmpty()) && childNodes.isEmpty()
-    val isFanOut: Boolean get() = outgoingEdges.count() > 1
-    val isFanIn: Boolean get() = in_port.incommingEdges.count() > 1
-    val isPipelineStage = outgoingEdges.count() == 1 && in_port.incommingEdges.count() == 1
-
-
-    val properties = mutableListOf<Property>()
-
-    val propertiesPadding: Padding get() = Padding((1.2 * properties.size) * UNIT, 0.0, 0.0, 0.0)
-
-    override val bounds: Bounds get() = innerBounds + padding + propertiesPadding
-    val titleBottom: Coordinate get() = (bounds - propertiesPadding).min() + Vector(0.0, TITLE_HEIGHT)
 
     val padding = DEFAULT_PADDING
     var innerBounds = DEFAULT_BOUNDS
     var color = DEFAULT_COLOR
 
+    // Properties
 
+    val childNodeCount: Int get() = childNodes.size
+    val outgoingEdges :  Iterable<Edge> get() = out_ports.flatMap { p -> p.outgoingEdges }
+    val incommingEdges :  Iterable<Edge> get() = in_port?.incommingEdges
+    val successors : Iterable<Node> get() = outgoingEdges.map { e -> e.targetNode }
+    val predecessors : Iterable<Node> get() = incommingEdges.map { e -> e.sourceNode }
+    val isSink: Boolean get() = out_ports.isEmpty()
+    val isSource: Boolean get() = (in_port == null || incommingEdges.none()) // && childNodes.isEmpty()
+    val isFanOut: Boolean get() = outgoingEdges.count() > 1
+    val isFanIn: Boolean get() = in_port.incommingEdges.count() > 1
 
-    val nodesBaseDir: String = scene.editor!!.project.basePath + Viewport.NODES_RELATIVE_PATH
+    val properties = mutableListOf<Property>()
+    val propertiesPadding: Padding get() = Padding((1.2 * properties.size) * UNIT, 0.0, 0.0, 0.0)
+    override val bounds: Bounds get() = innerBounds + padding + propertiesPadding
+    val titleBottom: Coordinate get() = (bounds - propertiesPadding).min() + Vector(0.0, TITLE_HEIGHT)
 
-    fun nodePath(): String {
-        return if (parent == null) { //root
-            nodesBaseDir
-        } else {
-            parent.nodePath() + "/" + pascalToSnakeCase(name)
-        }
-    }
-
-    val filePath: Path get() {
-        return Paths.get(nodePath() + DEFAULT_FILE_ENDING)
-    }
-
-    val trashFilePath: Path get() {
-        return Paths.get(scene.trashDir.toString() + filePath.toString().substringAfter(Viewport.NODES_RELATIVE_PATH))
-    }
 
     constructor(parent: Node, scene: Viewport) : this(DEFAULT_TRANSFORM, parent, scene)
     constructor(t: Transform, parent: Node, scene: Viewport) : this(t, DEFAULT_NAME, parent, scene) {
@@ -519,44 +500,7 @@ open class Node(transform: Transform, var name: String, parent: Node?, scene: Vi
         return toString(0)
     }
 
-    fun getOrCreateFile(): VirtualFile {
-        val nodePath = filePath
-        if (!nodePath.exists()){
-            nodePath.createFile()
-        }
-        return LocalFileSystem.getInstance().refreshAndFindFileByIoFile(nodePath.toFile())!!
-    }
 
-    fun moveToTrash() {
-        // do it for all the child nodes first
-        childNodes.forEach {
-            it.moveToTrash()
-        }
-        // if a rust file for the node exists, move it to the trash dir
-        val nodePath = filePath
-        if (nodePath.exists()) {
-            // create parent dirs of trash file path if we need to
-            val nodeTrashPathParent = trashFilePath.parent
-            if (!Files.isDirectory(nodeTrashPathParent))
-                Files.createDirectories(nodeTrashPathParent)
-            Files.move(nodePath, trashFilePath, StandardCopyOption.REPLACE_EXISTING)
-            LocalFileSystem.getInstance().refresh(false)
-        }
-    }
-
-    fun retreiveFromTrash() {
-        // if a rust file exists in the trash we are going to retreive it
-        if (trashFilePath.exists()){
-            val nodePath = filePath
-            nodePath.parent.createDirectories()
-            Files.move(trashFilePath, nodePath, StandardCopyOption.REPLACE_EXISTING)
-            LocalFileSystem.getInstance().refresh(false)
-        }
-        // now retreive all children
-        childNodes.forEach {
-            it.retreiveFromTrash()
-        }
-    }
 
     fun toString(n: Int): String {
         val prefix = get2NSpaces(n)

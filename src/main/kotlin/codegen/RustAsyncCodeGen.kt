@@ -7,144 +7,174 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 const val ERROR_TYPE = "EveError"
+const val TAB = "    "
+val tabs = {n:Int -> "".padStart(n* TAB.length)}
 val streamType = {itemType: String -> "impl Stream<Item=$itemType, Error=$ERROR_TYPE>"}
+val define = {name:String, expression:String -> "let $name = $expression;\n"}
 
-abstract class ReducedGraphNode(val name: String) {
+
+interface StreamNode {
     // TODO get rid of the recursion here (handledElements Set too) - see traverseGraph
-    abstract fun generateInstantiationCode(builder: StringBuilder, handledElements: MutableSet<String>)
+    //abstract val ident:String
+    //open fun generateDefinitionCode():String  = ""
+    //abstract fun generateInstantiationCode(builder: StringBuilder)
+    val definition: String
+    val streamHandle: String
 }
 
-class Pipeline(name: String,
-               private val firstNode: Node, private val lastNode: Node,
-               private val predecessor: ReducedGraphNode?, var successor: ReducedGraphNode?) :
-        ReducedGraphNode(name), Iterable<Node> {
+class StreamSource(private val node:Node):StreamNode {
 
-    private class PipelineIterator(start:Node, end:Node): Iterator<Node> {
-        private var currentNode:Node = start
-        private var endNode:Node = end
+    init {
+        assert(node.isSource)
+        assert(isValidRustPascalCase(node.name))
+    }
 
-        override fun hasNext(): Boolean = currentNode.successors.any()
+    override val streamHandle: String get() = node.streamHandle
+    override val definition: String get() = define(streamHandle,
+            "${node.moduleName}::${node.name}::new()"
+    )
+}
 
-        override fun next(): Node {
-            assert(currentNode == endNode || currentNode.successors.count() == 1)
-            val result = currentNode.successors.first()
-            currentNode = result
-            return result
+class StatelessNode(private val inputHandle: String, private val node:Node):StreamNode {
+
+    init {
+        assert(isValidRustPascalCase(node.name))
+    }
+
+    override val streamHandle: String get() = node.streamHandle
+    override val definition: String get() = define(streamHandle,
+            "$inputHandle\n$TAB.map(|event| { ${node.moduleName}::tick(event) })"
+    )
+}
+
+class Merge(val inputStreams: Iterable<String>, private val ident: String) : StreamNode {
+
+    init {
+        assert(inputStreams.count() > 1)
+    }
+
+
+    override val streamHandle: String get() = "merge_$ident"
+
+    override val definition: String get() = define(streamHandle,
+            inputStreams.joinToString(")\n$TAB.select(", "(", ")")
+    )
+}
+
+class Copy(private val inputHandle: String, private val ident: String) : StreamNode {
+
+    val mutex_ident:String get() = "copy_$ident"
+
+    override val definition: String get() = define(mutex_ident,
+            "StreamCopyMutex::new(${inputHandle})"
+    )
+
+    override val streamHandle: String get() = "$mutex_ident.create_output_locked()"
+}
+
+abstract class Sink(private val inputHandle: String): StreamNode {
+    companion object {
+        fun joinToFuture(sinks:Iterable<Sink>): String {
+            val joinedSinks = sinks.joinToString (").join(","(",")"){ sink -> sink.streamHandle }
+            return "$joinedSinks.for_each(|_| ok(()))"
         }
     }
 
-    override operator fun iterator(): Iterator<Node> {
-        return (Pipeline::PipelineIterator)(firstNode, lastNode)
+}
+
+class DropSink(inputHandle: String, val ident: String): Sink(inputHandle) {
+
+    override val streamHandle: String get() = "sink_$ident"
+    override val definition: String = define(streamHandle, "$inputHandle\n$TAB.map(|_| ())")
+}
+
+class Cursor(val node: Node, val depth: Int = 0) {
+
+    val successors: Iterable<Cursor> get() = node.successors
+            .filter { s -> s != node.parent }
+            .map { s -> Cursor(s, depth + 1) }
+
+    override fun equals(other: Any?): Boolean {
+        return when (other) {
+            is Cursor -> node == other.node
+            is Node -> node == other
+            else -> false
+        }
     }
 
-    override fun generateInstantiationCode(builder: StringBuilder, handledElements: MutableSet<String>) {
-        if (name in handledElements) {
-            return
-        }
-
-        predecessor?.generateInstantiationCode(builder, handledElements)
-        if (name in handledElements) {
-            return
-        }
-
-        val inputConnector = when (predecessor) {
-            null -> ""
-            is Pipeline -> name
-            is Merge -> name
-            is Copy -> "$name.create_output_locked()"
-            else -> error("unknown element type")
-        }
-
-        builder.appendln("let $name = $name($inputConnector);")
-        handledElements.add(name)
-
-        successor?.generateInstantiationCode(builder, handledElements)
+    override fun hashCode(): Int {
+        return node.hashCode()
     }
 
-    val isSource: Boolean get() = firstNode.isSource
-    val isSink: Boolean get() = lastNode.isSink
+}
 
-    fun generatePipeline(): String {
-        val builder = StringBuilder()
+private fun traverseGraph(rootNode: Node) : StreamNode {
+    val sources = rootNode.childNodes.filter { n -> n.isSource } + rootNode.in_port.outgoingEdges.map{e -> e.targetNode}
+    val visited = mutableSetOf<Cursor>()
+    val cursors = sources.asSequence().map { n -> Cursor(n) }.toMutableSet()
 
-        val resultType = if (isSink) "()" else streamType(lastNode.out_ports.first().message_type)
+    val definitions = StringBuilder();
+    val taskGraph = StringBuilder();
 
-        val pipelineName = "pipeline_${firstNode.id}_${lastNode.id}"
 
+    while (cursors.isNotEmpty()) {
+        val current = cursors.first()
+        assert(!visited.contains(current))
+        val node = current.node
 
-        if (isSource) {
-            builder.appendln("pub fn $pipelineName() -> $resultType {")
-        } else {
-            val inputType = streamType(firstNode.in_port.message_type)
-            builder.append("""
-            pub fn $pipelineName(stream: $inputType) -> $resultType} {
-                stream"""
-            )
-        }
+        val predecessor:StreamNode = when {
+            node.isSource -> {
+                StreamSource(node)
 
-        for (node in this){
-            val nodeName = node.name
-            val moduleName = pascalToSnakeCase(nodeName)
-            if (node.isSource) {
-                builder.appendln("$moduleName::$nodeName::new()")
-            } else {
-                builder.appendln("  .map(|event| { $moduleName::tick(event) })")
+            }
+            node.isFanIn -> {
+                val inputNodes = TODO("build merge from $node.predecessors")
+                Merge(inputNodes)
+
+            }
+            else -> {
+                node.predecessors.first()
             }
         }
-        builder.appendln("}")
-        return builder.toString()
+
+        val streamNode:StreamNode = if (node.childNodes.any()) {
+            //TODO context stuff
+            val edges = node.in_port.outgoingEdges
+            traverseGraph(node)
+            val childCursors = edges.map { e -> Cursor(e.targetNode) }.toMutableSet()
+            cursors.addAll(childCursors)
+        } else {
+            if (node.hasContext){
+                TODO("StatefullNode")
+            } else {
+                StatelessNode(predecessor)
+            }
+        }
+
+        val successors = current.successors
+
+        when {
+            node.isSink -> { //Sink
+                TODO("build sink")
+            }
+            node.isFanOut ->{ //Fanout
+
+                TODO("build copy / fanout")
+            }
+            else -> { // Pipline
+                val next = successors.first()
+                TODO("pipeline")
+            }
+        }
+        cursors.addAll(successors.filter { s -> visited.contains(s) })
+        visited.add(current)
+        cursors.remove(current)
     }
+
 }
 
-class Merge(name: String, val inputNodes: MutableList<ReducedGraphNode>, var outputNode: ReducedGraphNode?) : ReducedGraphNode(name) {
-    override fun generateInstantiationCode(builder: StringBuilder, handledElements: MutableSet<String>) {
-        if (name in handledElements) {
-            return
-        }
 
-        inputNodes.forEach {
-            it.generateInstantiationCode(builder, handledElements)
-        }
-        if (name in handledElements) {
-            return
-        }
-        builder.appendln("let $name = ${inputNodes[0].name}")
-        for (i in 1 until inputNodes.count() - 1) {
-            builder.appendln(".select(${inputNodes[i].name})")
-        }
-        builder.append(";")
-        handledElements.add(name)
-        outputNode?.generateInstantiationCode(builder, handledElements)
-    }
-}
-
-class Copy(name: String, val inputNode: ReducedGraphNode, val outputNodes: MutableList<ReducedGraphNode>) : ReducedGraphNode(name) {
-    override fun generateInstantiationCode(builder: StringBuilder, handledElements: MutableSet<String>) {
-        if (name in handledElements) {
-            return
-        }
-
-        builder.append(
-                """
-                    let $name = StreamCopyMutex {
-                        inner: Arc::new(Mutex::new(StreamCopy {
-                            input: ${inputNode.name},
-                            buffers: vec!(),
-                            idx: 0
-                        }
-                    ))};
-                    """
-        )
-        handledElements.add(name)
-        outputNodes.forEach {
-            it.generateInstantiationCode(builder, handledElements)
-        }
-    }
-}
-
-class ReducedGraph(val pipelines: List<Pipeline>, val merges: List<Merge>)
-
-class GraphBuilder(nodes: Collection<Node>) {
+class GraphBuilder(nodes: Iterable<Node>) {
     private val pipelines =  HashMap<String, Pipeline>()
     private val merges = HashMap<String, Merge>()
     private val copies = HashMap<String, Copy>()
@@ -152,16 +182,19 @@ class GraphBuilder(nodes: Collection<Node>) {
     init {
         val sourceNodes = nodes.filter { n -> n.isSource }
         sourceNodes.forEach {
-            traverseGraph(it, it, null)
+            oldTraverseGraph(it, it, null)
         }
     }
 
-    fun asReducesGraph():ReducedGraph = ReducedGraph(ArrayList(this.pipelines.values), ArrayList(this.merges.values))
+    fun asReducesGraph():ReducedGraph = ReducedGraph(ArrayList(this.pipelines.values))
+
+
+
 
     /*
      TODO: brake this up
       */
-    private fun traverseGraph(sourceNode: Node, currentNode: Node, predecessor: ReducedGraphNode?) {
+    private fun oldTraverseGraph(sourceNode: Node, currentNode: Node, predecessor: StreamNode?) {
         if (currentNode.isSink) { // sink
             val pipelineId = "pipeline_${sourceNode.id.toLowerCase()}_${currentNode.id.toLowerCase()}"
             if (!pipelines.containsKey(pipelineId)) {
@@ -178,7 +211,7 @@ class GraphBuilder(nodes: Collection<Node>) {
         } else if (currentNode.outgoingEdges.count() == 1) { // pipeline...
             val next = currentNode.successors.first()
             if (next.in_port.incommingEdges.count() == 1) { // ... continues with a normal successor
-                traverseGraph(sourceNode, next, predecessor)
+                oldTraverseGraph(sourceNode, next, predecessor)
             } else { // ... stops with a merge
                 val pipelineId = "pipeline_${sourceNode.id.toLowerCase()}_${currentNode.id.toLowerCase()}"
                 val mergeId = "merge_${next.id.toLowerCase()}"
@@ -208,7 +241,7 @@ class GraphBuilder(nodes: Collection<Node>) {
                     }
                 }
 
-                traverseGraph(next, next, merge)
+                oldTraverseGraph(next, next, merge)
             }
         } else { // Copy
             val copyid = "copy_${currentNode.id.toLowerCase()}"
@@ -229,7 +262,7 @@ class GraphBuilder(nodes: Collection<Node>) {
                     pipelines[pipelineId] = pipeline
 
                     currentNode.successors.forEach {
-                        traverseGraph(it, it, copy)
+                        oldTraverseGraph(it, it, copy)
                     }
                 }
                 is Merge -> {
@@ -254,7 +287,7 @@ class GraphBuilder(nodes: Collection<Node>) {
                     pipelines[pipelineId] = pipeline
 
                     currentNode.successors.forEach {
-                        traverseGraph(it, it, copy)
+                        oldTraverseGraph(it, it, copy)
                     }
                 }
                 else -> error("copy invalid predecessor")
@@ -274,6 +307,8 @@ class RustAsyncCodeGen {
 
         }
 
+        fun flattenChildGraphs(node:Node ):Iterable<Node> = listOf(node)  +  node.childNodes.flatMap { c -> flattenChildGraphs(c) }
+
         fun generateCode(rootGraph: RootNode, outputDirectory: String) {
             println("[RustCodeGenerator] generating code...")
             val srcPath = Paths.get("$outputDirectory/src")
@@ -286,14 +321,17 @@ class RustAsyncCodeGen {
                 val byteStream = templateUrl.openStream()
                 Files.copy(byteStream, streamCopyPath)
             }
-            val graphs: Collection<Node> = rootGraph.flattenChildGraphs()
+
+            val graphs = flattenChildGraphs(rootGraph)
+
+            val graph_code =  traverseGraph(rootGraph)
             generateTaskGraph(graphs, outputDirectory)
         }
     }
 }
 
 
-    private fun generateTaskGraph(nodes: Collection<Node>, outputDirectory: String) {
+    private fun generateTaskGraph(nodes: Iterable<Node>, outputDirectory: String) {
         val graph = GraphBuilder(nodes).asReducesGraph()
         val builder = StringBuilder()
         builder.append("""
@@ -343,26 +381,20 @@ pub fn main() {
             if (it.isSink) {
                 sinks.add(it)
             }
-            builder.append(it.generatePipeline())
+            builder.append(it.generateDefinitionCode())
         }
 
-        builder.append("""
-pub fn build() -> impl Future<Item=(), Error=$ERROR_TYPE)> {""")
+        builder.appendln("pub fn build() -> impl Future<Item=(), Error=$ERROR_TYPE)> {")
         sources.forEach {
             it.generateInstantiationCode(builder, handledElements)
         }
 
         builder.appendln("${sinks[0].name}")
         for (i in 1 until sinks.count()) {
-            builder.appendln(".join(${sinks[i].name}).map(|_| ())")
+            builder.appendln("${tabs(2)}.join(${sinks[i].name}).map(|_| ())")
         }
-        builder.append(
-        """
-        .for_each(|_| ok(()))
-        }
-
-        """
-        )
+        builder.appendln("${tabs(2)}.for_each(|_| ok(()))")
+        builder.appendln("}")
 
         Files.write(Paths.get("$outputDirectory/src/task_graph.rs"), builder.toString().toByteArray())
     }

@@ -160,7 +160,7 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
                                 "Node in higher level of node is not named, can not open its file",
                                 "Error", JOptionPane.ERROR_MESSAGE)
                     else -> {
-                        val nodeFile = element.getOrCreateFile()
+                        val nodeFile = element.impl.getOrCreateFile()
                         FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile, true)
                     }
                 }
@@ -278,11 +278,11 @@ class RemoveNodeOperation(val parent: Node, val element: Node, val crossingEdges
             it.parent!!.addEdge(it)
         }
 
-        element.retreiveFromTrash()
+        element.impl.retreiveFromTrash()
     }
 
     override  fun apply() {
-        element.moveToTrash()
+        element.impl.moveToTrash()
 
         parent.remove(element)
         crossingEdges.forEach {
@@ -350,7 +350,6 @@ class RemoveEdgeOperation( val parent: Node, val element: Edge): UIOperation() {
 class SetNodeNameOperation(val node: Node, val oldName: String, val newName: String): UIOperation() {
     override fun reverse() {
         node.name = oldName
-        node.repaint()
     }
 
     override fun apply() {
@@ -367,19 +366,8 @@ class SetNodeNameOperation(val node: Node, val oldName: String, val newName: Str
                     "Name must be unique, at least on this hierarchy level.",
                     "Error", JOptionPane.ERROR_MESSAGE)
             return
-        } else {
-            // everything is fine, we can change the name
-            // backup old path
-            val oldPath = node.filePath
-            node.name = newName
-            node.repaint()
-            // we also need to rename (move) the corresponding rust file
-            // (if it yet exists)
-            if (Files.exists(oldPath)) {
-                val newFile = node.getOrCreateFile()
-                val newPath = Paths.get(newFile.path)
-                Files.move(oldPath, newPath, StandardCopyOption.REPLACE_EXISTING)
-            }
         }
+
+        node.name = newName
     }
 }

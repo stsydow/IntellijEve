@@ -1,12 +1,8 @@
 package editor
 
-import com.intellij.openapi.vfs.LocalFileSystem
 import intellij.GraphFileEditor
 import java.awt.*
 import java.awt.event.*
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
 import java.util.*
 import javax.swing.*
 
@@ -26,11 +22,6 @@ data class Interaction(val operation: Operation, val type: EventType){
 */
 
 class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener {
-    companion object {
-        const val NODES_RELATIVE_PATH = "/src/nodes"
-        const val TRASH_RELATIVE_PATH = "/src/.trash"
-    }
-
     var idx: Int = 0
     var root = RootNode(this)
 
@@ -47,13 +38,7 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
     var selectedNodes = mutableListOf<Node>()
     var knownProperties = mutableSetOf<Property>()
 
-    val trashDir: Path get() {
-        val trashPath = Paths.get(editor!!.project.basePath + TRASH_RELATIVE_PATH)
-        if (!Files.isDirectory(trashPath))
-            Files.createDirectories(trashPath)
-        LocalFileSystem.getInstance().refresh(false)
-        return trashPath
-    }
+
 
     init {
         addMouseListener(this)
