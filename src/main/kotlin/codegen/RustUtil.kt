@@ -32,7 +32,7 @@ fun isValidRustSnakeCase(str: String): Boolean {
 }
 
 fun pascalToSnakeCase(str:String): String {
-    assert(str.isNotEmpty())
+    require(str.isNotEmpty())
     var result = str[0].toLowerCase().toString()
     for(c in str.slice(1..str.lastIndex)) {
         if (c.isUpperCase()) {

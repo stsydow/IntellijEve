@@ -17,7 +17,7 @@ class NodeList(private val nodes: DomNodeList):Iterable<DomNode> {
         override fun hasNext(): Boolean = index < nodes.length
 
         override fun next(): org.w3c.dom.Node {
-            assert(hasNext())
+            require(hasNext())
             val node = nodes.item(index)
             index++
             return node
@@ -69,8 +69,8 @@ private fun createPortFromDOM(parent: Node, port: Element, scene: Viewport){
     var portMsgType = extractDataStringValue(port, "port_message_type")
     if (portMsgType == null)
         portMsgType = ""
-    // get port name
-    val portName = port.getAttribute("name")
+    // get port structName
+    val portName = port.getAttribute("structName")
     // get port direction
     val portDirection = extractDataStringValue(port, "port_direction")
     if (portDirection == Direction.IN.toString()){
@@ -104,11 +104,11 @@ private fun createNodeFromDOM(parent: Node, node: Element, scene: Viewport){
     val nodeId = node.getAttribute("id")
     updateSceneUIElementIndex(nodeId, scene)
     if (parent.getChildNodeById(nodeId) != null)
-        throw DOMException(DOMException.INVALID_STATE_ERR, "Node name $nodeId is already taken by another Node.")
+        throw DOMException(DOMException.INVALID_STATE_ERR, "Node structName $nodeId is already taken by another Node.")
     else {
         newNode = Node(parent, scene)
         newNode.id = nodeId
-        // get node name
+        // get node structName
         val nodeName = extractDataStringValue(node, "node_name")
         if (nodeName == null)
             newNode.name = ""

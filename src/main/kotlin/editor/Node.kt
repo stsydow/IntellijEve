@@ -90,12 +90,12 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
 
     constructor(parent: Node, scene: Viewport) : this(DEFAULT_TRANSFORM, parent, scene)
     constructor(t: Transform, parent: Node, scene: Viewport) : this(t, DEFAULT_NAME, parent, scene) {
-        println("Created Node for parent ${parent.id} with name $name and id $id")
+        println("Created Node for parent ${parent.id} with structName $name and id $id")
         parent.addNode(this)
     }
 
     init {
-        assert(this is RootNode || parent != null)
+        require(this is RootNode || parent != null)
         positionChildren()
     }
 
@@ -107,7 +107,7 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
     }
 
     fun addNode(child: Node) {
-        assert(child.parent == this)
+        require(child.parent == this)
         childNodes.add(child)
         onChildChanged(child)
         repaint()
@@ -115,13 +115,13 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
 
     // NOTE: this function is overloaded in the RootNode class!
     open fun addEdge(child: Edge) {
-        assert(child.parent == this)
+        require(child.parent == this)
         childEdges.forEach {
             if ((child.targetPort == it.targetPort)
                 && (child.sourcePort == it.sourcePort))
                 return
         }
-        assert(childEdges.add(child))
+        check(childEdges.add(child))
         parent?.onChildChanged(this)
         repaint()
     }
@@ -182,22 +182,22 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
 
     // NOTE: this function is overloaded in the RootNode class
     open fun remove(child: UIElement) {
-        assert(child.parent == this)
+        require(child.parent == this)
         when (child) {
             is Node -> {
-                assert(childNodes.remove(child))
+                check(childNodes.remove(child))
                 onChildChanged(child)
             }
             is Port -> {
-                assert(child.direction == Direction.OUT)
+                require(child.direction == Direction.OUT)
                 parent?.removeEdgesConnectedToPort(child)
                 removeEdgesConnectedToPort(child)
-                assert(out_ports.remove(child))
+                check(out_ports.remove(child))
                 positionChildren()
                 parent?.onChildChanged(this)
             }
             is Edge -> {
-                assert(childEdges.remove(child))
+                check(childEdges.remove(child))
                 parent?.onChildChanged(this)
             }
         }
@@ -505,7 +505,7 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
     fun toString(n: Int): String {
         val prefix = get2NSpaces(n)
 
-        var str = "${prefix}Node[id: $id; name: $name]{\n"
+        var str = "${prefix}Node[id: $id; structName: $name]{\n"
         str += in_port.toString(n+1)
         out_ports.forEach{
             str += it.toString(n+1)
@@ -562,12 +562,12 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
     }
 
     override fun remove(child: UIElement) {
-        assert(child.parent == this)
+        require(child.parent == this)
         if (child is Node) {
-            assert(childNodes.remove(child))
+            check(childNodes.remove(child))
             onChildChanged(child)
         } else if (child is Edge) {
-            assert(childEdges.remove(child))
+            check(childEdges.remove(child))
             if (keepInSync)
                 scene.save()
         }
@@ -575,13 +575,13 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
     }
 
     override fun addEdge(child: Edge) {
-        assert(child.parent == this)
+        require(child.parent == this)
         childEdges.forEach {
             if ((child.targetPort == it.targetPort)
                     && (child.sourcePort == it.sourcePort))
                 return
         }
-        assert(childEdges.add(child))
+        check(childEdges.add(child))
         if (keepInSync)
             scene.save()
         repaint()
@@ -600,7 +600,7 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         var picked: UIElement?
         val local_c = !transform * c
 
-        assert(screenTransform == viewport.transform)
+        require(screenTransform == viewport.transform)
 
         childEdges.forEach {
             picked = it.pick(local_c, screenTransform * transform, filter)

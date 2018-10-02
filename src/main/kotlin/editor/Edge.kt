@@ -8,7 +8,7 @@ class Edge(transform: Transform, parent: Node, internal val sourcePort: Port, in
     private val curve: CubicBezierCurve
 
     init {
-        assert(isValidEdge(sourcePort, targetPort))
+        require(isValidEdge(sourcePort, targetPort))
         curve = CubicBezierCurve(this)}
 
     override val bounds: Bounds
@@ -21,7 +21,7 @@ class Edge(transform: Transform, parent: Node, internal val sourcePort: Port, in
         if (sourceNode == parent)    // edge from in port to inner node
             return sourcePort.transform * sourcePort.connectionPointRight
         else {  // edge between two nodes on same level
-            assert(sourceNode.parent == parent)
+            check(sourceNode.parent == parent)
             return sourceNode.transform * sourcePort.transform * sourcePort.connectionPointRight
         }
     }
@@ -30,7 +30,7 @@ class Edge(transform: Transform, parent: Node, internal val sourcePort: Port, in
         return if (targetNode == parent)    // edge from inner node to out port
             targetPort.transform * targetPort.connectionPointLeft
         else {  // edge between two nodes on same level
-            assert(targetNode.parent == parent)
+            check(targetNode.parent == parent)
             targetNode.transform * targetPort.transform * targetPort.connectionPointLeft
         }
     }

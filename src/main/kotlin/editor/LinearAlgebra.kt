@@ -54,7 +54,7 @@ operator fun Double.times(v: Vector) = Vector(this * v.x, this * v.y)
 
 data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y_max: Double) {
     init {
-        assert(x_min == Double.POSITIVE_INFINITY || (x_min <= x_max && y_min <= y_max))
+        require(x_min == Double.POSITIVE_INFINITY || (x_min <= x_max && y_min <= y_max))
     }
 
     constructor() : this(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY)
@@ -169,7 +169,7 @@ data class Padding(val top: Double = 0.0, val right: Double = 0.0,
 
 data class Transform(val x_offset: Double, val y_offset: Double, val scale: Double) {
     init {
-        assert(x_offset.isFinite() && y_offset.isFinite() && scale.isFinite())
+        require(x_offset.isFinite() && y_offset.isFinite() && scale.isFinite())
     }
     constructor() : this(0.0, 0.0, 1.0)
     constructor(c: Coordinate, scale: Double) : this(c.x, c.y, scale)

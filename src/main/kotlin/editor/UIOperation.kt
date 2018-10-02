@@ -151,7 +151,7 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
                     element.name == Node.DEFAULT_NAME ->
                         JOptionPane.showMessageDialog(
                                 root.viewport,
-                                "Please name the node before opening its file",
+                                "Please structName the node before opening its file",
                                 "Error", JOptionPane.ERROR_MESSAGE)
 
                     element.parentsUnnamed() ->
@@ -247,7 +247,7 @@ class ChangePayloadOperation(val port: Port, val oldPayload: String, val newPayl
 
 class AddNodeOperation(val parent: Node, val element: Node, val oldParentBounds: LinkedList<Bounds>, val newParentBounds: LinkedList<Bounds>): UIOperation() {
     init {
-        assert(oldParentBounds.size == newParentBounds.size)
+        require(oldParentBounds.size == newParentBounds.size)
     }
     override fun reverse() {
         parent.remove(element)
@@ -353,14 +353,14 @@ class SetNodeNameOperation(val node: Node, val oldName: String, val newName: Str
     }
 
     override fun apply() {
-        // check whether new name is valid rust identifier
+        // check whether new structName is valid rust identifier
         if (!isValidRustPascalCase(newName) || isRustKeyword(newName)) {
             JOptionPane.showMessageDialog(node.scene,
                     "Name must be a valid Rust identifier in pascal case and can not be a Rust keyword.",
                     "Error", JOptionPane.ERROR_MESSAGE)
             return
         }
-        // check whether new name is already taken on this level of hierarchy
+        // check whether new structName is already taken on this level of hierarchy
         if (node.parent!!.getChildNodeByName(newName) != null) {
             JOptionPane.showMessageDialog(node.scene,
                     "Name must be unique, at least on this hierarchy level.",

@@ -16,7 +16,7 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
         val setOrderItem = JMenuItem("set order")
         val setContextId = JMenuItem("set context")
         val setFilter = JMenuItem("set filter")
-        val setName = JMenuItem("set name")
+        val setName = JMenuItem("set structName")
         val openRustFile = JMenuItem("open rust file")
         val shrinkItem = JMenuItem("shrink to minimal size")
         val showGeometryItem = JMenuItem("show node geometry")

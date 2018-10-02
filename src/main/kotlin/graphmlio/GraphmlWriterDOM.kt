@@ -17,7 +17,7 @@ const val W3C_XML_SCHEMA_INSTANCE_NS_URI = "http://www.w3.org/2001/XMLSchema-ins
 
 class GraphmlConstants {
     companion object {
-        const val ATTR_NAME = "attr.name"
+        const val ATTR_NAME = "attr.structName"
         const val ATTR_TYPE = "attr.type"
         const val DATA = "data"
         const val DEFAULT_GRAPHML_SCHEMA_LOCATION = "http://graphml.graphdrawing.org/xmlns/1.1/graphml.xsd"
@@ -31,7 +31,7 @@ class GraphmlConstants {
         const val GRAPHML_XMLNS = "http://graphml.graphdrawing.org/xmlns"
         const val ID = "id"
         const val KEY = "key"
-        const val NAME = "name"
+        const val NAME = "structName"
         const val NODE = "node"
         const val PORT = "port"
         const val SOURCE = "source"
@@ -64,7 +64,7 @@ class EveamcpConstants {
         const val NODE_FILTER = "node_filter"
         const val NODE_FILTER_NAME = "filter"
         const val NODE_NAME = "node_name"
-        const val NODE_NAME_NAME = "name"
+        const val NODE_NAME_NAME = "structName"
         const val NODE_ORDER = "node_order"
         const val NODE_ORDER_NAME = "order"
         const val NODE_FILE = "node_file"

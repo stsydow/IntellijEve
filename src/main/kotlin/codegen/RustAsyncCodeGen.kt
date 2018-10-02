@@ -25,8 +25,8 @@ interface StreamNode {
 class StreamSource(private val node:Node):StreamNode {
 
     init {
-        assert(node.isSource)
-        assert(isValidRustPascalCase(node.name))
+        require(node.isSource)
+        require(isValidRustPascalCase(node.name))
     }
 
     override val streamHandle: String get() = node.streamHandle
@@ -38,7 +38,7 @@ class StreamSource(private val node:Node):StreamNode {
 class StatelessNode(private val inputHandle: String, private val node:Node):StreamNode {
 
     init {
-        assert(isValidRustPascalCase(node.name))
+        require(isValidRustPascalCase(node.name))
     }
 
     override val streamHandle: String get() = node.streamHandle
@@ -50,7 +50,7 @@ class StatelessNode(private val inputHandle: String, private val node:Node):Stre
 class Merge(val inputStreams: Iterable<String>, private val ident: String) : StreamNode {
 
     init {
-        assert(inputStreams.count() > 1)
+        require(inputStreams.count() > 1)
     }
 
 
@@ -119,7 +119,7 @@ private fun traverseGraph(rootNode: Node) : StreamNode {
 
     while (cursors.isNotEmpty()) {
         val current = cursors.first()
-        assert(!visited.contains(current))
+        check(!visited.contains(current))
         val node = current.node
 
         val predecessor:StreamNode = when {
