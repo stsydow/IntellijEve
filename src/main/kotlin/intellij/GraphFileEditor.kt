@@ -1,6 +1,6 @@
 package intellij
 
-import codegen.RustAsyncCodeGen
+import codegen.RustCodeGen
 import com.intellij.codeHighlighting.BackgroundEditorHighlighter
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorLocation
@@ -78,8 +78,7 @@ class GraphFileEditor(val project: Project, private val virtualFile: VirtualFile
     fun generate() {
         try {
             val path = project.baseDir.path
-            RustAsyncCodeGen.generateSkeleton(path)
-            RustAsyncCodeGen.generateCode(panel.root, path)
+            RustCodeGen.generateCode(panel.root, path)
         } catch(e: Exception) {
             e.printStackTrace()
         }
