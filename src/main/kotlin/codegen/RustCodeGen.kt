@@ -8,40 +8,53 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-interface Statement {}
+interface Statement {
+    override fun toString() : String
+}
 
 class Expression(val expression:String):Statement {
     override fun toString() = expression
 }
 
-class Definition(val identifier:String, val expression: Expression) : Statement {
-    override fun toString() = "let $identifier = $expression;"
+class Definition(val identifier:String, val expression: Expression, val mutable:Boolean = false) : Statement {
+    override fun toString() = if (mutable) {
+        "let mut $identifier = $expression;"
+    }else {
+        "let $identifier = $expression;"
+    }
 }
 
-class CodeBlock : Statement  {
-    private val statements = mutableListOf<Statement>()
-    private val known_indentifiers = mutableSetOf<String>()
-    private var result: Expression? = null
+interface Scope {
+    val statements: MutableList<Statement>
+    val knownIdentifiers: MutableSet<String>
+    var result: Expression?
     val hasResult: Boolean get() = result != null
 
+    fun checkIdent(identifier:String) {
+        require(! identifier.isEmpty()) {"Can't define an anonymous variable."}
+        require(knownIdentifiers.add(identifier)){"identifier \"$identifier\" already defined."}
+    }
+
     fun define(identifier:String, expression:String) {
+        checkIdent(identifier)
         require(result == null)
-        require(known_indentifiers.add(identifier)){"identifier allready defined"}
         statements.add(Definition(identifier, Expression(expression)))
     }
 
+    fun defineMut(identifier:String, expression:String) {
+        checkIdent(identifier)
+        require(result == null)
+        statements.add(Definition(identifier, Expression(expression), true))
+    }
+
     fun defineFromBlock(identifier:String, block:CodeBlock) {
+        checkIdent(identifier)
         require(result == null)
         require(block.hasResult)
-        require(known_indentifiers.add(identifier)){"identifier allready defined"}
-        statements.add(Definition(identifier, Expression(block.toString())))
+        statements.add(Definition(identifier, block.asExpression()))
     }
 
-    fun defineReserved(identifier:String) {
-        require(known_indentifiers.add(identifier)){"reserved identifier allready defined"}
-    }
-
-    fun exec(expression:String) {
+    fun exec(expression:Statement) {
         require(result == null)
         statements.add(Expression("$expression;"))
     }
@@ -51,51 +64,96 @@ class CodeBlock : Statement  {
         result = Expression(expression)
     }
 
-    fun asStringBuilder() : StringBuilder {
+     fun asStringBuilder() : StringBuilder {
         val builder = StringBuilder()
-        builder.appendln("{")
         statements.forEach { statement ->
             builder.appendln("$TAB$statement")
         }
         if(result != null) {
             builder.appendln("$TAB$result")
         }
+        return builder
+    }
+}
+
+abstract class ScopeImpl : Scope {
+    override val statements = mutableListOf<Statement>()
+    override val knownIdentifiers = mutableSetOf<String>()
+    override var result: Expression? = null
+
+    override fun toString() = asStringBuilder().toString()
+}
+
+class CodeBlock : ScopeImpl() , Statement {
+
+    override fun asStringBuilder() : StringBuilder {
+        val builder = StringBuilder()
+        builder.appendln("{")
+        builder.append(super.asStringBuilder())
         builder.appendln("}")
         return builder
     }
 
-    override fun toString(): String {
-        return asStringBuilder().toString()
-    }
+    fun asExpression() = Expression(toString())
 }
+
 class Parameter(val name:String, val type:String) {
     override fun toString(): String {
         return "$name:$type"
     }
 }
 
-class Function(val name: String, val body:CodeBlock, val arguments: List<Parameter>, val resultType:String) : Statement {
-    companion object {
-        fun main(body: CodeBlock) = Function("main", body, listOf<Parameter>(), "()")
-    }
+class Function(val name: String, val arguments: List<Parameter>, val resultType:String) : ScopeImpl(), Statement {
+
     init {
-        arguments.map { a -> a.name }.forEach { arg_name ->
-            body.defineReserved(arg_name)
+        arguments.forEach { arg ->
+            require(knownIdentifiers.add(arg.name)){"argument \"${arg.name}\" allready defined"}
         }
     }
-    //constructor(name: String):this(name, CodeBlock(), listOf<Parameter>(), "()")
 
-    fun asStringBuilder() : StringBuilder {
-        check( (resultType != "()") == body.hasResult)
-        val builder = java.lang.StringBuilder()
+    val signature: String get() {
         val argumentString = arguments.joinToString(", ")
-        builder.appendln("pub fn $name(${argumentString}) -> $resultType")
-        builder.append(body)
+        return "$name($argumentString) -> $resultType"
+    }
+
+    override fun asStringBuilder() : StringBuilder {
+        check( (resultType != "()") == hasResult)
+        val builder = java.lang.StringBuilder()
+        builder.appendln("pub fn $signature")
+        builder.appendln("{")
+        builder.append(super.asStringBuilder())
+        builder.appendln("}")
+        return builder
+    }
+}
+
+fun mainFunction() = Function("main", listOf<Parameter>(), "()")
+
+class CodeFile(val fileName: String) : ScopeImpl() {
+
+    var externCrates = mutableSetOf<String>()
+    var modules = mutableSetOf<String>()
+    var imports = mutableSetOf<String>()
+
+
+    fun defineFunction(function: Function) {
+        require(knownIdentifiers.add(function.signature)){"function \"${function.signature}\" allready defined"}
+        statements.add(function)
+    }
+
+    override fun asStringBuilder(): StringBuilder {
+        val builder = java.lang.StringBuilder()
+        externCrates.forEach { crate -> builder.appendln("extern crate $crate;")}
+        modules.forEach { module -> builder.appendln("mod $module;")}
+        imports.forEach { import -> builder.appendln("use $import;")}
+
+        builder.append(super.asStringBuilder())
         return builder
     }
 
-    override fun toString(): String {
-        return asStringBuilder().toString()
+    fun write() {
+        val path = Paths.get(fileName)
+        Files.write(path, asStringBuilder().chunked(4096), Charsets.UTF_8)
     }
 }
 
@@ -134,28 +192,48 @@ class RustCodeGen {
 
             val visited = mutableSetOf<Node>()
 
-            val next_nodes = sources.toMutableSet()
+            val nextNodes = sources.toMutableSet()
 
-            val code = CodeBlock()
-            while (next_nodes.any()) {
-                val node = next_nodes.first()
-                node.codeGen.generate(code)
+            val buildGraph = Function("build_graph", listOf(),"impl Future<Item=(), Error=EveError>")
+            while (nextNodes.any()) {
+                val node = nextNodes.first()
+                node.codeGen.generate(buildGraph)
 
                 visited.add(node)
-                next_nodes.addAll(node.successors.filter { n -> !visited.contains(n) })
-                next_nodes.remove(node)
+                nextNodes.addAll(node.successors.filter { n -> !visited.contains(n) })
+                nextNodes.remove(node)
             }
 
             val sinkFutureHandle = "${rootNode.codeGen.nodeHandle}_sink_future"
             val sinkHandles = sinks.map { s -> s.codeGen.nodeHandle }
-            code.define(sinkFutureHandle, sinkHandles.joinToString(").join(","(", ")"))
-            code.define("runtime", "Core::new().unwrap()")
-            code.exec("runtime.run($sinkFutureHandle).unwrap()")
-            //".map(|_| ())"
-            //"${tabs(2)}.for_each(|_| ok(()))"
+            buildGraph.define(sinkFutureHandle, sinkHandles.joinToString(").join(","(", ")"))
+            buildGraph.result(sinkFutureHandle)
 
-            val graphFile = Paths.get("$outputDirectory/src/task_graph.rs")
-            Files.write(graphFile, code.asStringBuilder().chunked(4096), Charsets.UTF_8)
+            val graphFile = CodeFile("$outputDirectory/src/task_graph.rs")
+
+            graphFile.imports.addAll(listOf(
+                    "futures::{Future, Stream}",
+                    "use futures::future::ok",
+                    "crate::nodes::*",
+                    "crate::structs::*",
+                    "crate::stream_copy::StreamCopyMutex"
+            ))
+
+            graphFile.defineFunction(buildGraph)
+
+            graphFile.write()
+
+            val mainFile = CodeFile("$outputDirectory/src/main.rs")
+            mainFile.modules.addAll(listOf("nodes", "structs", "task_graph", "stream_copy"))
+            mainFile.imports.addAll(listOf(
+                    "self::tokio_core::reactor::Core"
+            ))
+            val main = mainFunction()
+            main.defineMut("runtime", "Core::new().unwrap()")
+            main.define("task_graph", "task_graph::build_graph()")
+            main.exec(Expression("runtime.run(task_graph).unwrap()"))
+            mainFile.defineFunction(main)
+            mainFile.write()
         }
     }
 }

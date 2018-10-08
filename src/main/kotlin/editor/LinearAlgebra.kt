@@ -169,7 +169,7 @@ data class Padding(val top: Double = 0.0, val right: Double = 0.0,
 
 data class Transform(val x_offset: Double, val y_offset: Double, val scale: Double) {
     init {
-        require(x_offset.isFinite() && y_offset.isFinite() && scale.isFinite())
+        require(x_offset.isFinite() && y_offset.isFinite() && scale.isFinite()) { "infinite Transform: $this"}
     }
     constructor() : this(0.0, 0.0, 1.0)
     constructor(c: Coordinate, scale: Double) : this(c.x, c.y, scale)

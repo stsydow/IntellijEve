@@ -14,22 +14,24 @@ class CodeGenNode(val node: Node) {
     val structName get() = node.name
 
     val moduleName: String get() = pascalToSnakeCase(structName)
-    val nodeHandle = moduleName
+    val nodeHandle: String get() = moduleName
 
     val sinkHandle: String get() {
         require(node.isSink)
         return "${nodeHandle}_sink"
     }
 
-    fun generate(code: CodeBlock) {
-        val inner_block = CodeBlock()
+    fun generate(code: Scope) {
+        check(nodeHandle != "<anonymous>" && ! nodeHandle.isEmpty()) {"Can't generate an anonymous node."}
+        val innerBlock = CodeBlock()
         val prefixHandle = when {
             node.isFanIn -> {
                 val inputs = node.predecessors.map { i -> i.codeGen.getOutputHandle(this) }
                 val mergeHandle = "${nodeHandle}_merge"
-                inner_block.define(mergeHandle, inputs.joinToString(")\n$TAB.select(", "(", ")"))
+                innerBlock.define(mergeHandle, inputs.joinToString(")\n$TAB.select(", "(", ")"))
                 mergeHandle
             }
+            node.isSource -> {"(invalid)"}
             else ->{
                 node.predecessors.first().codeGen.getOutputHandle(this)
             }
@@ -37,24 +39,24 @@ class CodeGenNode(val node: Node) {
 
         val stageHandle = when {
             node.childNodes.any() -> {
-                TODO("Hierarchic")
+                TODO("Hierarchic node $nodeHandle")
             }
             node.isSource -> {
                 check(!node.isSink)
                 val sourceHandle = "${nodeHandle}_source"
-                inner_block.define(sourceHandle,"$moduleName::$structName::new()")
+                innerBlock.define(sourceHandle,"$moduleName::$structName::new()")
                 sourceHandle
             }
             node.isSink -> {
                 //TODO("replace drop sink")
                 val sinkDropHandle = "${nodeHandle}_sink_drop"
-                inner_block.define(sinkDropHandle,
-                        "$prefixHandle.map(|_| ())")
+                innerBlock.define(sinkDropHandle,
+                        "$prefixHandle.for_each(|_| ok(()))")
                 sinkDropHandle
             }
             else -> {
                 val stageHandle = "${nodeHandle}_stage"
-                inner_block.define(stageHandle,
+                innerBlock.define(stageHandle,
                         "$prefixHandle\n$TAB.map(|event| { $moduleName::tick(event) })")
                 stageHandle
             }
@@ -64,22 +66,16 @@ class CodeGenNode(val node: Node) {
             node.isFanOut -> {
                 val copyHandle = "${nodeHandle}_copy"
 
-                inner_block.result("StreamCopyMutex::new(${stageHandle})")
-                code.defineFromBlock(copyHandle, inner_block)
+                innerBlock.result("StreamCopyMutex::new(${stageHandle})")
+                code.defineFromBlock(copyHandle, innerBlock)
                 node.successors.forEach { s ->
                     val outHandle = "${nodeHandle}_out_${s.codeGen.nodeHandle}"
                     code.define(outHandle, "$copyHandle.create_output_locked()")
                 }
             }
-            node.isSink -> {
-                inner_block.result(stageHandle)
-                //code.define(sinkHandle, "$stageHandle.map(|_| ())")
-
-                TODO("build a proper sink")
-            }
             else -> {
-                inner_block.result(stageHandle)
-                code.defineFromBlock(nodeHandle, inner_block)
+                innerBlock.result(stageHandle)
+                code.defineFromBlock(nodeHandle, innerBlock)
             }
         }
     }

@@ -28,6 +28,8 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
 
     var name: String = id
 
+    val node: Node get() = parent!!
+
     val connectionPointLeft: Coordinate get() {
         return if (direction == Direction.IN)
             Transform(0.0, 0.0, UNIT) * Coordinate(0.0, 0.5)
@@ -43,39 +45,36 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
     }
 
     val incommingEdges: Collection<Edge> get(){
-        val parent: Node = parent!!
+        val isTarget = { e:Edge -> e.targetPort == this }
 
-        val filterTarget = { e:Edge -> e.targetPort == this }
+        val fromChilds = node.childEdges.filter(isTarget)
 
-        val fromChilds = parent.childEdges.filter(filterTarget)
+        val graph = node.parent
 
-        val grandParent = parent.parent
-
-        val fromSiblings = when (grandParent)
+        val fromSiblings = when (graph)
         {
             is Node -> {
-                grandParent.childEdges.filter(filterTarget)
+                graph.childEdges.filter(isTarget)
             }
             else -> mutableListOf()
         }
         return fromChilds + fromSiblings
     }
 
-    val outgoingEdges: Collection<Edge> get() {
-        val list: MutableList<Edge> = mutableListOf()
-        val parent: Node = parent!!
-        parent.childEdges.forEach {
-            if (it.sourcePort == this) {
-                list.add(it)
+    val outgoingEdges: Iterable<Edge> get(){
+        val isSource = { e:Edge -> e.sourcePort == this }
+        val toChilds = node.childEdges.filter(isSource)
+        val graph = node.parent
+
+        val toSiblings = when (graph)
+        {
+            is Node -> {
+                graph.childEdges.filter(isSource)
             }
+            else -> mutableListOf()
         }
-        val gparent:Node = parent.parent!!
-        gparent.childEdges.forEach {
-            if (it.sourcePort == this) {
-                list.add(it)
-            }
-        }
-        return list
+
+        return toChilds + toSiblings
     }
 
     override fun render(g: GraphicsProxy) {

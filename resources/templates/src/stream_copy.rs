@@ -1,16 +1,12 @@
-extern crate futures;
-extern crate tokio_core;
 
-use futures::Poll;
-use futures::Stream;
-use futures::Async;
+use futures::{Poll, Stream, Async};
 
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::clone::Clone;
 use std::sync::MutexGuard;
 
-use ::EveError;
+use crate::structs::EveError;
 
 pub struct StreamCopy<T, S: Stream<Item=T, Error=EveError>> {
     input: S,
@@ -35,12 +31,12 @@ impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopy<T, S> {
             None => {
                 let result = self.input.poll();
                 match result {
-                    Ok(async) => {
-                        match async {
+                    Ok(value) => {
+                        match value {
                             Async::Ready(ready) => {
                                 match ready {
                                     Some(event) => {
-                                        for mut buffer in &mut self.buffers {
+                                        for buffer in &mut self.buffers {
                                             buffer.push(event.clone())
                                         }
                                         self.poll(id)
