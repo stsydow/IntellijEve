@@ -8,7 +8,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 const val DEFAULT_FILE_ENDING = "rs"
-const val NODES_RELATIVE_PATH = "/src/nodes"
+const val NODES_RELATIVE_PATH = "/src"
 const val TRASH_RELATIVE_PATH = "/src/.trash"
 
 class ImplementationNode(private val node:Node) {
@@ -31,11 +31,14 @@ class ImplementationNode(private val node:Node) {
     private val sourceDirectory: String get()  = with(parent?.impl) {
         when (this) {
             null -> NODES_RELATIVE_PATH
-            else -> "$sourceDirectory}/$moduleName"
+            else -> "$sourceDirectory/$moduleName"
         }
     }
 
-    private val moduleName: String get() = pascalToSnakeCase(name)
+    private val moduleName: String get() = when(node) {
+        is RootNode -> "nodes"
+        else -> pascalToSnakeCase(name)
+    }
 
     private val sourceFile: Path get() = Paths.get("$projectDirectory/$sourceDirectory/$moduleName.$DEFAULT_FILE_ENDING")
     private val moduleDirectory: Path get() = Paths.get("$projectDirectory/$sourceDirectory/$moduleName")

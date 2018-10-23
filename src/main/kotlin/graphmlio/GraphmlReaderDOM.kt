@@ -115,17 +115,16 @@ private fun createNodeFromDOM(parent: Node, node: Element, scene: Viewport){
         else
             newNode.name = nodeName
         // get node filter property
-        val nodeFilterProperty = extractDataStringValue(node, EveamcpConstants.NODE_FILTER)
-        if (nodeFilterProperty != null)
-            newNode.setProperty(PropertyType.Filter, nodeFilterProperty)
+        val nodeFilter = extractDataStringValue(node, EveamcpConstants.NODE_FILTER)
+        if (nodeFilter != null)
+            newNode.filterExpression = nodeFilter
         // get node context property
-        val nodeContextProperty = extractDataStringValue(node, "node_context")
-        if (nodeContextProperty != null)
-            newNode.setProperty(PropertyType.ContextId, nodeContextProperty)
+        val nodeContext = extractDataStringValue(node, "node_context")
+        newNode.context = Context.parse(nodeContext.orEmpty())
         // get node order property
-        val nodeOrderProperty = extractDataStringValue(node, "node_order")
-        if (nodeOrderProperty != null)
-            newNode.setProperty(PropertyType.Order, nodeOrderProperty)
+        val nodeOrder = extractDataStringValue(node, EveamcpConstants.NODE_ORDER)
+        if (nodeOrder != null)
+            newNode.orderExpression = nodeOrder
         // get node color
         val nodeColor = extractDataStringValue(node, "node_color")
         if (nodeColor != null)

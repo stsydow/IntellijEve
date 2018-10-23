@@ -259,23 +259,22 @@ private fun writeNodeElement(writer: XMLStreamWriter, node: Node) {
     writeIndentation(writer)
     writeDataElement(writer,
             EveamcpConstants.NODE_COLOR, colorToHexstring(node.color))
-    val context = node.getProperty(PropertyType.ContextId)
-    if (context != null) {
+    if (node.hasContext) {
         writeIndentation(writer)
-        writeDataElement(writer, EveamcpConstants.NODE_CONTEXT, context)
+        writeDataElement(writer, EveamcpConstants.NODE_CONTEXT, node.context.asExpression())
     }
-    val filter = node.getProperty(PropertyType.Filter)
-    if (filter != null){
+
+    if (node.hasFilter){
         writeIndentation(writer)
-        writeDataElement(writer, EveamcpConstants.NODE_FILTER, filter)
+        writeDataElement(writer, EveamcpConstants.NODE_FILTER, node.filterExpression)
     }
     writeIndentation(writer)
     writeDataElement(writer,
             EveamcpConstants.NODE_NAME, node.name)
-    val order = node.getProperty(PropertyType.Order)
-    if (order != null) {
+
+    if (node.hasOrder) {
         writeIndentation(writer)
-        writeDataElement(writer, EveamcpConstants.NODE_ORDER, order)
+        writeDataElement(writer, EveamcpConstants.NODE_ORDER, node.orderExpression)
     }
 //    if(node.fileName != "")
 //        writeDataElement(writer, EveamcpConstants.NODE_FILE, node.fileName)

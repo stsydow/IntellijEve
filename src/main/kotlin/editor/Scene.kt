@@ -36,8 +36,6 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
     var operationsStack = Stack<UIOperation>()
     var reversedOperationsStack = Stack<UIOperation>()
     var selectedNodes = mutableListOf<Node>()
-    var knownProperties = mutableSetOf<Property>()
-
 
 
     init {
@@ -96,7 +94,7 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
                 groupCoords.addAll((it.getGlobalTransform()*it.bounds).toCoordinates())
             }
             val groupBounds = Bounds.minimalBounds(groupCoords)
-            val stroke = globalGraphics.awt_graphics.stroke as BasicStroke
+            val stroke = globalGraphics.awtGraphics.stroke as BasicStroke
             val dashedStroke = BasicStroke(stroke.lineWidth, stroke.endCap, stroke.lineJoin, stroke.miterLimit, floatArrayOf(9.0f), 0.0f)
             globalGraphics.polygon(Color.MAGENTA,
                     groupBounds.toCoordinates(),

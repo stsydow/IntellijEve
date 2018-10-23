@@ -4,26 +4,95 @@ import codegen.CodeGenNode
 import java.awt.Color
 
 
-enum class PropertyType {Filter, Order, ContextId }
+enum class ContextType{None, Global, Selection}
 
-class Property(val type: PropertyType, var expression: String) {
-    override fun toString(): String {
-        return "$type: $expression"
-    }
+interface Property {
+    fun exchange(node:Node) : Property
+}
 
-    override fun equals(other: Any?): Boolean {
-        return when(other) {
-            null -> false
-            is Property -> ((other.type == type) && other.expression == expression)
-            else -> false
+class Context(val type: ContextType, val selector:String):Property {
+
+    companion object {
+        val None = Context(ContextType.None, "")
+        val Global = Context(ContextType.Global, "")
+        fun Select(expression: String) = Context(ContextType.Selection, expression)
+
+        private const val SELECT_PREFIX = "SELECT:"
+
+        fun parse(expression: String): Context = when(expression) {
+            "" -> None
+            "GLOBAL" -> Global
+            else ->
+            {
+                val selector = if (expression.startsWith(SELECT_PREFIX, ignoreCase = false)) {
+                    expression.substring(SELECT_PREFIX.length)
+                } else {
+                    expression
+                }
+                Select(selector)
+            }
         }
     }
 
-    override fun hashCode(): Int {
-        return type.hashCode() * expression.hashCode()
+    init {
+        require((type == ContextType.Selection) == selector.isNotEmpty())
     }
+
+    override fun exchange(node: Node): Property {
+        val oldContext = node.context
+        node.context = this
+        return oldContext
+    }
+
+    override fun toString(): String = when (type) {
+        ContextType.None -> "None"
+        ContextType.Global -> "Global"
+        ContextType.Selection -> "Select:$selector"
+    }
+
+    fun asExpression(): String = when (type) {
+        ContextType.None -> ""
+        ContextType.Global -> "GLOBAL"
+        ContextType.Selection -> selector
+    }
+
+    override fun equals(other: Any?): Boolean = when (other) {
+        is Context -> type == other.type && selector == other.selector
+        else -> false
+    }
+
+    override fun hashCode(): Int  = type.hashCode() * selector.hashCode()
 }
 
+class Filter(val expression:String):Property {
+    override fun exchange(node: Node): Property {
+        val oldFilter = node.filterExpression
+        node.filterExpression = expression
+        return Filter(oldFilter)
+    }
+
+    override fun equals(other: Any?): Boolean = when (other) {
+        is Filter -> expression == other.expression
+        else -> false
+    }
+
+    override fun hashCode(): Int  = expression.hashCode()
+}
+
+class Order(val expression: String):Property {
+    override fun exchange(node: Node): Property {
+        val oldOrder = node.orderExpression
+        node.orderExpression = expression
+        return Order(oldOrder)
+    }
+
+    override fun equals(other: Any?): Boolean = when (other) {
+        is Order -> expression == other.expression
+        else -> false
+    }
+
+    override fun hashCode(): Int  = expression.hashCode()
+}
 
 // assert Nodes may not overlap
 open class Node(transform: Transform, name: String, parent: Node?, scene: Viewport) : UIElement(transform, parent, scene) {
@@ -83,8 +152,31 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
     val isFanOut: Boolean get() = outgoingEdges.count() > 1
     val isFanIn: Boolean get() = in_port.incommingEdges.count() > 1
 
-    val properties = mutableListOf<Property>()
-    val propertiesPadding: Padding get() = Padding((1.2 * properties.size) * UNIT, 0.0, 0.0, 0.0)
+    var context:Context = Context.None
+
+    val hasContext: Boolean get() = context.type != ContextType.None
+
+    var filterExpression = ""
+    val hasFilter: Boolean get() = filterExpression.isNotEmpty()
+    var orderExpression = ""
+    val hasOrder: Boolean get() = orderExpression.isNotEmpty()
+
+    val hasProperties: Boolean get() = hasFilter || hasContext || hasOrder
+
+    /*
+    val properties:Collection<Property> get() = listOf(
+                Property(PropertyType.ContextId, contextString),
+                Property(PropertyType.Filter, filterField),
+                Property(PropertyType.Order, orderField)).filter { p -> p.expression.isNotEmpty() }
+
+    */
+    val propertiesPadding: Padding get(){
+        var count = 0
+        if (hasContext) count += 1
+        if (hasFilter) count += 1
+        if (hasOrder) count += 1
+        return Padding((1.2 * count) * UNIT, 0.0, 0.0, 0.0)
+    }
     override val bounds: Bounds get() = innerBounds + padding + propertiesPadding
     val titleBottom: Coordinate get() = (bounds - propertiesPadding).min() + Vector(0.0, TITLE_HEIGHT)
 
@@ -119,7 +211,7 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
         require(child.parent == this)
         childEdges.forEach {
             if ((child.targetPort == it.targetPort)
-                && (child.sourcePort == it.sourcePort))
+                    && (child.sourcePort == it.sourcePort))
                 return
         }
         check(childEdges.add(child))
@@ -335,23 +427,23 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
         localGraphics.text(name, titleBottom + Vector(0.5 * UNIT, -0.5 * UNIT), DEFAULT_FONT)
         localGraphics.line(titleBottom, titleBottom + Vector(bounds.width, 0.0))
 
-        if (properties.size > 0) {
-            localGraphics.polygon(color, listOf(
-                    bounds.topLeft + Vector(0.0, propertiesPadding.top),
+        if (hasProperties) {
+            val propertyShape = listOf<Coordinate>(bounds.topLeft + Vector(0.0, propertiesPadding.top),
                     bounds.topLeft,
                     bounds.topRight - Vector(propertiesPadding.top, 0.0),
-                    bounds.topRight + Vector(0.0, propertiesPadding.top)),
-                    true)
-            localGraphics.lines(
-                    Color.BLACK,
-                    bounds.topLeft + Vector(0.0, propertiesPadding.top),
-                    bounds.topLeft,
-                    bounds.topRight - Vector(propertiesPadding.top, 0.0),
-                    bounds.topRight + Vector(0.0, propertiesPadding.top)
-            )
-            properties.forEachIndexed { i, p ->
-                localGraphics.text(p.toString(), bounds.topLeft + Vector(0.5 * UNIT, 1.2 * (i + 1) * UNIT), DEFAULT_FONT)
+                    bounds.topRight + Vector(0.0, propertiesPadding.top))
+            localGraphics.polygon(color, propertyShape,true)
+            localGraphics.lines(Color.BLACK, propertyShape)
+
+            var index = 0
+            val printProperty = { text:String ->
+                index += 1
+                localGraphics.text(text, bounds.topLeft + Vector(0.5 * UNIT, (1.2 * index - 0.1)  * UNIT), DEFAULT_FONT)
             }
+
+            if (hasFilter) printProperty("Filter: $filterExpression")
+            if (hasContext) printProperty("Context: $context")
+            if (hasOrder) printProperty("Order: $orderExpression")
         }
 
         in_port.render(localGraphics)
@@ -442,7 +534,7 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
 
         // highlight a selected node
         if (isSelected){
-            if (properties.size <= 0){
+            if (!hasProperties){
                 val boundsToDraw = bounds - propertiesPadding
                 localGraphics.polygon(Color.MAGENTA, boundsToDraw.toCoordinates(), false)
             } else {
@@ -457,6 +549,7 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
         }
     }
 
+    /*
     fun getProperty(type: PropertyType): String? {
         properties.forEach {
             if (it.type == type)
@@ -469,23 +562,34 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
         if (value == "")
             removeProperty(type)
         else {
-            properties.forEach {
-                if (it.type == type) {
-                    it.expression = value
-                    scene.knownProperties.add(Property(type, value))
-                    return
+            when(type) {
+                PropertyType.ContextId -> {
+                    if (value == "GLOBAL") {
+                        context = ContextType.Global
+                        contextSelector = ""
+                    } else {
+                        context = ContextType.Selection
+                        contextSelector = value
+                    }
                 }
+                PropertyType.Order -> orderField = value
+                PropertyType.Filter -> filterField = value
             }
-            properties.add(Property(type, value))
             scene.knownProperties.add(Property(type, value))
             scene.save()
         }
     }
 
     fun removeProperty(type: PropertyType) {
-        properties.retainAll { it.type != type }
+        when(type) {
+            PropertyType.ContextId -> context = ContextType.None
+            PropertyType.Order -> orderField = ""
+            PropertyType.Filter -> filterField = ""
+        }
         scene.save()
     }
+
+    */
 
     open fun showGeometry(){
         showGeometry = true

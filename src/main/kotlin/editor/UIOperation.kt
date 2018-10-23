@@ -303,26 +303,16 @@ class ChangeColorOperation(val node: Node, val oldColor: Color, val newColor: Co
     }
 }
 
-class ChangePropertyOperation(val node: Node, val type: PropertyType, val oldExpression: String, val newExpression: String): UIOperation() {
+class ChangePropertyOperation(val node: Node, val value: Property): UIOperation() {
+    lateinit var old: Property
     override fun reverse() {
-        node.setProperty(type, oldExpression)
+        val cur_value = old.exchange(node)
+        check(cur_value == value)
         node.repaint()
     }
 
     override fun apply() {
-        node.setProperty(type, newExpression)
-        node.repaint()
-    }
-}
-
-class RemovePropertyOperation(val node: Node, val type: PropertyType, val oldExpression: String): UIOperation() {
-    override fun reverse() {
-        node.setProperty(type, oldExpression)
-        node.repaint()
-    }
-
-    override fun apply() {
-        node.removeProperty(type)
+        old = value.exchange(node)
         node.repaint()
     }
 }

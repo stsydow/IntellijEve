@@ -13,9 +13,7 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
         val deleteNodeItem = JMenuItem("delete node")
         val addPortItem = JMenuItem("add port")
         val setColorItem = JMenuItem("set color")
-        val setOrderItem = JMenuItem("set order")
-        val setContextId = JMenuItem("set context")
-        val setFilter = JMenuItem("set filter")
+        val setProperties = JMenuItem("set properties")
         val setName = JMenuItem("set structName")
         val openRustFile = JMenuItem("open rust file")
         val shrinkItem = JMenuItem("shrink to minimal size")
@@ -60,58 +58,28 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
             }
         }
 
-        setOrderItem.addActionListener {
-            var oldOrder = node.getProperty(PropertyType.Order)
-            if (oldOrder == null)
-                oldOrder = ""
-            // get a list of all existing orders in the graph
-            val existingOrders = mutableSetOf<Property>()
-            scene.knownProperties.forEach { prop ->
-                if (prop.type == PropertyType.Order)
-                    existingOrders.add(prop)
-            }
-            // display dialog to choose or enter order
-            val orderDialog = ListDialog("Please choose or enter order",
-                                    existingOrders.distinctBy { prop ->
-                                    Pair(prop.type, prop.expression)
-                                 })
-            orderDialog.pack()
-            orderDialog.setLocationRelativeTo(scene)
-            orderDialog.setInitialSelection(oldOrder)
-            orderDialog.isVisible = true
-            val order = orderDialog.selection
-            // set, change or remove order
-            if (order != null){
-                if (order != "")
-                    scene.pushOperation(ChangePropertyOperation(node, PropertyType.Order, oldOrder, order))
-                else
-                    scene.pushOperation(RemovePropertyOperation(node, PropertyType.Order, oldOrder))
-            }
-        }
+        setProperties.addActionListener {
+            val oldOrder = node.orderExpression
+            val oldContext = node.context
+            val oldFilter = node.filterExpression
 
-        setContextId.addActionListener {
-            var oldContext = node.getProperty(PropertyType.ContextId)
-            if (oldContext == null)
-                oldContext = ""
-            val context = JOptionPane.showInputDialog(scene, "Set ContextID", oldContext)
-            if (context != null) {
-                if (context != "")
-                    scene.pushOperation(ChangePropertyOperation(node, PropertyType.ContextId, oldContext, context))
-                else
-                    scene.pushOperation(RemovePropertyOperation(node, PropertyType.ContextId, oldContext))
-            }
-        }
+            val dialog = PropertyDialog(node)
 
-        setFilter.addActionListener {
-            var oldFilter = node.getProperty(PropertyType.Filter)
-            if (oldFilter == null)
-                oldFilter = ""
-            val filter = JOptionPane.showInputDialog(scene, "Set filter", oldFilter)
-            if (filter != null) {
-                if (filter != "")
-                    scene.pushOperation(ChangePropertyOperation(node, PropertyType.Filter, oldFilter, filter))
-                else
-                    scene.pushOperation(RemovePropertyOperation(node, PropertyType.Filter, oldFilter))
+            val successful = dialog.showAndGet()
+            if (successful) {
+                if (oldContext != dialog.context) {
+                    val op = ChangePropertyOperation(node, dialog.context)
+                    scene.pushOperation(op)
+                }
+
+                if(oldFilter != dialog.filter) {
+                    val op = ChangePropertyOperation(node, Filter(dialog.filter))
+                    scene.pushOperation(op)
+                }
+                if(oldOrder != dialog.order) {
+                    val op = ChangePropertyOperation(node, Order(dialog.order))
+                    scene.pushOperation(op)
+                }
             }
         }
 
@@ -154,9 +122,7 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
             add(deleteNodeItem)
             add(addPortItem)
             add(setColorItem)
-            add(setOrderItem)
-            add(setContextId)
-            add(setFilter)
+            add(setProperties)
             add(setName)
             add(openRustFile)
             add(shrinkItem)

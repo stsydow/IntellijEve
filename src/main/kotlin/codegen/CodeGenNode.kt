@@ -1,12 +1,10 @@
 package codegen
 
+import editor.ContextType
 import editor.Node
 
 const val ERROR_TYPE = "EveError"
 fun streamType(itemType: String) = "impl Stream<Item=$itemType, Error=${ERROR_TYPE}>"
-
-const val TAB = "    "
-val tabs = {n:Int -> "".padStart(n* TAB.length)}
 
 class CodeGenNode(val node: Node) {
     val parent get() = node.parent
@@ -24,7 +22,7 @@ class CodeGenNode(val node: Node) {
     fun generate(code: Scope) {
         check(nodeHandle != "<anonymous>" && ! nodeHandle.isEmpty()) {"Can't generate an anonymous node."}
         val innerBlock = CodeBlock()
-        val prefixHandle = when {
+        var prefixHandle = when {
             node.isFanIn -> {
                 val inputs = node.predecessors.map { i -> i.codeGen.getOutputHandle(this) }
                 val mergeHandle = "${nodeHandle}_merge"
@@ -35,6 +33,13 @@ class CodeGenNode(val node: Node) {
             else ->{
                 node.predecessors.first().codeGen.getOutputHandle(this)
             }
+        }
+
+        if (node.hasFilter) {
+            val filterHandle = "${nodeHandle}_filter"
+            innerBlock.define(filterHandle,
+                        "$prefixHandle\n$TAB.map(|event| { ${node.filterExpression} })")
+            prefixHandle = filterHandle
         }
 
         val stageHandle = when {
@@ -56,8 +61,12 @@ class CodeGenNode(val node: Node) {
             }
             else -> {
                 val stageHandle = "${nodeHandle}_stage"
-                innerBlock.define(stageHandle,
+                when(node.context.type) {
+                    ContextType.Selection -> TODO("selective context")
+                    ContextType.Global -> innerBlock.define(stageHandle,"$moduleName::$structName::new($prefixHandle)")
+                    ContextType.None -> innerBlock.define(stageHandle,
                         "$prefixHandle\n$TAB.map(|event| { $moduleName::tick(event) })")
+                }
                 stageHandle
             }
         }

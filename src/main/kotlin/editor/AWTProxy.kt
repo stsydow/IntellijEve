@@ -26,143 +26,117 @@ fun Graphics2D.drawLine(start: Coordinate, end: Coordinate) =
 
 class GraphicsProxy(graphics: Graphics2D, val transform: Transform) {
 
-    internal val awt_graphics = graphics
+    internal val awtGraphics = graphics
 
     fun reset() {
-        awt_graphics.color = Color.BLACK
-        awt_graphics.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON)
+        awtGraphics.color = Color.BLACK
+        awtGraphics.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON)
 
         //ANTIALIASING in with awt is rather expensive
 
-        awt_graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        //awt_graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR)
-        //awt_graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+        awtGraphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+        //awtGraphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR)
+        //awtGraphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
 
         // enable if ANTIALIASING for everything is to slow
-        //awt_graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+        //awtGraphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
     }
 
     constructor(parent: GraphicsProxy, localTransform: Transform) :
-            this(parent.awt_graphics, parent.transform * localTransform)
+            this(parent.awtGraphics, parent.transform * localTransform)
 
     fun stack(transform: Transform): GraphicsProxy {
         return GraphicsProxy(this, transform)
     }
 
     fun rect(c: Color, r: Bounds) {
-        val oldColor = awt_graphics.color
-        val global_bounds = transform * r
+        val oldColor = awtGraphics.color
+        val globalBounds = transform * r
 
-        val x_min = global_bounds.x_min.toInt()
-        val y_min = global_bounds.y_min.toInt()
-        val x_max = global_bounds.x_max.toInt()
-        val y_max = global_bounds.y_max.toInt()
+        val x_min = globalBounds.x_min.toInt()
+        val y_min = globalBounds.y_min.toInt()
+        val x_max = globalBounds.x_max.toInt()
+        val y_max = globalBounds.y_max.toInt()
 
-        awt_graphics.color = c
-        awt_graphics.fillPolygon(
+        awtGraphics.color = c
+        awtGraphics.fillPolygon(
                 intArrayOf(x_min, x_max, x_max, x_min),
                 intArrayOf(y_min, y_min, y_max, y_max), 4)
-        awt_graphics.color = oldColor
+        awtGraphics.color = oldColor
 
-        awt_graphics.drawPolygon(
+        awtGraphics.drawPolygon(
                 intArrayOf(x_min, x_max, x_max, x_min),
                 intArrayOf(y_min, y_min, y_max, y_max), 4)
     }
 
     fun circle(col: Color, center: Coordinate, radius: Double){
-        val oldColor = awt_graphics.color
-        val global_bounds = transform*Bounds(center.x-radius, center.y-radius, center.x+radius, center.y+radius)
+        val oldColor = awtGraphics.color
+        val globalBounds = transform*Bounds(center.x-radius, center.y-radius, center.x+radius, center.y+radius)
 
-        val x = global_bounds.x_min.toInt()
-        val y = global_bounds.y_min.toInt()
-        val width = (global_bounds.x_max - x).toInt()
-        val height = (global_bounds.y_max - y).toInt()
+        val x = globalBounds.x_min.toInt()
+        val y = globalBounds.y_min.toInt()
+        val width = (globalBounds.x_max - x).toInt()
+        val height = (globalBounds.y_max - y).toInt()
 
-        awt_graphics.color = col
-        awt_graphics.fillOval(x, y, width, height)
-        awt_graphics.color = oldColor
+        awtGraphics.color = col
+        awtGraphics.fillOval(x, y, width, height)
+        awtGraphics.color = oldColor
 
-        awt_graphics.drawArc(x, y, width, height, 0, 360)
+        awtGraphics.drawArc(x, y, width, height, 0, 360)
     }
 
     fun line(begin: Coordinate, end: Coordinate) {
-        val global_begin = transform * begin
-        val global_end = transform * end
-
-        awt_graphics.drawLine(global_begin, global_end)
+        awtGraphics.drawLine(transform * begin, transform * end)
     }
 
     fun lines(c: Color, vararg coords: Coordinate) = lines(c, coords.asIterable())
 
     fun lines(c: Color, coords: Iterable<Coordinate>) {
-        val old = awt_graphics.color
-        awt_graphics.color = c
-        val iter = coords.iterator()
-        var last_coord = transform * iter.next()
-        while (iter.hasNext()) {
-            val cur_coord = transform * iter.next()
-            awt_graphics.drawLine(last_coord, cur_coord)
-            last_coord = cur_coord
+        val oldColor = awtGraphics.color
+        awtGraphics.color = c
+
+        coords.map { c -> transform * c }.reduce { last, cur ->
+            awtGraphics.drawLine(last, cur)
+            cur
         }
-        awt_graphics.color = old
-    }
-
-
-    fun polygon(c: Color, points: List<Coordinate>, filled: Boolean) {
-        val old = awt_graphics.color
-        awt_graphics.color = c
-        val x = IntArray(points.size)
-        val y = IntArray(points.size)
-
-        val global_points = points.map { p -> transform * p }
-
-        global_points.forEachIndexed { index, coordinate ->
-            x[index] = (coordinate.x + 0.5).toInt()
-            y[index] = (coordinate.y + 0.5).toInt()
-        }
-
-        if (filled)
-            awt_graphics.fillPolygon(x, y, points.size)
-        else
-            awt_graphics.drawPolygon(x, y, points.size)
-        awt_graphics.color = old
+        awtGraphics.color = oldColor
     }
     
-    fun polygon(c: Color, points: List<Coordinate>, filled: Boolean, stroke: Stroke){
-        val oldColor = awt_graphics.color
-        awt_graphics.color = c
-        val oldStroke = awt_graphics.stroke
-        awt_graphics.stroke = stroke
+    fun polygon(c: Color, points: Collection<Coordinate>, filled: Boolean, stroke: Stroke = awtGraphics.stroke){
+        val oldColor = awtGraphics.color
+        awtGraphics.color = c
+        val oldStroke = awtGraphics.stroke
+        awtGraphics.stroke = stroke
         val x = IntArray(points.size)
         val y = IntArray(points.size)
 
-        val global_points = points.map { p -> transform * p }
+        val globalPoints = points.map { p -> transform * p }
 
-        global_points.forEachIndexed { index, coordinate ->
+        globalPoints.forEachIndexed { index, coordinate ->
             x[index] = (coordinate.x + 0.5).toInt()
             y[index] = (coordinate.y + 0.5).toInt()
         }
 
         if (filled)
-            awt_graphics.fillPolygon(x, y, points.size)
+            awtGraphics.fillPolygon(x, y, points.size)
         else
-            awt_graphics.drawPolygon(x, y, points.size)
-        awt_graphics.color = oldColor
-        awt_graphics.stroke = oldStroke
+            awtGraphics.drawPolygon(x, y, points.size)
+        awtGraphics.color = oldColor
+        awtGraphics.stroke = oldStroke
     }
 
     fun text(text: String, position: Coordinate, font: Font) {
-        val global_position = transform * position
+        val globalPosition = transform * position
 
-        val awtFont = font.getAWTFont(awt_graphics, transform.scale)
-        awt_graphics.font = awtFont
+        val awtFont = font.getAWTFont(awtGraphics, transform.scale)
+        awtGraphics.font = awtFont
 
-        awt_graphics.drawString(text, global_position.x.toInt(), global_position.y.toInt())
+        awtGraphics.drawString(text, globalPosition.x.toInt(), globalPosition.y.toInt())
     }
 
     fun textBounds(text: String, font: Font): Bounds {
-        val awtFont = font.getAWTFont(awt_graphics, transform.scale)
-        val r = awtFont.getStringBounds(text, awt_graphics.fontRenderContext)
+        val awtFont = font.getAWTFont(awtGraphics, transform.scale)
+        val r = awtFont.getStringBounds(text, awtGraphics.fontRenderContext)
         return !transform * Bounds(r)
     }
 }
