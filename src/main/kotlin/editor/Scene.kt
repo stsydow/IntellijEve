@@ -33,9 +33,9 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
     var lastMovementPosition: Coordinate? = null
     var lastMousePosition: Coordinate? = null
     var currentOperation: Operation = Operation.NoOperation()
-    var operationsStack = Stack<UIOperation>()
-    var reversedOperationsStack = Stack<UIOperation>()
-    var selectedNodes = mutableListOf<Node>()
+    val operationsStack = Stack<UIOperation>()
+    val reversedOperationsStack = Stack<UIOperation>()
+    val selectedNodes = mutableListOf<Node>()
 
 
     init {
@@ -131,7 +131,6 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
     }
 
     override fun mouseClicked(e: MouseEvent) {
-        val op: Operation
         val sceneCoord = getSceneCoordinate(e)
         val picked: UIElement?
         val onlyCtrlModifier =  e.isControlDown &&
@@ -139,10 +138,10 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
                                 !e.isAltDown &&
                                 !e.isAltGraphDown &&
                                 !e.isMetaDown
-        when (e.button) {
+        val op = when (e.button) {
             M_BUTTON_LEFT   -> {
                 picked = root.pick(sceneCoord, transform, UIElementKind.Node)
-                op = when {
+                when {
                     e.clickCount == 2 -> when (picked) {
                         is Node -> Operation.OpenRustFileOperation(root, picked)
                         else    -> Operation.NoOperation()
@@ -160,19 +159,20 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
             }
             M_BUTTON_MIDDLE -> {
                 picked = root.pick(sceneCoord, transform, UIElementKind.All)
-                op = when (picked) {
+                when (picked) {
                     null    -> Operation.NoOperation()
                     else    -> Operation.PrintDebugOperation(picked)
                 }
             }
-            M_BUTTON_RIGHT  -> {
-                op = Operation.NoOperation()
-            }
-            else -> {
-                op = Operation.NoOperation()
-            }
+            M_BUTTON_RIGHT -> Operation.NoOperation()
+            else -> Operation.NoOperation()
         }
-        op.perform()
+
+        if(! (op is Operation.NoOperation)) {
+            e.consume()
+            op.perform()
+            currentOperation = Operation.NoOperation()
+        }
     }
 
     override fun mousePressed(e: MouseEvent) {

@@ -89,11 +89,11 @@ class GraphicsProxy(graphics: Graphics2D, val transform: Transform) {
         awtGraphics.drawLine(transform * begin, transform * end)
     }
 
-    fun lines(c: Color, vararg coords: Coordinate) = lines(c, coords.asIterable())
+    fun lines(color: Color, vararg coords: Coordinate) = lines(color, coords.asIterable())
 
-    fun lines(c: Color, coords: Iterable<Coordinate>) {
+    fun lines(color: Color, coords: Iterable<Coordinate>) {
         val oldColor = awtGraphics.color
-        awtGraphics.color = c
+        awtGraphics.color = color
 
         coords.map { c -> transform * c }.reduce { last, cur ->
             awtGraphics.drawLine(last, cur)

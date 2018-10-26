@@ -63,7 +63,7 @@ class CodeGenNode(val node: Node) {
                 val stageHandle = "${nodeHandle}_stage"
                 when(node.context.type) {
                     ContextType.Selection -> TODO("selective context")
-                    ContextType.Global -> innerBlock.define(stageHandle,"$moduleName::$structName::new($prefixHandle)")
+                    ContextType.Global -> innerBlock.define(stageHandle,"GlobalContext::new($prefixHandle,$moduleName::${TODO("ContextImp")}::new())")
                     ContextType.None -> innerBlock.define(stageHandle,
                         "$prefixHandle\n$TAB.map(|event| { $moduleName::tick(event) })")
                 }

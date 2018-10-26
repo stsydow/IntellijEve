@@ -54,7 +54,8 @@ fun pascalToSnakeCase(str:String): String {
  */
 fun isRustKeyword(str: String): Boolean {
     val strictKeywords = arrayOf(
-            "as",       "break",        "const",        "continue",     "crate",
+            "as",       "async",        "await",        "break",        "const",
+            "continue",     "crate",
             "else",     "enum",         "extern",       "false",        "fn",
             "for",      "if",           "impl",         "in",           "let",
             "loop",     "match",        "mod",          "move",         "mut",
@@ -199,8 +200,6 @@ class Function(val name: String, val arguments: List<Parameter>, val resultType:
 fun mainFunction() = Function("main", listOf<Parameter>(), "()")
 
 class CodeFile(val fileName: String) : ScopeImpl() {
-
-    var externCrates = mutableSetOf<String>()
     var modules = mutableSetOf<String>()
     var imports = mutableSetOf<String>()
 
@@ -212,7 +211,6 @@ class CodeFile(val fileName: String) : ScopeImpl() {
 
     override fun asStringBuilder(): StringBuilder {
         val builder = java.lang.StringBuilder()
-        externCrates.forEach { crate -> builder.appendln("extern crate $crate;")}
         modules.forEach { module -> builder.appendln("mod $module;")}
         imports.forEach { import -> builder.appendln("use $import;")}
 
