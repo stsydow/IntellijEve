@@ -692,10 +692,10 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         repaint()
     }
 
-    /*
+
     override fun positionChildren() {
+        /*don't touch the ports*/
     }
-    */
 
     override fun repaint() {
         viewport.repaint()

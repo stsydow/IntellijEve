@@ -12,10 +12,17 @@ import java.util.*
 import javax.swing.JOptionPane
 import javax.swing.JPopupMenu
 
-sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element: UIElement?) {
+/*
+TODO:
+interface Operation {
+    fun perform()
+}
+*/
+
+sealed class Operation() {
     abstract fun perform()
 
-    class AreaSelectOperation(root: RootNode, element: Node, val startPos: Coordinate, mousePos: Coordinate): Operation(root, null, element) {
+    class AreaSelectOperation(val root: RootNode, val element: Node, val startPos: Coordinate, mousePos: Coordinate): Operation() {
         var selectRect: Bounds
         init {
             val topLeft = Coordinate(Math.min(startPos.x, mousePos.x), Math.min(startPos.y, mousePos.y))
@@ -25,18 +32,16 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
 
         override fun perform() {
             val nodesContained = mutableListOf<Node>()
-            if (root!= null && element != null && element is Node){
-                if (element.childrenPickable){
-                    element.childNodes.forEach {
-                        val globalBounds = it.getGlobalTransform() * it.bounds
-                        if (selectRect.contains(globalBounds))
-                            nodesContained.add(it)
-                    }
+            if (element.childrenPickable){
+                element.childNodes.forEach {
+                    val globalBounds = it.getGlobalTransform() * it.bounds
+                    if (selectRect.contains(globalBounds))
+                        nodesContained.add(it)
                 }
-                nodesContained.forEach {
-                    it.isSelected = true
-                    root.viewport.selectedNodes.add(it)
-                }
+            }
+            nodesContained.forEach {
+                it.isSelected = true
+                root.viewport.selectedNodes.add(it)
             }
         }
 
@@ -47,28 +52,33 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
         }
     }
 
-    class DrawEdgeOperation(root: RootNode, src: Port): Operation(root, null, src){
+    class DrawEdgeOperation(val root: RootNode, val src: Port) : Operation() {
         var target: Port? = null
 
         override fun perform() {
             if (target != null) {
-                val ancestor = getCommonAncestorForEdge(element as Port, target!!)
+                val ancestor = getCommonAncestorForEdge(src , target!!)
                 if (ancestor != null) {
-                    val edge = Edge(Transform(0.0, 0.0, 1.0), ancestor, element, target!!, root!!.viewport)
-                    element.scene.pushOperation(AddEdgeOperation(ancestor, edge))
+                    val edge = Edge(Transform(0.0, 0.0, 1.0), ancestor, src, target!!, root.viewport)
+                    src.scene.pushOperation(AddEdgeOperation(ancestor, edge))
                 }
             }
         }
     }
 
-    class MoveOperation(element: Node, val oldParentBounds: LinkedList<Bounds>, val oldTransform: Transform, var newParentBounds: List<Bounds>, var newTransform: Transform): Operation(null, null, element) {
+    class MoveOperation(val element: Node, val oldParentBounds: LinkedList<Bounds>, val oldTransform: Transform, var newParentBounds: List<Bounds>, var newTransform: Transform): Operation() {
+
+
+        constructor(element: Node):this(element,
+                element.getParentBoundsList(), element.transform,
+                element.getParentBoundsList(), element.transform)
+
+        val hasMoved: Boolean get() = (oldTransform != newTransform)
         override fun perform() {
-            if (element != null) {
-                element.transform = newTransform
-                element.repaint()   // TODO: needed here?
-                val p: Node? = element.parent
-                p?.onChildChanged(element as Node)
-            }
+            element.transform = newTransform
+            element.repaint()   // TODO: needed here?
+            val p: Node? = element.parent
+            p?.onChildChanged(element)
         }
 
         fun update(newParentBounds: List<Bounds>, newTransform: Transform){
@@ -78,31 +88,27 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
         }
     }
 
-    class NoOperation: Operation(null, null, null) {
+    class NoOperation: Operation() {
         override fun perform() {
             // do nothing obviously
         }
     }
 
-    class PrintDebugOperation(element: UIElement): Operation(null, null, element){
+    class PrintDebugOperation(val element: UIElement): Operation(){
         override fun perform() {
-            if (element != null){
-                val elemStr = when(element) {
-                    is Edge -> "Edge"
-                    is Node -> "Node"
-                    is Port -> "Port"
-                    else    -> "<Unknown>"
-                }
-                println("$elemStr ${element.id}: bounds ${element.bounds} \n\t external bounds ${element.externalBounds()} ")
-            } else {
-                println("no UIElement picked")
+            val elemStr = when(element) {
+                is Edge -> "Edge"
+                is Node -> "Node"
+                is Port -> "Port"
+                else    -> "<Unknown>"
             }
+            println("$elemStr ${element.id}: bounds ${element.bounds} \n\t external bounds ${element.externalBounds()} ")
         }
     }
 
-    class SelectOperation(root: RootNode, element: UIElement?): Operation(root, null, element) {
+    class SelectOperation(val root: RootNode, val element: UIElement?): Operation() {
         override fun perform() {
-            if (root != null && element != null && element is Node){
+            if (element != null && element is Node){
                 if (element.isSelected){
                     element.isSelected = false
                     root.viewport.selectedNodes.remove(element)
@@ -116,9 +122,9 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
         }
     }
 
-    class ShowMenuOperation(element: UIElement?, coord: Coordinate, val view: Viewport, val comp: Component): Operation(null, coord, element) {
+    class ShowMenuOperation(val element: UIElement?, val coord: Coordinate, val view: Viewport, val comp: Component): Operation() {
         override fun perform() {
-            if (element != null && coord != null){
+            if (element != null){
                 val menu:JPopupMenu? = when (element) {
                     is RootNode -> RootNodeContextMenu(element, view, coord)
                     is Edge     -> EdgeContextMenu(element, view, coord)
@@ -134,35 +140,30 @@ sealed class Operation(val root: RootNode?, val coord: Coordinate?, val element:
         }
     }
 
-    class UnselectAllOperation(root: RootNode): Operation(root, null, null){
+    class UnselectAllOperation(val root: RootNode): Operation(){
         override fun perform() {
-            if (root != null) {
                 root.viewport.selectedNodes.forEach{ node -> node.isSelected = false }
                 root.viewport.selectedNodes.clear()
-            }
         }
     }
 
-    class OpenRustFileOperation(root: RootNode, node: Node): Operation(root, null, node){
+    class OpenRustFileOperation(val node: Node): Operation(){
         override fun perform() {
-            if (element != null && root != null){
-                element as Node
-                when {
-                    element.name == Node.DEFAULT_NAME ->
-                        JOptionPane.showMessageDialog(
-                                root.viewport,
-                                "Please structName the node before opening its file",
-                                "Error", JOptionPane.ERROR_MESSAGE)
+            when {
+                node.name == Node.DEFAULT_NAME ->
+                    JOptionPane.showMessageDialog(
+                            node.scene,
+                            "Please structName the node before opening its file",
+                            "Error", JOptionPane.ERROR_MESSAGE)
 
-                    element.parentsUnnamed() ->
-                        JOptionPane.showMessageDialog(
-                                root.viewport,
-                                "Node in higher level of node is not named, can not open its file",
-                                "Error", JOptionPane.ERROR_MESSAGE)
-                    else -> {
-                        val nodeFile = element.impl.getOrCreateFile()
-                        FileEditorManager.getInstance(root.viewport.editor!!.project).openFile(nodeFile, true)
-                    }
+                node.parentsUnnamed() ->
+                    JOptionPane.showMessageDialog(
+                            node.scene,
+                            "Node in higher level of node is not named, can not open its file",
+                            "Error", JOptionPane.ERROR_MESSAGE)
+                else -> {
+                    val nodeFile = node.impl.getOrCreateFile()
+                    FileEditorManager.getInstance(node.scene.editor!!.project).openFile(nodeFile, true)
                 }
             }
         }
@@ -174,29 +175,34 @@ abstract class UIOperation {
     abstract fun apply()
 }
 
-class MoveOperation(val element: UIElement, val oldParentBounds: LinkedList<Bounds>, val old: Transform, val newParentBounds: List<Bounds>, val new: Transform): UIOperation() {
+class MoveOperation(val op: Operation.MoveOperation): UIOperation() {
     override fun reverse() {
-        element.transform = old
-        var p: Node? = element.parent
-        for (i in oldParentBounds) {
-            println("setting bounds to $i for $p")
-            p!!.innerBounds = i
-            p.positionChildren()
-            p = p.parent
+        with(op) {
+            element.transform = oldTransform
+            var p: Node? = element.parent
+            for (i in oldParentBounds) {
+                println("setting bounds to $i for $p")
+                p!!.innerBounds = i
+                p.positionChildren()
+                p = p.parent
+            }
+            element.repaint()
         }
-        element.repaint()
     }
 
+
     override  fun apply() {
-        element.transform = new
-        element.repaint()
-        var p: Node? = element.parent
-        for (i in newParentBounds) {
-            p!!.innerBounds = i
-            p.positionChildren()
-            p = p.parent
+        with(op) {
+            element.transform = newTransform
+            element.repaint()
+            var p: Node? = element.parent
+            for (i in newParentBounds) {
+                p!!.innerBounds = i
+                p.positionChildren()
+                p = p.parent
+            }
+            element.repaint()
         }
-        element.repaint()
     }
 }
 

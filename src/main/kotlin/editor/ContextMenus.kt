@@ -92,7 +92,7 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
         }
 
         openRustFile.addActionListener {
-            val op = Operation.OpenRustFileOperation(scene.root, node)
+            val op = Operation.OpenRustFileOperation(node)
             op.perform()
         }
 
