@@ -1,14 +1,24 @@
 plugins {
     //id 'java-gradle-plugin' - breaks XML Parser classpath
-    //id "org.jetbrains.intellij" version "0.3.2"
-    id "org.jetbrains.intellij" version "0.3.7"
-    id "org.jetbrains.kotlin.jvm" version "1.2.71"
+    id "org.jetbrains.intellij" version "0.3.12"
+    id "org.jetbrains.kotlin.jvm" version "1.3.0"
 }
 
 intellij {
-    //version 'IU-182.4129.33'
     version 'IC-2018.2.5'
     pluginName 'IntellijEve'
+    plugins = [
+            'org.toml.lang:0.2.0.19',
+            'org.rust.lang:0.2.0.2109-182'
+    ]
+}
+
+compileKotlin {
+    kotlinOptions {
+        apiVersion = '1.3'
+        languageVersion = '1.3'
+        jvmTarget = '1.8'
+    }
 }
 
 group 'org.tub.eveamcp'
@@ -28,13 +38,5 @@ repositories {
 
 dependencies {
     compile 'commons-io:commons-io:2.6'
-}
-
-prepareSandbox {
-    doLast {
-        copy {
-            from System.getProperty("user.home")+'/.IdeaIC2018.2/config/plugins/'
-            into './build/idea-sandbox/plugins/'
-        }
-    }
+    compile 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.3.0'
 }

@@ -10,26 +10,30 @@ interface Property {
     fun exchange(node:Node) : Property
 }
 
-class Context(val type: ContextType, val selector:String):Property {
+class Context(val type: ContextType, val selector:String, val structName: String):Property {
 
     companion object {
-        val None = Context(ContextType.None, "")
-        val Global = Context(ContextType.Global, "")
-        fun Select(expression: String) = Context(ContextType.Selection, expression)
+        val None = Context(ContextType.None, "", "")
+        fun Global(struct: String) = Context(ContextType.Global, "", struct)
+        fun Select(expression: String, struct:String) = Context(ContextType.Selection, expression, struct)
 
         private const val SELECT_PREFIX = "SELECT:"
 
-        fun parse(expression: String): Context = when(expression) {
+        fun parse(expression: String, structName: String): Context = when(expression) {
             "" -> None
-            "GLOBAL" -> Global
+            "GLOBAL" -> {
+                //TODO: require(structName.isNotEmpty())
+                Global(structName)
+            }
             else ->
             {
+                //TODO: require(structName.isNotEmpty())
                 val selector = if (expression.startsWith(SELECT_PREFIX, ignoreCase = false)) {
                     expression.substring(SELECT_PREFIX.length)
                 } else {
                     expression
                 }
-                Select(selector)
+                Select(selector,structName)
             }
         }
     }
@@ -56,12 +60,22 @@ class Context(val type: ContextType, val selector:String):Property {
         ContextType.Selection -> selector
     }
 
-    override fun equals(other: Any?): Boolean = when (other) {
-        is Context -> type == other.type && selector == other.selector
-        else -> false
-    }
+    override fun equals(other: Any?): Boolean =
+        if(other is Context && type == other.type) {
+            when (type) {
+                ContextType.None -> true
+                ContextType.Global -> structName == other.structName
+                ContextType.Selection -> structName == other.structName && selector == other.selector
+            }
+        }else {
+            false
+        }
 
-    override fun hashCode(): Int  = type.hashCode() * selector.hashCode()
+    override fun hashCode(): Int  = when (type) {
+        ContextType.None -> 0
+        ContextType.Global -> structName.hashCode()
+        ContextType.Selection -> 31 * structName.hashCode() * selector.hashCode()
+    }
 }
 
 class Filter(val expression:String):Property {

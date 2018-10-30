@@ -60,6 +60,7 @@ class EveamcpConstants {
         const val NODE_COLOR = "node_color"
         const val NODE_COLOR_NAME = "color"
         const val NODE_CONTEXT = "node_context"
+        const val NODE_CONTEXT_STRUCT = "node_context_struct"
         const val NODE_CONTEXT_NAME = "context"
         const val NODE_FILTER = "node_filter"
         const val NODE_FILTER_NAME = "filter"
@@ -262,6 +263,7 @@ private fun writeNodeElement(writer: XMLStreamWriter, node: Node) {
     if (node.hasContext) {
         writeIndentation(writer)
         writeDataElement(writer, EveamcpConstants.NODE_CONTEXT, node.context.asExpression())
+        writeDataElement(writer, EveamcpConstants.NODE_CONTEXT_STRUCT, node.context.structName)
     }
 
     if (node.hasFilter){

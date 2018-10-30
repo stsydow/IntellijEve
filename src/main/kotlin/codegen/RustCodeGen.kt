@@ -67,7 +67,8 @@ class RustCodeGen {
                     "futures::future::ok",
                     "crate::nodes::*",
                     "crate::structs::*",
-                    "crate::stream_copy::StreamCopyMutex"
+                    "crate::stream_copy::StreamCopyMutex",
+                    "crate::context::GlobalContext"
             ))
 
             graphFile.defineFunction(buildGraph)
@@ -75,7 +76,7 @@ class RustCodeGen {
             graphFile.write()
 
             val mainFile = CodeFile("$outputDirectory/src/main.rs")
-            mainFile.modules.addAll(listOf("nodes", "structs", "task_graph", "stream_copy"))
+            mainFile.modules.addAll(listOf("nodes", "structs", "task_graph", "stream_copy", "context"))
             mainFile.imports.addAll(listOf(
                     "tokio_core::reactor::Core"
             ))

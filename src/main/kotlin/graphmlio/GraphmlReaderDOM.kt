@@ -120,7 +120,8 @@ private fun createNodeFromDOM(parent: Node, node: Element, scene: Viewport){
             newNode.filterExpression = nodeFilter
         // get node context property
         val nodeContext = extractDataStringValue(node, "node_context")
-        newNode.context = Context.parse(nodeContext.orEmpty())
+        val nodeContextStruct = extractDataStringValue(node, "node_context_struct")
+        newNode.context = Context.parse(nodeContext.orEmpty(), nodeContextStruct.orEmpty())
         // get node order property
         val nodeOrder = extractDataStringValue(node, EveamcpConstants.NODE_ORDER)
         if (nodeOrder != null)

@@ -212,7 +212,9 @@ class CodeFile(val fileName: String) : ScopeImpl() {
     override fun asStringBuilder(): StringBuilder {
         val builder = java.lang.StringBuilder()
         modules.forEach { module -> builder.appendln("mod $module;")}
+        builder.appendln()
         imports.forEach { import -> builder.appendln("use $import;")}
+        builder.appendln()
 
         builder.append(super.asStringBuilder())
         return builder
