@@ -1,7 +1,7 @@
 <idea-plugin>
   <id>org.tub.eveamcp</id>
   <name>IntellijEve</name>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
   <vendor email="stefan.sydow@tu-berlin.de" url="http://www.kbs.tu-berlin.de">KBS TU-Berlin</vendor>
 
   <description><![CDATA[
