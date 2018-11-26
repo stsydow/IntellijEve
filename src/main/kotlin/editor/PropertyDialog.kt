@@ -2,9 +2,12 @@ package editor
 
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.*
+import java.awt.GridBagConstraints
 import javax.swing.*
-import java.awt.GridLayout
+import java.awt.GridBagLayout
 
+
+//TODO use an com.intellij.ui.EditorTextField for Context Struct, selector and init
 
 class PropertyDialog(val node: Node) : DialogWrapper(node.scene.editor?.project) {
 
@@ -13,7 +16,7 @@ class PropertyDialog(val node: Node) : DialogWrapper(node.scene.editor?.project)
     val context: Context get() = Context.parse(contextField.text, contextStructField.text)
     private val filterField = JBTextField(node.filterExpression,25)
     val filter: String get() = filterField.text
-    private val orderField = JBTextField(node.orderExpression)
+    private val orderField = JBTextField(node.orderExpression, 15)
     val order: String get() = orderField.text
 
     init {
@@ -23,31 +26,30 @@ class PropertyDialog(val node: Node) : DialogWrapper(node.scene.editor?.project)
 
     override fun createCenterPanel(): JComponent? {
 
-        // TODO use GridBagLayout
-        val panel = JPanel(GridLayout(4, 2))
+        val panel = JPanel(GridBagLayout())
 
-        val contextLabel = JLabel("Context:") //TODO JBLabel
-        contextLabel.labelFor = contextField
+        var rowCount = 0;
+        val add = {labelText:String, text: JBTextField ->
+            val constraints = GridBagConstraints()
+            constraints.gridy = rowCount
 
-        val contextStructLabel = JLabel("ContextStruct:") //TODO JBLabel
-        contextStructLabel.labelFor = contextStructField
+            constraints.gridx = 0
+            constraints.anchor = GridBagConstraints.LINE_START
 
-        val filterLabel = JLabel("Filter:")
-        filterLabel.labelFor = filterField
+            val label = JBLabel(labelText)
+            label.labelFor = contextField
+            panel.add(label, constraints)
 
-        val orderLabel = JLabel("Order:")
-        orderLabel.labelFor = orderField
+            constraints.gridx = 1
+            panel.add(text, constraints)
 
-        with(panel) {
-            add(contextLabel)
-            add(contextField)
-            add(contextStructLabel)
-            add(contextStructField)
-            add(filterLabel)
-            add(filterField)
-            add(orderLabel)
-            add(orderField)
+            rowCount += 1
         }
+
+        add("Context:", contextField)
+        add("ContextStruct:", contextStructField)
+        add("Filter:",filterField)
+        add("Order:", orderField)
 
         return panel
     }

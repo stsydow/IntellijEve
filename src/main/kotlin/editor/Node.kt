@@ -10,6 +10,8 @@ interface Property {
     fun exchange(node:Node) : Property
 }
 
+
+// TODO: parent context; termination condition
 class Context(val type: ContextType, val selector:String, val structName: String):Property {
 
     companion object {

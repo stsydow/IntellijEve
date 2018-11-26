@@ -5,11 +5,11 @@ plugins {
 }
 
 intellij {
-    version 'IC-2018.2.5'
+    version 'IC-2018.3'
     pluginName 'IntellijEve'
     plugins = [
             'org.toml.lang:0.2.0.19',
-            'org.rust.lang:0.2.0.2109-182'
+            'org.rust.lang:0.2.0.2111-183'
     ]
 }
 

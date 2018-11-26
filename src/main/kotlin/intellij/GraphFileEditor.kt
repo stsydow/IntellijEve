@@ -5,6 +5,8 @@ import com.intellij.codeHighlighting.BackgroundEditorHighlighter
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorLocation
 import com.intellij.openapi.fileEditor.FileEditorState
+import com.intellij.openapi.module.Module
+import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
@@ -13,6 +15,7 @@ import graphmlio.read
 import graphmlio.validate
 import graphmlio.write
 import org.apache.commons.io.input.BOMInputStream
+import org.rust.cargo.util.cargoProjectRoot
 import java.beans.PropertyChangeListener
 import java.io.File
 import java.io.FileInputStream
@@ -28,6 +31,8 @@ private fun fileIsEmpty(file: File): Boolean {
 class GraphFileEditor(val project: Project, private val virtualFile: VirtualFile): UserDataHolderBase(), FileEditor {
 
     private val panel: Viewport = Viewport(this)
+
+    private val module: Module get() = ModuleUtil.findModuleForFile(virtualFile, project)!!
 
     init {
         val file = File(virtualFile.path)
@@ -77,7 +82,7 @@ class GraphFileEditor(val project: Project, private val virtualFile: VirtualFile
 
     fun generate() {
         try {
-            val path = project.baseDir.path
+            val path = module.cargoProjectRoot!!.path
             RustCodeGen.generateCode(panel.root, path)
         } catch(e: Exception) {
             e.printStackTrace()

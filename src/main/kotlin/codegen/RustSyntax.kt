@@ -1,6 +1,7 @@
 package codegen
 
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.regex.Pattern
 
@@ -199,10 +200,28 @@ class Function(val name: String, val arguments: List<Parameter>, val resultType:
 
 fun mainFunction() = Function("main", listOf<Parameter>(), "()")
 
-class CodeFile(val fileName: String) : ScopeImpl() {
+class Project(val root: Path) {
+    val sourceDir = root.resolve("src")
+}
+
+class CodeFile(val project: Project, val fileName: Path) : ScopeImpl() {
     var modules = mutableSetOf<String>()
     var imports = mutableSetOf<String>()
 
+    constructor(project: Project, fileName: String):this(project, Paths.get(fileName))
+
+    val moduleName:String = fileName.toString().removeSuffix(".rs")
+
+    val fullPath:String get(){
+        val parent = fileName.parent
+        return if (parent.any()) {
+            val parentModule = parent.joinToString("::")
+            "crate::$parentModule::$moduleName"
+
+        }else {
+            "crate::$moduleName"
+        }
+    }
 
     fun defineFunction(function: Function) {
         require(knownIdentifiers.add(function.signature)){"function \"${function.signature}\" allready defined"}
@@ -221,7 +240,7 @@ class CodeFile(val fileName: String) : ScopeImpl() {
     }
 
     fun write() {
-        val path = Paths.get(fileName)
+        val path = project.sourceDir.resolve(fileName)
         Files.write(path, asStringBuilder().chunked(4096), Charsets.UTF_8)
     }
 }

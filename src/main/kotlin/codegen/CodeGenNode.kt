@@ -3,9 +3,6 @@ package codegen
 import editor.ContextType
 import editor.Node
 
-const val ERROR_TYPE = "EveError"
-fun streamType(itemType: String) = "impl Stream<Item=$itemType, Error=${ERROR_TYPE}>"
-
 class CodeGenNode(val node: Node) {
     val parent get() = node.parent
     val childNodes get() = node.childNodes
@@ -13,11 +10,6 @@ class CodeGenNode(val node: Node) {
 
     val moduleName: String get() = pascalToSnakeCase(structName)
     val nodeHandle: String get() = moduleName
-
-    val sinkHandle: String get() {
-        require(node.isSink)
-        return "${nodeHandle}_sink"
-    }
 
     fun generate(code: Scope) {
         check(nodeHandle != "<anonymous>" && ! nodeHandle.isEmpty()) {"Can't generate an anonymous node."}
@@ -66,6 +58,17 @@ class CodeGenNode(val node: Node) {
                     innerBlock.define("context", "$moduleName::$contextStruct::new()")
                 }
                 when(node.context.type) {
+                    /*TODO new syntax:
+                           //let aircraft_contexts = global_context(adsb_stream, || {AircraftCollection::new(receiver_db.clone())});
+        let aircraft_contexts = selective_context(adsb_stream,
+                                                  |icao_address: &u32| { AircraftState::new(*icao_address) },
+                                                  |event| {
+                                                      let (_receiver, icao) = event.source;
+                                                      icao.into()
+                                                  },
+                                                  |state, event| { state.process(event) }
+        );
+                     */
                     ContextType.Selection -> TODO("selective context")
                     ContextType.Global -> innerBlock.define(stageHandle,"GlobalContext::new($prefixHandle, context)")
                     ContextType.None -> innerBlock.define(stageHandle,

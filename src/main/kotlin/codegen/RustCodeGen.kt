@@ -14,19 +14,24 @@ class RustCodeGen {
             val classloader = this::class.java.classLoader // the inteliJ ClassLoader is quit brittle
             return classloader.getResource("/templates/$filePath")
         }
-        fun generateCode(rootGraph: RootNode, projectDirectory: String) {
-            val projectPath = Paths.get(projectDirectory)
+
+        fun generateCode(rootGraph: RootNode, moduleDirectory: String) {
+            val projectPath = Paths.get(moduleDirectory)
             require(projectPath.exists())
             println("[RustCodeGenerator] generating code...")
-            val srcPath = Paths.get("$projectPath/src")
-            val nodesPath =  Paths.get("$srcPath/nodes")
+            val srcPath = projectPath.resolve("src")
+            val nodesPath =  srcPath.resolve("nodes")
             Files.createDirectories(nodesPath)
 
-            val streamCopyPath = Paths.get("$srcPath/stream_copy.rs")
-            if (!Files.exists(streamCopyPath)) {
-                val templateUrl = getTemplate("src/stream_copy.rs")
-                val byteStream = templateUrl.openStream()
-                Files.copy(byteStream, streamCopyPath)
+            val templates = listOf("stream_copy", "context")
+
+            templates.forEach { template ->
+                val destination = srcPath.resolve("$template.rs")
+                if(!destination.exists()) {
+                    val templateUrl = getTemplate("src/$template.rs")
+                    val byteStream = templateUrl.openStream()
+                    Files.copy(byteStream, destination)
+                }
             }
 
             generateTaskGraph(rootGraph, projectPath)
@@ -34,6 +39,8 @@ class RustCodeGen {
 
         private fun generateTaskGraph(rootNode: Node, outputDirectory:Path) {
             require(rootNode is RootNode)
+
+            val project = Project(outputDirectory)
             val sources = rootNode.childNodes.filter { n -> n.isSource }
             val sinks = rootNode.childNodes.filter { n -> n.isSink }
 
@@ -60,7 +67,7 @@ class RustCodeGen {
             buildGraph.define(sinkFutureHandle, sinkHandles.joinToString(").join(","(", ")"))
             buildGraph.result(sinkFutureHandle)
 
-            val graphFile = CodeFile("$outputDirectory/src/task_graph.rs")
+            val graphFile = CodeFile(project, "task_graph.rs")
 
             graphFile.imports.addAll(listOf(
                     "futures::{Future, Stream}",
@@ -75,7 +82,7 @@ class RustCodeGen {
 
             graphFile.write()
 
-            val mainFile = CodeFile("$outputDirectory/src/main.rs")
+            val mainFile = CodeFile(project,"main.rs")
             mainFile.modules.addAll(listOf("nodes", "structs", "task_graph", "stream_copy", "context"))
             mainFile.imports.addAll(listOf(
                     "tokio_core::reactor::Core"
