@@ -36,7 +36,7 @@ How to install
 IntellijEve is designed as a plugin for the IntelliJ IDEA development 
 environment from [JetBrains](https://www.jetbrains.com/).
 Therefore a recent version of that is required to run the plugin.
-We recommend version 2018.1 as we used it during development and the 
+We recommend version 2018.3 as we used it during development and the
 plugin was tested with this version.
 
 ### Prerequisites
@@ -49,8 +49,20 @@ plugin was tested with this version.
 
 How to build
 ------------
-*Maybe we should document the whole intellij project and gradle build 
-system setup here?*
+1. Set up the IntelliJ Plugin SDK setup. 
+[guide](https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/using_dev_kit.html)
+
+2. Add the Rust and the Toml plugin to the SDK's classpath as we depend on them.
+[guide](https://www.jetbrains.org/intellij/sdk/docs/basics/plugin_structure/plugin_dependencies.html)
+
+3. (optional Add the SDK's source-JARS to sources for easier code navigation.
+Use the following Jar's from the
+    [JetBrains Repo](https://www.jetbrains.com/intellij-repository/snapshots/):
+    - idea-community-resources-183-EAP-SNAPSHOT-sources.jar
+    - ideaIC-183-EAP-SNAPSHOT-sources.jar
+
+
+*There is also a gradle v5 build script (which may be out of date) for stand alone builds.*
 
 
 How to use
