@@ -1,10 +1,12 @@
 package editor
 
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.ui.components.*
+import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBTextField
 import java.awt.GridBagConstraints
-import javax.swing.*
 import java.awt.GridBagLayout
+import javax.swing.JComponent
+import javax.swing.JPanel
 
 
 //TODO use an com.intellij.ui.EditorTextField for Context Struct, selector and init

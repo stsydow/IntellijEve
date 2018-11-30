@@ -4,7 +4,10 @@ import intellij.GraphFileEditor
 import java.awt.*
 import java.awt.event.*
 import java.util.*
-import javax.swing.*
+import javax.swing.JComponent
+import javax.swing.JPanel
+import javax.swing.KeyStroke
+import javax.swing.SwingUtilities
 
 const val M_BUTTON_NONE = 0
 const val M_BUTTON_LEFT = 1

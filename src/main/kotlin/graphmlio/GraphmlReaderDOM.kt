@@ -1,7 +1,6 @@
 package graphmlio
 
 import editor.*
-import gherkin.lexer.El
 import org.w3c.dom.DOMException
 import org.w3c.dom.Element
 import org.w3c.dom.NodeList as DomNodeList

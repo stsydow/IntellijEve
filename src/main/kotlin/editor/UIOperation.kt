@@ -5,9 +5,6 @@ import codegen.isValidRustPascalCase
 import com.intellij.openapi.fileEditor.FileEditorManager
 import java.awt.Color
 import java.awt.Component
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
 import java.util.*
 import javax.swing.JOptionPane
 import javax.swing.JPopupMenu
