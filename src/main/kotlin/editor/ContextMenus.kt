@@ -26,7 +26,7 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
             val local_c = !local_to_global * interaction_point
             val oldBounds = node.getParentBoundsList()
             oldBounds.addFirst(node.innerBounds)
-            val newNode = Node(Transform(local_c, Node.SCALE_FACTOR), node, scene)
+            val newNode = Node(local_c, node, scene)
             val newBounds = node.getParentBoundsList()
             newBounds.addFirst(node.innerBounds)
             scene.pushOperation(AddNodeOperation(node, newNode, oldBounds, newBounds))
@@ -50,7 +50,7 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
         }
 
         setColorItem.addActionListener {
-            val new = JColorChooser.showDialog(scene, "Please select new color", Node.DEFAULT_COLOR)
+            val new = JColorChooser.showDialog(scene, "Please select new color", node.color)
             try {
                 scene.pushOperation(ChangeColorOperation(node, node.color, new))
             } catch(e: Exception) {

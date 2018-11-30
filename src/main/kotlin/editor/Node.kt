@@ -3,132 +3,24 @@ package editor
 import codegen.CodeGenNode
 import java.awt.Color
 
+private const val TITLE_HEIGHT = 2 * UNIT
+private val INNER_PADDING = Padding(0.2 * UNIT)
+private val DEFAULT_PADDING = Padding(TITLE_HEIGHT, Port.OUT_SIZE.width, 0.0, Port.IN_SIZE.width) + INNER_PADDING
+private const val DEFAULT_NAME = "<anonymous>"
+private val DEFAULT_COLOR = hex2Rgb("#b8d8d8")
+private val DEFAULT_BOUNDS = Bounds(0.0, 0.0, 20 * UNIT, 15 * UNIT)
+private var SCALE_FACTOR = 0.5
+private val DEFAULT_TRANSFORM = Transform(0.0, 0.0, SCALE_FACTOR)
 
-enum class ContextType{None, Global, Selection}
-
-interface Property {
-    fun exchange(node:Node) : Property
-}
-
-
-// TODO: parent context; termination condition
-class Context(val type: ContextType, val selector:String, val structName: String):Property {
-
-    companion object {
-        val None = Context(ContextType.None, "", "")
-        fun Global(struct: String) = Context(ContextType.Global, "", struct)
-        fun Select(expression: String, struct:String) = Context(ContextType.Selection, expression, struct)
-
-        private const val SELECT_PREFIX = "SELECT:"
-
-        fun parse(expression: String, structName: String): Context = when(expression) {
-            "" -> None
-            "GLOBAL" -> {
-                //TODO: require(structName.isNotEmpty())
-                Global(structName)
-            }
-            else ->
-            {
-                //TODO: require(structName.isNotEmpty())
-                val selector = if (expression.startsWith(SELECT_PREFIX, ignoreCase = false)) {
-                    expression.substring(SELECT_PREFIX.length)
-                } else {
-                    expression
-                }
-                Select(selector,structName)
-            }
-        }
-    }
-
-    init {
-        require((type == ContextType.Selection) == selector.isNotEmpty())
-    }
-
-    override fun exchange(node: Node): Property {
-        val oldContext = node.context
-        node.context = this
-        return oldContext
-    }
-
-    override fun toString(): String = when (type) {
-        ContextType.None -> "None"
-        ContextType.Global -> "Global"
-        ContextType.Selection -> "Select:$selector"
-    }
-
-    fun asExpression(): String = when (type) {
-        ContextType.None -> ""
-        ContextType.Global -> "GLOBAL"
-        ContextType.Selection -> selector
-    }
-
-    override fun equals(other: Any?): Boolean =
-        if(other is Context && type == other.type) {
-            when (type) {
-                ContextType.None -> true
-                ContextType.Global -> structName == other.structName
-                ContextType.Selection -> structName == other.structName && selector == other.selector
-            }
-        }else {
-            false
-        }
-
-    override fun hashCode(): Int  = when (type) {
-        ContextType.None -> 0
-        ContextType.Global -> structName.hashCode()
-        ContextType.Selection -> 31 * structName.hashCode() * selector.hashCode()
-    }
-}
-
-class Filter(val expression:String):Property {
-    override fun exchange(node: Node): Property {
-        val oldFilter = node.filterExpression
-        node.filterExpression = expression
-        return Filter(oldFilter)
-    }
-
-    override fun equals(other: Any?): Boolean = when (other) {
-        is Filter -> expression == other.expression
-        else -> false
-    }
-
-    override fun hashCode(): Int  = expression.hashCode()
-}
-
-class Order(val expression: String):Property {
-    override fun exchange(node: Node): Property {
-        val oldOrder = node.orderExpression
-        node.orderExpression = expression
-        return Order(oldOrder)
-    }
-
-    override fun equals(other: Any?): Boolean = when (other) {
-        is Order -> expression == other.expression
-        else -> false
-    }
-
-    override fun hashCode(): Int  = expression.hashCode()
-}
+private val CHILD_NODE_SYMBOL = Transform(0.0, 0.0, UNIT) * listOf(
+        Coordinate(0.0, 0.0),
+        Coordinate(5.0, 0.0),
+        Coordinate(5.0, 3.0),
+        Coordinate(0.0, 3.0)
+)
 
 // assert Nodes may not overlap
 open class Node(transform: Transform, name: String, parent: Node?, scene: Viewport) : UIElement(transform, parent, scene) {
-    companion object {
-        const val TITLE_HEIGHT = 2 * UNIT
-        val INNER_PADDING = Padding(0.2 * UNIT)
-        val DEFAULT_PADDING = Padding(TITLE_HEIGHT, Port.OUT_SIZE.width, 0.0, Port.IN_SIZE.width) + INNER_PADDING
-        const val DEFAULT_NAME = "<anonymous>"
-        val DEFAULT_COLOR = hex2Rgb("#b8d8d8")
-        val DEFAULT_BOUNDS = Bounds(0.0, 0.0, 20 * UNIT, 15 * UNIT)
-        var SCALE_FACTOR = 0.5
-        val DEFAULT_TRANSFORM = Transform(0.0, 0.0, SCALE_FACTOR)
-
-        val CHILD_NODE_SYMBOL = Transform(0.0, 0.0, UNIT) * listOf(
-                Coordinate(0.0, 0.0),
-                Coordinate(5.0, 0.0),
-                Coordinate(5.0, 3.0),
-                Coordinate(0.0, 3.0)
-        )
-    }
 
     var name: String = name
         get() = field
@@ -198,6 +90,7 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
 
 
     constructor(parent: Node, scene: Viewport) : this(DEFAULT_TRANSFORM, parent, scene)
+    constructor(c: Coordinate, parent: Node, scene: Viewport) : this(Transform(c, SCALE_FACTOR), parent, scene)
     constructor(t: Transform, parent: Node, scene: Viewport) : this(t, DEFAULT_NAME, parent, scene) {
         println("Created Node for parent ${parent.id} with structName $name and id $id")
         parent.addNode(this)
@@ -342,10 +235,11 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
         }
     }
 
+    val hasName: Boolean get() = name != DEFAULT_NAME
     fun parentsUnnamed(): Boolean {
         var p = parent
         while (p != null){
-            if (p.name == Node.DEFAULT_NAME)
+            if (!p.hasName)
                 return true
             p = p.parent
         }

@@ -147,7 +147,7 @@ sealed class Operation() {
     class OpenRustFileOperation(val node: Node): Operation(){
         override fun perform() {
             when {
-                node.name == Node.DEFAULT_NAME ->
+                !node.hasName ->
                     JOptionPane.showMessageDialog(
                             node.scene,
                             "Please structName the node before opening its file",

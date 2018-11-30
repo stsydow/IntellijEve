@@ -1,12 +1,9 @@
 package editor
 
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
-import java.awt.GridBagConstraints
-import java.awt.GridBagLayout
+import com.intellij.ui.layout.*
 import javax.swing.JComponent
-import javax.swing.JPanel
 
 
 //TODO use an com.intellij.ui.EditorTextField for Context Struct, selector and init
@@ -27,32 +24,11 @@ class PropertyDialog(val node: Node) : DialogWrapper(node.scene.editor?.project)
     }
 
     override fun createCenterPanel(): JComponent? {
-
-        val panel = JPanel(GridBagLayout())
-
-        var rowCount = 0;
-        val add = {labelText:String, text: JBTextField ->
-            val constraints = GridBagConstraints()
-            constraints.gridy = rowCount
-
-            constraints.gridx = 0
-            constraints.anchor = GridBagConstraints.LINE_START
-
-            val label = JBLabel(labelText)
-            label.labelFor = contextField
-            panel.add(label, constraints)
-
-            constraints.gridx = 1
-            panel.add(text, constraints)
-
-            rowCount += 1
+        return panel {
+            row("Context:") { contextField(grow) }
+            row("ContextStruct:") { contextStructField(grow) }
+            row("Filter:") { filterField(grow) }
+            row("Order:") { orderField(grow) }
         }
-
-        add("Context:", contextField)
-        add("ContextStruct:", contextStructField)
-        add("Filter:",filterField)
-        add("Order:", orderField)
-
-        return panel
     }
 }
