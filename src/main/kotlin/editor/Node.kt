@@ -135,8 +135,8 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
         repaint()
     }
 
-    override fun pick(c: Coordinate, screenTransform: Transform, filter: UIElementKind): UIElement? {
-        var picked: UIElement?
+    override fun pick(c: Coordinate, screenTransform: Transform, action: PickAction): Pickable? {
+        var picked: Pickable?
         val local_c = !transform * c
         if (local_c !in bounds) return null
 
@@ -147,18 +147,18 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
         // edges are not pickable when the children nodes are not rendered
         if (childrenPickable){
             childEdges.forEach {
-                picked = it.pick(local_c, screenTransform * transform, filter)
+                picked = it.pick(local_c, screenTransform * transform, action)
                 if (picked != null) {
                     return picked
                 }
             }
         }
 
-        picked = in_port.pick(local_c, screenTransform * transform, filter)
+        picked = in_port.pick(local_c, screenTransform * transform, action)
         if (picked != null) return picked
 
         for (out in out_ports) {
-            picked = out.pick(local_c, screenTransform * transform, filter)
+            picked = out.pick(local_c, screenTransform * transform, action)
             if (picked != null) {
                 return picked
             }
@@ -168,17 +168,17 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
             val iter = childNodes.iterator()
             while (iter.hasNext()) {
                 val child = iter.next()
-                val picked_child = child.pick(local_c, screenTransform * transform, filter)
+                val picked_child = child.pick(local_c, screenTransform * transform, action)
                 if (picked_child != null)
                     return picked_child
             }
         }
-        return when (filter) {
-            UIElementKind.NotEdge -> this
-            UIElementKind.Port -> null
-            UIElementKind.All -> this
-            UIElementKind.Node -> this
-            UIElementKind.Edge -> null
+        return when (action) {
+            PickAction.Select -> this
+            PickAction.Drag -> this
+            PickAction.Connect -> null
+            PickAction.Debug -> this
+            PickAction.Menu -> this
         }
     }
 
@@ -611,14 +611,14 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         viewport.repaint()
     }
 
-    override fun pick(c: Coordinate, screenTransform: Transform, filter: UIElementKind): UIElement? {
-        var picked: UIElement?
+    override fun pick(c: Coordinate, screenTransform: Transform, action: PickAction): Pickable? {
+        var picked: Pickable?
         val local_c = !transform * c
 
         require(screenTransform == viewport.transform)
 
         childEdges.forEach {
-            picked = it.pick(local_c, screenTransform * transform, filter)
+            picked = it.pick(local_c, screenTransform * transform, action)
             if (picked != null) {
                 return picked
             }
@@ -627,17 +627,16 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
         val iter = childNodes.iterator()
         while (iter.hasNext()) {
             val child = iter.next()
-            val picked_child = child.pick(local_c, screenTransform * transform, filter)
+            val picked_child = child.pick(local_c, screenTransform * transform, action)
             if (picked_child != null)
                 return picked_child
         }
-        return when (filter) {
-            UIElementKind.NotEdge -> this
-            UIElementKind.Port -> null
-            UIElementKind.All -> this
-            UIElementKind.Node -> this
-            UIElementKind.Edge -> null
-
+        return when (action) {
+            PickAction.Select -> this
+            PickAction.Drag -> this
+            PickAction.Connect -> null
+            PickAction.Debug -> this
+            PickAction.Menu -> this
         }
     }
 

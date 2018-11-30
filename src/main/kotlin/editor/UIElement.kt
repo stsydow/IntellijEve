@@ -6,26 +6,34 @@ const val FONT_SIZE = 22.0
 const val UNIT = FONT_SIZE
 val DEFAULT_FONT = Font(FontStyle.REGULAR, FONT_SIZE)
 
-enum class UIElementKind {
-    Node,
-    Port,
-    Edge,
-    All,
-    NotEdge
+interface  Drawable {
+    fun render(g: GraphicsProxy)
+
+    val bounds: Bounds
+    var transform: Transform
+
+    fun externalBounds() = transform * bounds
 }
 
-abstract class UIElement(var transform: Transform, val parent: Node?, var scene: Viewport) {
-    var id: String = "uielement"+scene.idx++
+enum class PickAction {
+    Select,
+    Menu,
+    Connect,
+    Drag,
+    Debug,
+}
 
-    abstract fun render(g: GraphicsProxy)
-    abstract fun pick(c: Coordinate, screenTransform: Transform, filter: UIElementKind): UIElement?
+interface Pickable {
+    fun pick(c: Coordinate, screenTransform: Transform, action: PickAction): Pickable?
+}
+
+
+abstract class UIElement(override var transform: Transform, val parent: Node?, var scene: Viewport) : Drawable, Pickable {
+    var id: String = "uielement"+scene.idx++
 
     open fun repaint() {
         parent?.repaint()
     }
-
-    abstract val bounds: Bounds
-    fun externalBounds() = transform * bounds
 
     fun getGlobalTransform(): Transform {
         val p = parent

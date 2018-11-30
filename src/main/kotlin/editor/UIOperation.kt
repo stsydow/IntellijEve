@@ -91,15 +91,15 @@ sealed class Operation() {
         }
     }
 
-    class PrintDebugOperation(val element: UIElement): Operation(){
+    class PrintDebugOperation(val element: Pickable): Operation(){
+        val printElem = { typeStr:String, e:UIElement -> println("$typeStr ${e.id}: bounds ${e.bounds} \n\t external bounds ${e.externalBounds()} ")}
         override fun perform() {
-            val elemStr = when(element) {
-                is Edge -> "Edge"
-                is Node -> "Node"
-                is Port -> "Port"
-                else    -> "<Unknown>"
+            when(element) {
+                is Edge -> printElem("Edge", element)
+                is Node -> printElem("Node", element)
+                is Port -> printElem("Port", element)
+                else    -> check(false)
             }
-            println("$elemStr ${element.id}: bounds ${element.bounds} \n\t external bounds ${element.externalBounds()} ")
         }
     }
 
@@ -119,7 +119,7 @@ sealed class Operation() {
         }
     }
 
-    class ShowMenuOperation(val element: UIElement?, val coord: Coordinate, val view: Viewport, val comp: Component): Operation() {
+    class ShowMenuOperation(val element: Pickable?, val coord: Coordinate, val view: Viewport, val comp: Component): Operation() {
         override fun perform() {
             if (element != null){
                 val menu:JPopupMenu? = when (element) {

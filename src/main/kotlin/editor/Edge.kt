@@ -41,18 +41,18 @@ class Edge(transform: Transform, parent: Node, internal val sourcePort: Port, in
         curve.paint(g)
     }
 
-    override fun pick(c: Coordinate, screenTransform: Transform, filter: UIElementKind): UIElement? {
+    override fun pick(c: Coordinate, screenTransform: Transform, action: PickAction): Pickable? {
         if(c.x < bounds.x_min || c.x >= bounds.x_max)
             return null
         val dist = curve.shortestDistancePointToCurve(c.x, c.y)
         if(dist > PICK_DISTANCE) return null
 
-        return when (filter) {
-            UIElementKind.NotEdge -> null
-            UIElementKind.Port -> null
-            UIElementKind.All -> this
-            UIElementKind.Node -> null
-            UIElementKind.Edge -> this
+        return when (action) {
+            PickAction.Select -> this
+            PickAction.Connect -> null
+            PickAction.Drag -> null
+            PickAction.Debug -> this
+            PickAction.Menu -> this
         }
     }
 }

@@ -30,7 +30,6 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
 
     var currentSize = Dimension(1200, 800)
     var transform = Transform(currentSize.width.toDouble() / 2, currentSize.height.toDouble() / 2, 2.0)
-    var focusedElement: UIElement? = null
     var lastMovementPosition: Coordinate? = null
     var lastMousePosition: Coordinate? = null
     var currentOperation: Operation = Operation.NoOperation()
@@ -132,7 +131,7 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
 
     override fun mouseClicked(e: MouseEvent) {
         val sceneCoord = getSceneCoordinate(e)
-        val picked: UIElement?
+        val picked: Pickable?
         val onlyCtrlModifier =  e.isControlDown &&
                                 !e.isShiftDown &&
                                 !e.isAltDown &&
@@ -140,7 +139,7 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
                                 !e.isMetaDown
         val op = when (e.button) {
             M_BUTTON_LEFT   -> {
-                picked = root.pick(sceneCoord, transform, UIElementKind.Node)
+                picked = root.pick(sceneCoord, transform, PickAction.Select)
                 when {
                     e.clickCount == 2 -> when (picked) {
                         is Node -> Operation.OpenRustFileOperation(picked)
@@ -158,7 +157,7 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
                 }
             }
             M_BUTTON_MIDDLE -> {
-                picked = root.pick(sceneCoord, transform, UIElementKind.All)
+                picked = root.pick(sceneCoord, transform, PickAction.Debug)
                 when (picked) {
                     null    -> Operation.NoOperation()
                     else    -> Operation.PrintDebugOperation(picked)
@@ -178,7 +177,7 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
     override fun mousePressed(e: MouseEvent) {
         val op: Operation
         val sceneCoord = getSceneCoordinate(e)
-        val picked: UIElement?
+        val picked: Pickable?
         val noModifier =    !e.isControlDown &&
                             !e.isShiftDown &&
                             !e.isAltDown &&
@@ -187,9 +186,8 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
 
         when (e.button) {
             M_BUTTON_LEFT   -> {
-                picked = root.pick(sceneCoord, transform, UIElementKind.NotEdge)
+                picked = root.pick(sceneCoord, transform, PickAction.Drag)
                 if (noModifier) {
-                    focusedElement = picked
                     when (picked) {
                         is Node -> {
                             if (!picked.isSelected && picked != root)
@@ -208,11 +206,10 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
                 }
             }
             M_BUTTON_MIDDLE -> {
-                focusedElement = root
                 op = Operation.MoveOperation(root)
             }
             M_BUTTON_RIGHT   -> {
-                picked = root.pick(sceneCoord, transform, UIElementKind.All)
+                picked = root.pick(sceneCoord, transform, PickAction.Menu)
                 op = Operation.ShowMenuOperation(picked, sceneCoord, this, e.component)
             }
             else            -> {
@@ -226,8 +223,6 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
 
     override fun mouseReleased(e: MouseEvent) {
         val sceneCoord = getSceneCoordinate(e)
-        val oldFocus = focusedElement
-        focusedElement = null
         lastMovementPosition = null
         val op = currentOperation
 
@@ -237,12 +232,12 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
                 op.update(sceneCoord)
             }
             is Operation.DrawEdgeOperation -> {
-                val picked = root.pick(sceneCoord, transform,  UIElementKind.Port)
+                val picked = root.pick(sceneCoord, transform,  PickAction.Connect)
                 if (picked is Port)
                     op.target = picked
             }
             is Operation.MoveOperation -> {
-                val parent: Node? = oldFocus!!.parent
+                val parent: Node? = op.element.parent
                 if (parent != null && op.hasMoved ) {
                     pushOperation(MoveOperation(op))
                 }
@@ -288,22 +283,22 @@ class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWhe
                 op.update(lastMousePosition!!)
             }
             is Operation.MoveOperation -> {
-                val p = focusedElement!!.parent
+                val p = op.element.parent
                 val delta_pos = sceneCoord - lastMovementPosition!!
                 val newTransform: Transform
                 if (p != null) {
                     val v_parent = p.getGlobalTransform().applyInverse(delta_pos)
-                    newTransform = focusedElement!!.transform + v_parent
+                    newTransform = op.element.transform + v_parent
                 } else {
-                    newTransform = focusedElement!!.transform + delta_pos
+                    newTransform = op.element.transform + delta_pos
                 }
-                op.update(focusedElement!!.getParentBoundsList(), newTransform)
+                op.update(op.element.getParentBoundsList(), newTransform)
                 currentOperation = op
             }
             else -> {
                 if (SwingUtilities.isLeftMouseButton(e)){
                     if (onlyCtrlModifier) {
-                        val picked = root.pick(sceneCoord, transform, UIElementKind.Node)
+                        val picked = root.pick(sceneCoord, transform, PickAction.Select)
                         if (picked != null)
                             currentOperation = Operation.AreaSelectOperation(root,
                                                                                 picked as Node,
