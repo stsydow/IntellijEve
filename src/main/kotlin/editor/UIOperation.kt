@@ -160,7 +160,16 @@ sealed class Operation() {
                             "Error", JOptionPane.ERROR_MESSAGE)
                 else -> {
                     val nodeFile = node.impl.getOrCreateFile()
-                    FileEditorManager.getInstance(node.scene.editor!!.project).openFile(nodeFile, true)
+                    val project = node.scene.editor?.project
+
+                    if(project != null) {
+                        FileEditorManager.getInstance(project).openFile(nodeFile, true)
+                    } else {
+                        JOptionPane.showMessageDialog(
+                                node.scene,
+                                "No IntelliJ project instance found. Running in standalone mode?",
+                                "Error", JOptionPane.ERROR_MESSAGE)
+                    }
                 }
             }
         }

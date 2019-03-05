@@ -4,6 +4,7 @@ import codegen.pascalToSnakeCase
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.io.*
+import org.rust.cargo.util.cargoProjectRoot
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -17,9 +18,9 @@ class ImplementationNode(private val node:Node) {
     private val childNodes get() = node.childNodes
     private val name get() = node.name
 
-    private val project get() = node.scene.editor!!.project
+    private val module get() = node.scene.module!!
 
-    private val projectDirectory: String get() = project.basePath!!
+    private val rustProjectDirectory: String get() = module.cargoProjectRoot!!.path
 
     private val trashDirectory: String get() = with(parent?.impl) {
         when (this) {
@@ -40,10 +41,10 @@ class ImplementationNode(private val node:Node) {
         else -> pascalToSnakeCase(name)
     }
 
-    private val sourceFile: Path get() = Paths.get("$projectDirectory/$sourceDirectory/$moduleName.$DEFAULT_FILE_ENDING")
-    private val moduleDirectory: Path get() = Paths.get("$projectDirectory/$sourceDirectory/$moduleName")
+    private val sourceFile: Path get() = Paths.get("$rustProjectDirectory/$sourceDirectory/$moduleName.$DEFAULT_FILE_ENDING")
+    private val moduleDirectory: Path get() = Paths.get("$rustProjectDirectory/$sourceDirectory/$moduleName")
 
-    private val trashFile: Path get() = Paths.get("$projectDirectory/$trashDirectory/$moduleName.$DEFAULT_FILE_ENDING")
+    private val trashFile: Path get() = Paths.get("$rustProjectDirectory/$trashDirectory/$moduleName.$DEFAULT_FILE_ENDING")
 
     fun getOrCreateFile(): VirtualFile {
         val file = with(sourceFile) {
@@ -59,11 +60,11 @@ class ImplementationNode(private val node:Node) {
         val newModuleName = pascalToSnakeCase(newName)
         when {
             sourceFile.exists() -> {
-                val newFile = Paths.get("$projectDirectory/$sourceDirectory/$newModuleName.$DEFAULT_FILE_ENDING")
+                val newFile = Paths.get("$rustProjectDirectory/$sourceDirectory/$newModuleName.$DEFAULT_FILE_ENDING")
                 sourceFile.move(newFile)
             }
             moduleDirectory.isDirectory() -> {
-                val newDirectory = Paths.get("$projectDirectory/$sourceDirectory/$newModuleName")
+                val newDirectory = Paths.get("$rustProjectDirectory/$sourceDirectory/$newModuleName")
                 moduleDirectory.move(newDirectory)
             }
             else -> {}

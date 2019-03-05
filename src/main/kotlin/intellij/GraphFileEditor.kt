@@ -32,7 +32,13 @@ class GraphFileEditor(val project: Project, private val virtualFile: VirtualFile
 
     private val panel: Viewport = Viewport(this)
 
-    private val module: Module get() = ModuleUtil.findModuleForFile(virtualFile, project)!!
+    private val module: Module? get(){
+        return if(virtualFile != null) {
+            ModuleUtil.findModuleForFile(virtualFile, project)
+        } else {
+            null
+        }
+    }
 
     init {
         val file = File(virtualFile.path)
@@ -81,16 +87,25 @@ class GraphFileEditor(val project: Project, private val virtualFile: VirtualFile
     override fun dispose() { }
 
     fun generate() {
-        try {
-            val path = module.cargoProjectRoot!!.path
-            RustCodeGen.generateCode(panel.root, path)
-        } catch(e: Exception) {
-            e.printStackTrace()
-        }
+
+            val path = module?.cargoProjectRoot?.path
+            if (path != null) {
+                try {
+                    RustCodeGen.generateCode(panel.root, path)
+                } catch(e: Exception) {
+                    e.printStackTrace()
+                }
+            } else {
+                assert(true) {"Cannot find rust project path!"}
+            }
+
     }
 
     fun save() {
         write(virtualFile.path, panel.root)
     }
 
+    override fun getFile(): VirtualFile? {
+        return virtualFile
+    }
 }

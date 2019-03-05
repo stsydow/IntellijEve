@@ -1,6 +1,10 @@
 package editor
 
+import com.intellij.openapi.module.Module
+import com.intellij.openapi.module.ModuleUtil
+import com.sun.corba.se.impl.orbutil.graph.Graph
 import intellij.GraphFileEditor
+import org.apache.commons.imaging.palette.MostPopulatedBoxesMedianCut
 import java.awt.*
 import java.awt.event.*
 import java.util.*
@@ -27,6 +31,17 @@ data class Interaction(val operation: Operation, val type: EventType){
 class Viewport(val editor: GraphFileEditor?) : JPanel(), MouseListener, MouseWheelListener, MouseMotionListener, ComponentListener {
     var idx: Int = 0
     var root = RootNode(this)
+
+    val module:Module? get() {
+        val graphFile = editor?.file
+        val module:Module?
+        if(editor != null && graphFile != null) {
+            module = ModuleUtil.findModuleForFile(graphFile, editor.project)
+        } else {
+            module = null
+        }
+        return module
+    }
 
     var currentSize = Dimension(1200, 800)
     var transform = Transform(currentSize.width.toDouble() / 2, currentSize.height.toDouble() / 2, 2.0)
