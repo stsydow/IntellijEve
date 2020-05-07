@@ -52,7 +52,7 @@ class RustCodeGen {
 
             val nextNodes = sources.toMutableSet()
 
-            val buildGraph = Function("build_graph", listOf(),"impl Future<Item=(), Error=EveError>")
+            val buildGraph = Function("build_graph", listOf(), Type.ImplTrait(AsyncTrait.Future(Type.unit))) //TODO Error Type
             while (nextNodes.any()) {
                 val node = nextNodes.first()
                 node.codeGen.generate(buildGraph)

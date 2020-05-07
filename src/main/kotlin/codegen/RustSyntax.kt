@@ -7,6 +7,13 @@ import java.util.regex.Pattern
 
 const val TAB = "    "
 
+val RustBasicTypes = arrayOf(
+        "bool",
+        "u8", "u16", "u32", "u64", "u128",
+        "i8", "i16", "i32", "i64", "i128",
+        "char", "str"
+)
+
 /*
  * Function that checks whether the given string matches against the regular
  * expression that is provided by the Rust developers as given here:
@@ -168,14 +175,13 @@ class CodeBlock : ScopeImpl() , Statement {
     fun asExpression() = Expression(toString())
 }
 
-class Parameter(val name:String, val type:String) {
-    override fun toString(): String {
-        return "$name:$type"
+class Function(val name: String, val arguments: List<Parameter>, val resultType:Type) : ScopeImpl(), Statement {
+
+    class Parameter(val name:String, val type:Type) {
+        override fun toString(): String {
+            return "$name:$type"
+        }
     }
-}
-
-class Function(val name: String, val arguments: List<Parameter>, val resultType:String) : ScopeImpl(), Statement {
-
     init {
         arguments.forEach { arg ->
             require(knownIdentifiers.add(arg.name)){"argument \"${arg.name}\" allready defined"}
@@ -188,7 +194,7 @@ class Function(val name: String, val arguments: List<Parameter>, val resultType:
     }
 
     override fun asStringBuilder() : StringBuilder {
-        check( (resultType != "()") == hasResult)
+        check( (resultType != Type.unit) == hasResult)
         val builder = java.lang.StringBuilder()
         builder.appendln("pub fn $signature")
         builder.appendln("{")
@@ -198,7 +204,7 @@ class Function(val name: String, val arguments: List<Parameter>, val resultType:
     }
 }
 
-fun mainFunction() = Function("main", listOf<Parameter>(), "()")
+fun mainFunction() = Function("main", listOf<Function.Parameter>(), Type.unit)
 
 class Project(val root: Path) {
     val sourceDir = root.resolve("src")

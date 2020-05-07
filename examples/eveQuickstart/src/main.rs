@@ -1,24 +1,23 @@
 extern crate futures;
 extern crate tokio_core;
 
-mod nodes;
-mod structs;
-
-use tokio_core::reactor::Core;
+use futures::Async;
 use futures::Future;
 use futures::future::ok;
 use futures::Poll;
 use futures::Stream;
-use futures::Async;
-
+use nodes::sink;
+use nodes::source;
+use std::clone::Clone;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::clone::Clone;
 use std::sync::MutexGuard;
-
 use structs::*;
-use nodes::source;
-use nodes::sink;
+use tokio_core::reactor::Core;
+
+mod nodes;
+mod structs;
+
 #[derive(Debug)]
 pub enum EveError {
     UnknownError
@@ -27,7 +26,7 @@ pub enum EveError {
 pub struct StreamCopy<T, S: Stream<Item=T, Error=EveError>> {
     input: S,
     buffers: Vec<Vec<T>>,
-    idx: usize
+    idx: usize,
 }
 
 struct StreamCopyMutex<T, S: Stream<Item=T, Error=EveError>> {
@@ -36,7 +35,7 @@ struct StreamCopyMutex<T, S: Stream<Item=T, Error=EveError>> {
 
 struct StreamCopyOutPort<T, S: Stream<Item=T, Error=EveError>> {
     id: usize,
-    source: StreamCopyMutex<T, S>
+    source: StreamCopyMutex<T, S>,
 }
 
 impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopy<T, S> {
@@ -58,10 +57,10 @@ impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopy<T, S> {
                                             buffer.push(event.clone())
                                         }
                                         self.poll(id)
-                                    },
+                                    }
                                     None => Ok(Async::Ready(None))
                                 }
-                            },
+                            }
                             Async::NotReady => Ok(Async::NotReady)
                         }
                     }
@@ -71,7 +70,7 @@ impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopy<T, S> {
         }
     }
 
-    fn buffered_poll(&mut self, id: usize) -> Option<T>{
+    fn buffered_poll(&mut self, id: usize) -> Option<T> {
         let mut buffer = &mut self.buffers[id];
         if buffer.len() > 0 {
             Some(buffer.remove(0))
@@ -107,7 +106,7 @@ impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopyMutex<T, S> {
         let mut inner = self.lock();
         let val = StreamCopyOutPort {
             source: (*self).clone(),
-            id: inner.idx
+            id: inner.idx,
         };
         inner.buffers.push(vec!());
         inner.idx += 1;

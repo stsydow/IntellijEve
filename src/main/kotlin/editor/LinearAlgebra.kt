@@ -62,6 +62,8 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
     constructor(r: Rectangle2D) : this(r.minX, r.minY, r.maxX, r.maxY)
 
     companion object {
+        final val INFINITE_BOUNDS:Bounds = Bounds(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY)
+
         fun minimalBounds(col: Iterable<Coordinate>): Bounds {
             var x_min: Double = Double.POSITIVE_INFINITY
             var y_min: Double = Double.POSITIVE_INFINITY
@@ -79,10 +81,6 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
         }
 
         fun minimalBounds(vararg coordinate: Coordinate) = minimalBounds(coordinate.asIterable())
-
-        fun infinite(): Bounds {
-            return Bounds(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY)
-        }
     }
 
     operator fun contains(c: Coordinate): Boolean = c.x in x_min..x_max && c.y in y_min..y_max
@@ -97,20 +95,56 @@ data class Bounds(val x_min: Double, val y_min: Double, val x_max: Double, val y
             maxOf(x_max, c.x), maxOf(y_max, c.y)
     )
 
+    /*
+    operator fun plusAssign(c: Coordinate) {
+        x_min = minOf(x_min, c.x)
+        y_min = minOf(y_min, c.y)
+        x_max = maxOf(x_max, c.x)
+        y_max = maxOf(y_max, c.y)
+    }
+    */
+
     operator fun plus(b: Bounds) = Bounds(
             minOf(x_min, b.x_min), minOf(y_min, b.y_min),
             maxOf(x_max, b.x_max), maxOf(y_max, b.y_max)
     )
+
+    /*
+    operator fun plusAssign(b: Bounds) {
+        x_min = minOf(x_min, b.x_min)
+        y_min = minOf(y_min, b.y_min)
+        x_max = maxOf(x_max, b.x_max)
+        y_max = maxOf(y_max, b.y_max)
+    }
+    */
 
     operator fun plus(p: Padding) = Bounds(
             x_min - p.left, y_min - p.top,
             x_max + p.right, y_max + p.bottom
     )
 
+    /*
+    operator fun plusAssign(p: Padding){
+        x_min -= p.left
+        y_min -= p.top
+        x_max += p.right
+        y_max += p.bottom
+    }
+    */
+
     operator fun minus(p: Padding) = Bounds(
             x_min + p.left, y_min + p.top,
             x_max - p.right, y_max - p.bottom
     )
+
+    /*
+    operator fun minusAssign(p: Padding){
+        x_min += p.left
+        y_min += p.top
+        x_max -= p.right
+        y_max -= p.bottom
+    }
+    */
 
     fun intersectsWith(b: Bounds): Boolean {
         return ((topLeft in b) || (b.topLeft in this)
@@ -169,7 +203,10 @@ data class Padding(val top: Double = 0.0, val right: Double = 0.0,
 
 data class Transform(val x_offset: Double, val y_offset: Double, val scale: Double) {
     init {
-        require(x_offset.isFinite() && y_offset.isFinite() && scale.isFinite()) { "infinite Transform: $this"}
+        // TODO broken - Error:(206, 38) Kotlin: Overload resolution ambiguity:
+        //@InlineOnly public inline fun Double.isFinite(): Boolean defined in kotlin
+        //
+        // require(x_offset.isFinite() && y_offset.isFinite() && scale.isFinite()) { "infinite Transform: $this"}
     }
     constructor() : this(0.0, 0.0, 1.0)
     constructor(c: Coordinate, scale: Double) : this(c.x, c.y, scale)
@@ -197,7 +234,22 @@ data class Transform(val x_offset: Double, val y_offset: Double, val scale: Doub
     operator fun times(col: Iterable<Coordinate>) = col.map { c -> this * c }
 
     operator fun plus(v: Vector) = Transform(x_offset + v.x, y_offset + v.y, scale)
+
+    /*
+    operator fun plusAssign(v: Vector) {
+        x_offset += v.x
+        y_offset += v.y
+    }
+    */
+
     operator fun minus(v: Vector) = Transform(x_offset - v.x, y_offset - v.y, scale)
+
+    /*
+    operator fun minusAssign(v: Vector) {
+        x_offset -= v.x
+        y_offset -= v.y
+    }
+    */
 
     operator fun not() = Transform(-x_offset / scale, -y_offset / scale, 1 / scale)
 

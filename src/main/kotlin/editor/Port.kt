@@ -3,8 +3,9 @@ package editor
 import java.awt.Color
 
 enum class Direction {IN, OUT }
+enum class Type {VALUE, ASYNC_VALUE, STREAM }
 
-class Port(val direction: Direction, var message_type: String, parent: Node, scene: Viewport) : UIElement(Transform(0.0, 0.0, 1.0), parent, scene) {
+class Port(val direction: Direction, val type: Type, var message_type: String, parent: Node, scene: Viewport) : UIElement(Transform(0.0, 0.0, 1.0), parent, scene) {
     companion object {
         val IN_SHAPE = Transform(0.0, 0.0, UNIT) * listOf(
                 Coordinate(0.0, 0.0),
@@ -104,7 +105,12 @@ class Port(val direction: Direction, var message_type: String, parent: Node, sce
         if (g.transform.scale > 0.5) {
             localGraphics.text(message_type, text_pos, DEFAULT_FONT)
         }
-        localGraphics.polygon(Color.BLACK, shape, true)
+        when (type) {
+            Type.VALUE -> localGraphics.polygon(Color.GRAY, shape, true)
+            Type.ASYNC_VALUE -> localGraphics.polygon(Color.GRAY, shape, false)
+            Type.STREAM -> localGraphics.polygon(Color.BLACK, shape, true)
+        }
+
     }
 
     override fun pick(c: Coordinate, screenTransform: Transform, action: PickAction): Pickable? {

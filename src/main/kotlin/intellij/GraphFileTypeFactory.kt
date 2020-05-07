@@ -9,6 +9,6 @@ import com.intellij.openapi.fileTypes.FileTypeFactory
  */
 class GraphFileTypeFactory : FileTypeFactory() {
     override fun createFileTypes(fileTypeConsumer: FileTypeConsumer) {
-        fileTypeConsumer.consume(GraphFileType.instance, ExtensionFileNameMatcher("eve"))
+        fileTypeConsumer.consume(GraphFileType.instance, ExtensionFileNameMatcher(GraphFileType.FILE_EXENSION))
     }
 }

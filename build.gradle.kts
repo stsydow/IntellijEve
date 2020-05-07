@@ -56,11 +56,11 @@ allprojects {
         //updateSinceUntilBuild = false
         //instrumentCode = true
 
-        version = "2018.3"
+        version = "2020.1"
         pluginName = "IntellijEve"
         setPlugins(
-                "org.toml.lang:0.2.0.19",
-                "org.rust.lang:0.2.0.2111-183"
+                "org.toml.lang:0.2.120",
+                "org.rust.lang:0.2.120"
         )
     }
 

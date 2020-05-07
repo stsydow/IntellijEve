@@ -80,7 +80,7 @@ private fun createPortFromDOM(parent: Node, port: Element, scene: Viewport){
         // check that port id is unique for parent node
         if (parent.getPortById(portId) != null)
             throw DOMException(DOMException.INVALID_STATE_ERR, "Port id $portId is already taken by other port of node " + parent.name)
-        val newPort = Port(Direction.OUT, portMsgType, parent, scene)
+        val newPort = Port(Direction.OUT, Type.STREAM, portMsgType, parent, scene)
         newPort.id = portId
         newPort.name = portName
         parent.addPort(newPort)
@@ -217,6 +217,20 @@ private fun createsEdgesOfGraphFromDOM(parent: Node, graph: Element, scene: View
         }
     }
 }
+
+// extract integer number from UIElement default names, like 23 out of "uielement23"
+private fun extractIndexFromString(str: String): Int?{
+    val defaultNamePattern = Regex("^uielement[0-9][0-9]*$")
+    if (defaultNamePattern.matches(str)){
+        val digitPattern = Regex("[0-9][0-9]*")
+        val digitMatch = digitPattern.find(str, 0)
+        if (digitMatch != null){
+            return digitMatch.value.toIntOrNull()
+        }
+    }
+    return null
+}
+
 
 private fun updateSceneUIElementIndex(id: String, scene: Viewport){
     val index = extractIndexFromString(id)

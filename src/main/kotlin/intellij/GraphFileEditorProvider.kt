@@ -10,7 +10,7 @@ import org.jdom.Element
 class GraphFileEditorProvider: FileEditorProvider, DumbAware {
     override fun accept(project: Project, virtualFile: VirtualFile): Boolean {
         val ext = virtualFile.extension
-        return ext != null && ext == "eve"
+        return ext != null && ext == GraphFileType.FILE_EXENSION
     }
 
     override fun createEditor(project: Project, virtualFile: VirtualFile): FileEditor {

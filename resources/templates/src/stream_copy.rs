@@ -1,9 +1,7 @@
-
-use futures::{Poll, Stream, Async};
-
+use futures::{Async, Poll, Stream};
+use std::clone::Clone;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::clone::Clone;
 use std::sync::MutexGuard;
 
 use crate::structs::EveError;
@@ -11,14 +9,14 @@ use crate::structs::EveError;
 pub struct StreamCopy<T, S: Stream<Item=T, Error=EveError>> {
     input: S,
     buffers: Vec<Vec<T>>,
-    idx: usize
+    idx: usize,
 }
 
 pub struct StreamCopyMutex<T, S: Stream<Item=T, Error=EveError>>(Arc<Mutex<StreamCopy<T, S>>>);
 
 pub struct StreamCopyOutPort<T, S: Stream<Item=T, Error=EveError>> {
     id: usize,
-    source: StreamCopyMutex<T, S>
+    source: StreamCopyMutex<T, S>,
 }
 
 impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopy<T, S> {
@@ -40,10 +38,10 @@ impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopy<T, S> {
                                             buffer.push(event.clone())
                                         }
                                         self.poll(id)
-                                    },
+                                    }
                                     None => Ok(Async::Ready(None))
                                 }
-                            },
+                            }
                             Async::NotReady => Ok(Async::NotReady)
                         }
                     }
@@ -53,7 +51,7 @@ impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopy<T, S> {
         }
     }
 
-    fn buffered_poll(&mut self, id: usize) -> Option<T>{
+    fn buffered_poll(&mut self, id: usize) -> Option<T> {
         let buffer = &mut self.buffers[id];
         if buffer.len() > 0 {
             Some(buffer.remove(0))
@@ -80,11 +78,12 @@ impl<T, S: Stream<Item=T, Error=EveError>> Clone for StreamCopyMutex<T, S> {
 }
 
 impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopyMutex<T, S> {
-
-    pub fn new(input:S) -> StreamCopyMutex<T, S> {
+    pub fn new(input: S) -> StreamCopyMutex<T, S> {
         StreamCopyMutex(
             Arc::new(Mutex::new(StreamCopy {
-                input, buffers: vec!(), idx: 0
+                input,
+                buffers: vec!(),
+                idx: 0,
             })))
     }
 
@@ -96,7 +95,7 @@ impl<T: Clone, S: Stream<Item=T, Error=EveError>> StreamCopyMutex<T, S> {
         let mut inner = self.lock();
         let val = StreamCopyOutPort {
             source: (*self).clone(),
-            id: inner.idx
+            id: inner.idx,
         };
         inner.buffers.push(vec!());
         inner.idx += 1;

@@ -45,7 +45,7 @@ open class NodeContextMenu(val node: Node, val scene: Viewport, val interaction_
         }
 
         addPortItem.addActionListener {
-            val port = Port(Direction.OUT, Port.DEFAULT_MESSAGE_TYPE, node, scene)
+            val port = Port(Direction.OUT, Type.STREAM, Port.DEFAULT_MESSAGE_TYPE, node, scene)
             scene.pushOperation(AddPortOperation(node, port))
         }
 

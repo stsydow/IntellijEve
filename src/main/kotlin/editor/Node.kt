@@ -2,6 +2,7 @@ package editor
 
 import codegen.CodeGenNode
 import java.awt.Color
+import kotlin.test.assertFalse
 
 private const val TITLE_HEIGHT = 2 * UNIT
 private val INNER_PADDING = Padding(0.2 * UNIT)
@@ -23,13 +24,11 @@ private val CHILD_NODE_SYMBOL = Transform(0.0, 0.0, UNIT) * listOf(
 open class Node(transform: Transform, name: String, parent: Node?, scene: Viewport) : UIElement(transform, parent, scene) {
 
     var name: String = name
-        get() = field
         set(value) {
             impl.rename(value)
             field = value
             repaint()
         }
-
 
     val impl = ImplementationNode(this)
     val codeGen = CodeGenNode(this)
@@ -39,13 +38,22 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
     var childrenPickable = true
     var isSelected = false
 
-    val in_port = Port(Direction.IN, Port.ANY_MESSAGE_TYPE, this, scene)
+    val in_port = Port(Direction.IN, Type.STREAM, Port.ANY_MESSAGE_TYPE, this, scene)
     val out_ports = mutableListOf<Port>()
     val childEdges = mutableListOf<Edge>()
     val childNodes = mutableSetOf<Node>()
 
     val padding = DEFAULT_PADDING
+        /*set(value) {
+            field = value
+            calcBounds()
+        }*/
     var innerBounds = DEFAULT_BOUNDS
+        set(value) {
+            field = value
+            calcBounds()
+        }
+
     var color = DEFAULT_COLOR
 
     // Properties
@@ -61,12 +69,25 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
     val isFanIn: Boolean get() = in_port.incommingEdges.count() > 1
 
     var context:Context = Context.None
+        set(value) {
+            field = value
+            calcBounds()
+        }
 
     val hasContext: Boolean get() = context.type != ContextType.None
 
     var filterExpression = ""
+        set(value) {
+            field = value
+            calcBounds()
+        }
+
     val hasFilter: Boolean get() = filterExpression.isNotEmpty()
     var orderExpression = ""
+        set(value) {
+            field = value
+            calcBounds()
+        }
     val hasOrder: Boolean get() = orderExpression.isNotEmpty()
 
     val hasProperties: Boolean get() = hasFilter || hasContext || hasOrder
@@ -85,7 +106,15 @@ open class Node(transform: Transform, name: String, parent: Node?, scene: Viewpo
         if (hasOrder) count += 1
         return Padding((1.2 * count) * UNIT, 0.0, 0.0, 0.0)
     }
-    override val bounds: Bounds get() = innerBounds + padding + propertiesPadding
+
+    private var _bounds:Bounds = innerBounds + padding + propertiesPadding
+    override val bounds get() = _bounds
+
+    fun calcBounds() {
+        _bounds = innerBounds + padding + propertiesPadding
+    }
+
+    //override val bounds: Bounds get() = innerBounds + padding + propertiesPadding
     val titleBottom: Coordinate get() = (bounds - propertiesPadding).min() + Vector(0.0, TITLE_HEIGHT)
 
 
@@ -539,7 +568,7 @@ class RootNode(val viewport: Viewport, t: Transform) : Node(t, "__root__", null,
     var showTransforms = false
 
     init {
-        innerBounds = Bounds.infinite()
+        innerBounds = Bounds.INFINITE_BOUNDS
     }
 
     constructor(viewport: Viewport) : this(viewport, Transform())

@@ -1,5 +1,4 @@
-
-use futures::{Poll, Stream, Async};
+use futures::{Async, Poll, Stream};
 
 use crate::structs::EveError;
 
@@ -7,22 +6,22 @@ pub trait Context {
     type Event;
     type Result;
 
-    fn work(&mut self, event:Self::Event) -> Self::Result;
+    fn work(&mut self, event: Self::Event) -> Self::Result;
     /*fn new() -> Self;*/
 }
 
 pub struct GlobalContext<Ctx, InStream> {
-    context:Ctx,
-    input:InStream
+    context: Ctx,
+    input: InStream,
 }
 
 impl<E, R, Ctx, InStream> GlobalContext<Ctx, InStream>
-    where Ctx:Context<Event=E, Result=R>, InStream:Stream
+    where Ctx: Context<Event=E, Result=R>, InStream: Stream
 {
-    pub fn new(input:InStream, initial_ctx: Ctx) -> Self {
+    pub fn new(input: InStream, initial_ctx: Ctx) -> Self {
         GlobalContext {
             context: initial_ctx,
-            input
+            input,
         }
     }
 }
@@ -36,7 +35,7 @@ pub fn stream_context<E, R, InStream, Ctx> (input:InStream, initial_ctx: Ctx) ->
 }
 */
 
-impl<E, R, Ctx:Context<Event=E, Result=R>, InStream: Stream<Item=E, Error=EveError>> Stream for GlobalContext<Ctx, InStream> {
+impl<E, R, Ctx: Context<Event=E, Result=R>, InStream: Stream<Item=E, Error=EveError>> Stream for GlobalContext<Ctx, InStream> {
     type Item = R;
     type Error = EveError;
 
@@ -46,7 +45,7 @@ impl<E, R, Ctx:Context<Event=E, Result=R>, InStream: Stream<Item=E, Error=EveErr
             Async::Ready(Some(event)) => {
                 let result = self.context.work(event);
                 Async::Ready(Some(result))
-            },
+            }
             Async::Ready(None) => Async::Ready(None),
             Async::NotReady => Async::NotReady
         };

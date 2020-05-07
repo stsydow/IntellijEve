@@ -2,9 +2,7 @@ package editor
 
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtil
-import com.sun.corba.se.impl.orbutil.graph.Graph
 import intellij.GraphFileEditor
-import org.apache.commons.imaging.palette.MostPopulatedBoxesMedianCut
 import java.awt.*
 import java.awt.event.*
 import java.util.*

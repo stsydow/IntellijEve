@@ -9,7 +9,8 @@ import javax.swing.UIManager
  * Created by Stefan Sydow on 26.03.17.
  */
 object DemoLauncher {
-    @JvmStatic fun main(args: Array<String>) {
+    @JvmStatic
+    fun main(args: Array<String>) {
 
         val plaf = UIManager.getSystemLookAndFeelClassName() //"-Dswing.defaultlaf=com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel"
         UIManager.setLookAndFeel(plaf)
