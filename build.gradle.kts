@@ -17,31 +17,37 @@ import kotlin.concurrent.thread
 
 import org.jetbrains.intellij.tasks.PatchPluginXmlTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.gradle.api.JavaVersion.VERSION_1_8
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
+import org.gradle.api.JavaVersion.VERSION_11
 
-val packageName = "org.tub.eveamcp"
-val pluginVersion = "0.1.2"
+fun properties(key: String) = project.findProperty(key).toString()
 
-group = packageName
-version = pluginVersion
+group = properties("pluginGroup")
+version = properties("pluginVersion")
+
+repositories {
+    mavenCentral()
+    jcenter()
+
+    flatDir {
+        dirs("libs")
+    }
+}
+
 var kotlinVersion: String by extra
-
 
 buildscript {
     var kotlinVersion: String by extra
 
-    kotlinVersion = "1.3.0"
+    kotlinVersion = "1.4.31"
     repositories { mavenCentral() }
 
     dependencies { classpath(kotlin("gradle-plugin", kotlinVersion)) }
 }
 
 plugins {
-    //id 'java-gradle-plugin' - breaks XML Parser classpath
     //idea
-    kotlin("jvm") version "1.3.0"
-    id("org.jetbrains.intellij") version "0.3.12"
+    kotlin("jvm") version "1.4.31"
+    id("org.jetbrains.intellij") version "0.7.2"
 }
 
 allprojects {
@@ -56,18 +62,15 @@ allprojects {
         //updateSinceUntilBuild = false
         //instrumentCode = true
 
-        version = "2020.1"
+        version = "2020.3.3"
         pluginName = "IntellijEve"
-        setPlugins(
-                "org.toml.lang:0.2.120",
-                "org.rust.lang:0.2.120"
-        )
+        //setPlugins("org.toml.lang:0.2.143","org.rust.lang:0.3.143")
     }
 
 
     configure<JavaPluginConvention> {
-        sourceCompatibility = VERSION_1_8
-        targetCompatibility = VERSION_1_8
+        sourceCompatibility = VERSION_11
+        targetCompatibility = VERSION_11
     }
 
     tasks.withType<KotlinCompile> {
@@ -81,9 +84,9 @@ allprojects {
         )
         */
         kotlinOptions {
-            jvmTarget = "1.8"
-            languageVersion = "1.3"
-            apiVersion = "1.3"
+            jvmTarget = "11"
+            languageVersion = "1.4"
+            apiVersion = "1.4"
             freeCompilerArgs = listOf("-Xjvm-default=enable")
         }
     }
@@ -92,8 +95,8 @@ allprojects {
     tasks.withType<PatchPluginXmlTask> {
         //changeNotes(file("res/META-INF/change-notes.html").readText())
         //pluginDescription(file("res/META-INF/description.html").readText())
-        version(pluginVersion)
-        pluginId(packageName)
+        version(properties("pluginVersion"))
+        pluginId(properties("pluginGroup"))
         println(pluginId)
     }
 
@@ -109,8 +112,11 @@ allprojects {
     }
 
     dependencies {
-        compile("commons-io:commons-io:2.6")
+        implementation("commons-io:commons-io:2.8.0")
+        implementation(group = "org.rust.lang",  name = "intellij-rust-0.3.143")
+        implementation(group = "org.toml.lang", name = "intellij-toml-0.2.143")
+
         //compile(kotlin("stdlib"))
-        compile(kotlin("stdlib-jdk8"))
+        implementation(kotlin("stdlib-jdk8"))
     }
 }
